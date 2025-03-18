@@ -147,18 +147,22 @@
   </div>
 
   <script>
+    // Função para abrir o modal
     function abrirModal() {
       document.getElementById("cadastroModal").style.display = "flex";
     }
 
+    // Função para fechar o modal
     function fecharModal() {
       document.getElementById("cadastroModal").style.display = "none";
     }
 
+    // Função para mostrar/ocultar campos CLT
     function toggleClt() {
       document.getElementById("cltFields").style.display = document.getElementById("cltCheckbox").checked ? "block" : "none";
     }
 
+    // Função para calcular o INSS
     function calcularINSS(salario) {
       if (salario <= 1320.00) return salario * 0.075;
       else if (salario <= 2571.29) return (1320 * 0.075) + ((salario - 1320) * 0.09);
@@ -167,6 +171,7 @@
       return 876.97; // Teto do INSS em 2023
     }
 
+    // Função para calcular o IRRF
     function calcularIRRF(base) {
       if (base <= 2112.00) return 0;
       else if (base <= 2826.65) return (base * 0.075) - 158.40;
@@ -175,6 +180,7 @@
       return (base * 0.275) - 884.96;
     }
 
+    // Função para atualizar o salário líquido
     function atualizarSalarioLiquido() {
       let salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       let inss = calcularINSS(salarioBruto);
@@ -183,6 +189,7 @@
       document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
     }
 
+    // Função para verificar correção manual do salário líquido
     function verificarCorrecaoSalario() {
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
@@ -193,6 +200,7 @@
       }
     }
 
+    // Função para gerar campos de pagamentos
     function gerarCamposPagamentos() {
       let container = document.getElementById("pagamentosContainer");
       container.innerHTML = "";
@@ -205,6 +213,7 @@
       }
     }
 
+    // Função para verificar a soma dos pagamentos
     function verificarSomaPagamentos() {
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let valores = document.querySelectorAll(".valoresPagamento");
