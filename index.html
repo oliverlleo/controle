@@ -193,7 +193,7 @@
     function verificarCorrecaoSalario() {
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
-      if (salarioLiquido !== (salarioBruto - calcularINSS(salarioBruto) - calcularIRRF(salarioBruto - calcularINSS(salarioBruto))) {
+      if (salarioLiquido !== (salarioBruto - calcularINSS(salarioBruto) - calcularIRRF(salarioBruto - calcularINSS(salarioBruto)))) {
         document.getElementById("avisoErro").style.display = "block";
       } else {
         document.getElementById("avisoErro").style.display = "none";
