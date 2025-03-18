@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastro de Pessoa</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; }
-    .container { max-width: 600px; margin: auto; padding: 20px; background: #f9f9f9; }
-    .modal { display: none; position: fixed; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-    .modal-content { background: #fff; padding: 20px; margin: 10% auto; width: 50%; }
+    body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; }
+    .container { max-width: 600px; margin: auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .modal { display: none; position: fixed; width: 100%; height: 100%; background: rgba(0,0,0,0.5); top: 0; left: 0; justify-content: center; align-items: center; }
+    .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 50%; position: relative; }
+    .close { position: absolute; top: 10px; right: 15px; cursor: pointer; font-size: 20px; }
     .checkbox-group { display: flex; justify-content: center; gap: 20px; }
-    .radio-group { display: flex; justify-content: center; gap: 10px; }
     .pagamento-item { margin: 5px 0; }
   </style>
 </head>
@@ -22,7 +22,7 @@
 
   <div id="cadastroModal" class="modal">
     <div class="modal-content">
-      <span onclick="fecharModal()">&times;</span>
+      <span class="close" onclick="fecharModal()">&times;</span>
       <h2>Novo Cadastro</h2>
       <form id="cadastroForm">
         <label>Nome:</label>
@@ -30,7 +30,7 @@
 
         <div class="checkbox-group">
           <label><input type="checkbox" id="cltCheckbox" onclick="toggleClt()"> CLT</label>
-          <label><input type="checkbox"> PJ</label>
+          <label><input type="checkbox" id="pjCheckbox"> PJ</label>
         </div>
 
         <div id="cltFields" style="display: none;">
@@ -40,12 +40,9 @@
           <label>Salário Líquido (R$):</label>
           <input type="number" id="salarioLiquido" readonly>
 
-          <p>Quantas vezes deseja receber no mês?</p>
-          <div class="radio-group" id="numPagamentosGroup">
-            <label><input type="radio" name="numPagamentos" value="1" onclick="gerarCamposPagamentos()"> 1x</label>
-            <label><input type="radio" name="numPagamentos" value="2" onclick="gerarCamposPagamentos()"> 2x</label>
-            <label><input type="radio" name="numPagamentos" value="3" onclick="gerarCamposPagamentos()"> 3x</label>
-          </div>
+          <label>Quantas vezes deseja receber no mês?</label>
+          <input type="number" id="numPagamentos" min="1" max="5" oninput="gerarCamposPagamentos()">
+          
           <div id="pagamentosContainer"></div>
           <p id="avisoErro" style="color: red; display: none;">Os valores não somam o salário líquido!</p>
         </div>
@@ -55,7 +52,7 @@
   </div>
 
   <script>
-    function abrirModal() { document.getElementById("cadastroModal").style.display = "block"; }
+    function abrirModal() { document.getElementById("cadastroModal").style.display = "flex"; }
     function fecharModal() { document.getElementById("cadastroModal").style.display = "none"; }
     function toggleClt() { document.getElementById("cltFields").style.display = document.getElementById("cltCheckbox").checked ? "block" : "none"; }
 
@@ -64,7 +61,7 @@
       else if (salario <= 2571.29) return (1320 * 0.075) + ((salario - 1320) * 0.09);
       else if (salario <= 3856.94) return (1320 * 0.075) + (1251.29 * 0.09) + ((salario - 2571.29) * 0.12);
       else if (salario <= 7507.49) return (1320 * 0.075) + (1251.29 * 0.09) + (1285.65 * 0.12) + ((salario - 3856.94) * 0.14);
-      return 876.97; // Teto do INSS
+      return 876.97;
     }
 
     function calcularIRRF(base) {
@@ -86,11 +83,11 @@
     function gerarCamposPagamentos() {
       let container = document.getElementById("pagamentosContainer");
       container.innerHTML = "";
-      let numPagamentos = document.querySelector("input[name='numPagamentos']:checked").value;
+      let numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
       for (let i = 1; i <= numPagamentos; i++) {
         let div = document.createElement("div");
         div.className = "pagamento-item";
-        div.innerHTML = `<label>Valor do Pagamento ${i}:</label> <input type="number" class="valoresPagamento" step="0.01" oninput="verificarSomaPagamentos()">`;
+        div.innerHTML = `<label>Data ${i}: </label><input type="date"> <label>Valor ${i}:</label> <input type="number" class="valoresPagamento" step="0.01" oninput="verificarSomaPagamentos()">`;
         container.appendChild(div);
       }
     }
@@ -102,16 +99,6 @@
       valores.forEach(input => soma += parseFloat(input.value) || 0);
       document.getElementById("avisoErro").style.display = soma !== salarioLiquido ? "block" : "none";
     }
-
-    document.getElementById("cadastroForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-      if (document.getElementById("avisoErro").style.display === "block") {
-        alert("Os valores dos pagamentos não estão corretos!");
-      } else {
-        alert("Cadastro realizado com sucesso!");
-        fecharModal();
-      }
-    });
   </script>
 </body>
 </html>
