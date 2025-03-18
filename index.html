@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastro de Pessoa</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; }
-    .container { max-width: 600px; margin: auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .modal { display: none; position: fixed; width: 100%; height: 100%; background: rgba(0,0,0,0.5); top: 0; left: 0; justify-content: center; align-items: center; }
-    .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 50%; position: relative; }
+    body { font-family: Arial, sans-serif; background: #f9f9f9; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .container { width: 100%; max-width: 400px; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; }
+    .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .close { position: absolute; top: 10px; right: 15px; cursor: pointer; font-size: 20px; }
-    .checkbox-group { display: flex; justify-content: center; gap: 20px; }
+    input, button { width: 100%; margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .checkbox-group { display: flex; justify-content: space-between; margin: 10px 0; }
     .pagamento-item { margin: 5px 0; }
   </style>
 </head>
@@ -25,24 +28,15 @@
       <span class="close" onclick="fecharModal()">&times;</span>
       <h2>Novo Cadastro</h2>
       <form id="cadastroForm">
-        <label>Nome:</label>
-        <input type="text" id="nome" required>
-
+        <input type="text" id="nome" placeholder="Nome" required>
         <div class="checkbox-group">
           <label><input type="checkbox" id="cltCheckbox" onclick="toggleClt()"> CLT</label>
           <label><input type="checkbox" id="pjCheckbox"> PJ</label>
         </div>
-
         <div id="cltFields" style="display: none;">
-          <label>Salário Bruto (R$):</label>
-          <input type="number" id="salarioBruto" step="0.01" oninput="atualizarSalarioLiquido()">
-          
-          <label>Salário Líquido (R$):</label>
-          <input type="number" id="salarioLiquido" readonly>
-
-          <label>Quantas vezes deseja receber no mês?</label>
-          <input type="number" id="numPagamentos" min="1" max="5" oninput="gerarCamposPagamentos()">
-          
+          <input type="number" id="salarioBruto" placeholder="Salário Bruto (R$)" step="0.01" oninput="atualizarSalarioLiquido()">
+          <input type="number" id="salarioLiquido" placeholder="Salário Líquido (R$)" readonly>
+          <input type="number" id="numPagamentos" placeholder="Nº de Pagamentos no mês" min="1" max="5" oninput="gerarCamposPagamentos()">
           <div id="pagamentosContainer"></div>
           <p id="avisoErro" style="color: red; display: none;">Os valores não somam o salário líquido!</p>
         </div>
@@ -55,7 +49,6 @@
     function abrirModal() { document.getElementById("cadastroModal").style.display = "flex"; }
     function fecharModal() { document.getElementById("cadastroModal").style.display = "none"; }
     function toggleClt() { document.getElementById("cltFields").style.display = document.getElementById("cltCheckbox").checked ? "block" : "none"; }
-
     function calcularINSS(salario) {
       if (salario <= 1320.00) return salario * 0.075;
       else if (salario <= 2571.29) return (1320 * 0.075) + ((salario - 1320) * 0.09);
@@ -63,7 +56,6 @@
       else if (salario <= 7507.49) return (1320 * 0.075) + (1251.29 * 0.09) + (1285.65 * 0.12) + ((salario - 3856.94) * 0.14);
       return 876.97;
     }
-
     function calcularIRRF(base) {
       if (base <= 2112.00) return 0;
       else if (base <= 2826.65) return (base * 0.075) - 158.40;
@@ -71,15 +63,12 @@
       else if (base <= 4664.68) return (base * 0.225) - 651.73;
       return (base * 0.275) - 884.96;
     }
-
     function atualizarSalarioLiquido() {
       let salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       let inss = calcularINSS(salarioBruto);
       let irrf = calcularIRRF(salarioBruto - inss);
-      let salarioLiquido = salarioBruto - inss - irrf;
-      document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
+      document.getElementById("salarioLiquido").value = (salarioBruto - inss - irrf).toFixed(2);
     }
-
     function gerarCamposPagamentos() {
       let container = document.getElementById("pagamentosContainer");
       container.innerHTML = "";
@@ -87,11 +76,10 @@
       for (let i = 1; i <= numPagamentos; i++) {
         let div = document.createElement("div");
         div.className = "pagamento-item";
-        div.innerHTML = `<label>Data ${i}: </label><input type="date"> <label>Valor ${i}:</label> <input type="number" class="valoresPagamento" step="0.01" oninput="verificarSomaPagamentos()">`;
+        div.innerHTML = `<input type="date"> <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()">`;
         container.appendChild(div);
       }
     }
-
     function verificarSomaPagamentos() {
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let valores = document.querySelectorAll(".valoresPagamento");
