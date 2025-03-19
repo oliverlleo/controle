@@ -84,7 +84,7 @@
       margin-bottom: 10px;
       display: none;
     }
-    /* Calendário interativo */
+    /* Calendário Interativo - Modal */
     #calendarHeader {
       display: flex;
       justify-content: center;
@@ -97,10 +97,33 @@
       font-size: 1.5rem;
       cursor: pointer;
       margin: 0 10px;
+      color: #007bff;
     }
     #calendarMonthYear {
       font-size: 1.2rem;
       font-weight: bold;
+      cursor: pointer;
+    }
+    #monthYearSelect {
+      display: none;
+      margin-bottom: 10px;
+    }
+    #monthYearSelect select {
+      width: 48%;
+      padding: 8px;
+      margin-right: 4%;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    #monthYearSelect button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
     #calendarGrid table {
       width: 100%;
@@ -117,7 +140,7 @@
       background: #007bff;
       color: #fff;
     }
-    /* Modais (mantidos para renda, fonte de renda e categorias) */
+    /* Modais */
     .modal {
       display: none;
       position: fixed;
@@ -191,6 +214,7 @@
     <button onclick="abrirModal('cadastroModal')">Cadastra Nova Renda</button>
     <button onclick="abrirModal('fonteModal')">Fonte de Renda</button>
     <button onclick="abrirModal('categoriasModal')">Gerenciar Categorias</button>
+    <button onclick="abrirModal('calendarModal')">Calendário</button>
   </div>
 
   <!-- Seção de Cadastro de Despesa (na tela inicial) -->
@@ -227,15 +251,38 @@
     </form>
   </div>
 
-  <!-- Seção do Calendário de Despesas -->
-  <div class="section" id="calendarioSection">
-    <h2>Calendário de Despesas (Cartão)</h2>
-    <div id="calendarHeader">
-      <button onclick="prevMonth()">&#9664;</button>
-      <span id="calendarMonthYear"></span>
-      <button onclick="nextMonth()">&#9654;</button>
+  <!-- Modal de Calendário -->
+  <div id="calendarModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('calendarModal')">&times;</span>
+      <h2>Calendário de Despesas</h2>
+      <div id="calendarHeader">
+        <button onclick="prevMonth()">&#9664;</button>
+        <span id="calendarMonthYear" onclick="toggleMonthYearSelect()"></span>
+        <button onclick="nextMonth()">&#9654;</button>
+      </div>
+      <div id="monthYearSelect">
+        <select id="selectMonth" onchange="updateCalendarFromSelect()">
+          <option value="0">Janeiro</option>
+          <option value="1">Fevereiro</option>
+          <option value="2">Março</option>
+          <option value="3">Abril</option>
+          <option value="4">Maio</option>
+          <option value="5">Junho</option>
+          <option value="6">Julho</option>
+          <option value="7">Agosto</option>
+          <option value="8">Setembro</option>
+          <option value="9">Outubro</option>
+          <option value="10">Novembro</option>
+          <option value="11">Dezembro</option>
+        </select>
+        <select id="selectYear" onchange="updateCalendarFromSelect()">
+          <!-- As opções de ano serão preenchidas dinamicamente -->
+        </select>
+        <button onclick="toggleMonthYearSelect()">Ok</button>
+      </div>
+      <div id="calendarGrid"></div>
     </div>
-    <div id="calendarGrid"></div>
   </div>
 
   <!-- Modal de Cadastro de Renda -->
@@ -269,7 +316,6 @@
           <input type="number" id="salarioBruto" placeholder="Digite o salário bruto" step="0.01" oninput="atualizarSalarioLiquido()">
           
           <label for="salarioLiquido">Salário Líquido (R$):</label>
-          <!-- Campo editável: valor calculado é apenas sugestão -->
           <input type="number" id="salarioLiquido" placeholder="Salário líquido calculado" step="0.01">
           
           <label for="numPagamentos">Número de Pagamentos no Mês:</label>
@@ -332,6 +378,7 @@
       document.getElementById(id).style.display = "flex";
       if(id === "fonteModal") loadUsuarios();
       if(id === "categoriasModal") loadCategorias();
+      if(id === "calendarModal") renderCalendar();
     }
     function fecharModal(id) {
       document.getElementById(id).style.display = "none";
@@ -475,16 +522,16 @@
         .catch((error) => { alert("Erro ao salvar a despesa."); });
     });
 
-    // --- Calendário Interativo ---
+    // --- Calendário Interativo (Modal) ---
     function renderCalendar() {
-      // Atualiza o cabeçalho com o mês/ano atual
+      // Atualiza o cabeçalho
       document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
+      // Popula os selects de mês e ano se estiverem ocultos
+      populateMonthYearSelect();
       loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
-        // Cria a tabela do calendário
         let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
         let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
         let table = document.createElement("table");
-        // Cabeçalho com dias da semana
         let headerRow = document.createElement("tr");
         const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
         diasSemana.forEach(function(dia) {
@@ -493,7 +540,6 @@
           headerRow.appendChild(th);
         });
         table.appendChild(headerRow);
-        // Linhas do calendário
         let row = document.createElement("tr");
         for (let i = 0; i < firstDay; i++) {
           let cell = document.createElement("td");
@@ -571,7 +617,36 @@
         callback(totals);
       });
     }
-    renderCalendar();
+    // Popula os selects de mês e ano
+    function populateMonthYearSelect() {
+      // Para o select de mês, já estão as opções no HTML.
+      // Para o select de ano, cria opções de (ano atual - 10) até (ano atual + 10)
+      let selectYear = document.getElementById("selectYear");
+      selectYear.innerHTML = "";
+      let currentYear = new Date().getFullYear();
+      for(let y = currentYear - 10; y <= currentYear + 10; y++){
+        let option = document.createElement("option");
+        option.value = y;
+        option.innerText = y;
+        if(y === currentCalendarYear) option.selected = true;
+        selectYear.appendChild(option);
+      }
+      // Seleciona o mês atual no select de mês
+      let selectMonth = document.getElementById("selectMonth");
+      selectMonth.value = currentCalendarMonth;
+    }
+    // Alterna a exibição do dropdown de mês e ano
+    function toggleMonthYearSelect() {
+      let container = document.getElementById("monthYearSelect");
+      container.style.display = container.style.display === "none" ? "block" : "none";
+    }
+    function updateCalendarFromSelect() {
+      let selectMonth = document.getElementById("selectMonth");
+      let selectYear = document.getElementById("selectYear");
+      currentCalendarMonth = parseInt(selectMonth.value);
+      currentCalendarYear = parseInt(selectYear.value);
+      renderCalendar();
+    }
 
     // --- MÓDULO CATEGORIAS ---
     document.getElementById("categoriaForm").addEventListener("submit", function(e) {
