@@ -1,212 +1,670 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle Financeiro Completo</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #f0f4f8;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .menu {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        button {
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            background: #2ecc71;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-        }
-
-        #calendar {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-        }
-
-        .day {
-            padding: 15px;
-            border: 1px solid #ddd;
-            min-height: 100px;
-        }
-    </style>
-    <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciamento de Contas</title>
+  <style>
+    /* Estilos gerais */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .hidden { display: none; }
+    /* Modal e Calendário */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: flex-start;
+      overflow-y: auto;
+      padding: 20px;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #333;
+    }
+    /* Calendário */
+    #calendarHeader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    #calendarHeader button {
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      margin: 0 10px;
+      color: #007bff;
+    }
+    #calendarMonthYear {
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #monthYearSelect {
+      display: none;
+      margin-bottom: 10px;
+    }
+    #monthYearSelect select {
+      width: 48%;
+      padding: 8px;
+      margin-right: 4%;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    #monthYearSelect button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #calendarGrid table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #calendarGrid th, #calendarGrid td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      min-height: 60px;
+      vertical-align: top;
+    }
+    #calendarGrid th { background: #007bff; color: #fff; }
+    /* Relatório */
+    #relatorioMensalSection table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    #relatorioMensalSection th, #relatorioMensalSection td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    #relatorioMensalSection th { background: #007bff; color: #fff; }
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>📊 Meu Controle Financeiro</h1>
-        
-        <!-- Menu Principal Completo -->
-        <div class="menu">
-            <button onclick="abrirModal('rendaModal')">💰 Nova Renda</button>
-            <button onclick="abrirModal('despesaModal')">💸 Nova Despesa</button>
-            <button onclick="abrirModal('categoriaModal')">🏷️ Categorias</button>
-            <button onclick="mostrarCalendario()">📅 Calendário</button>
-        </div>
 
-        <!-- Seção do Calendário -->
-        <div id="calendarioSection" class="hidden">
-            <div id="calendarHeader">
-                <button onclick="mesAnterior()">←</button>
-                <h2 id="mesAtual">Janeiro 2024</h2>
-                <button onclick="proximoMes()">→</button>
-            </div>
-            <div id="calendar"></div>
-        </div>
+  <div class="container">
+    <h1>Gerenciamento de Contas</h1>
+    <!-- Menu -->
+    <button onclick="abrirModal('cadastroModal')">Cadastrar Nova Renda</button>
+    <button onclick="abrirModal('fonteModal')">Fonte de Renda</button>
+    <button onclick="abrirModal('categoriasModal')">Gerenciar Categorias</button>
+    <button onclick="abrirModal('cartaoModal')">Gerenciar Cartões</button>
+    <button onclick="abrirModal('calendarModal')">Calendário</button>
+  </div>
 
-        <!-- Modal de Renda -->
-        <div id="rendaModal" class="modal">
-            <div class="modal-content">
-                <h2>Adicionar Nova Renda</h2>
-                <input type="text" id="fonteRenda" placeholder="Fonte da Renda">
-                <input type="number" id="valorRenda" placeholder="Valor R$">
-                <button onclick="salvarRenda()">Salvar</button>
-            </div>
-        </div>
-
-        <!-- Modal de Despesa -->
-        <div id="despesaModal" class="modal">
-            <div class="modal-content">
-                <h2>Nova Despesa</h2>
-                <!-- Formulário completo de despesas -->
-            </div>
-        </div>
+  <!-- Seção de Cadastro de Despesa -->
+  <div class="container">
+    <h2>Cadastrar Despesa</h2>
+    <label>Descrição:</label>
+    <input type="text" id="despesaDescricao" placeholder="Descrição da despesa" required>
+    
+    <label>Valor (R$):</label>
+    <input type="number" id="despesaValor" placeholder="Valor" step="0.01" required>
+    
+    <label>Data da Compra:</label>
+    <input type="date" id="dataCompra" required>
+    
+    <label>Categoria:</label>
+    <select id="categoriaDespesa">
+      <option value="">Selecione a Categoria</option>
+      <!-- Preenchido via Firebase -->
+    </select>
+    
+    <label>Forma de Pagamento:</label>
+    <select id="formaPagamento" onchange="toggleParcelamento()">
+      <option value="avista">À Vista</option>
+      <option value="cartao">Cartão</option>
+    </select>
+    
+    <div id="parcelamentoDiv" class="hidden">
+      <label>Cartão:</label>
+      <select id="cartaoDespesa" required>
+        <option value="">Selecione o Cartão</option>
+        <!-- Preenchido via Firebase -->
+      </select>
+      <label>Número de Parcelas:</label>
+      <input type="number" id="numParcelasDespesa" min="1" max="12" required>
     </div>
+    
+    <button onclick="salvarDespesa()">Salvar Despesa</button>
+  </div>
 
-    <script>
-        // Configuração do Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
-            authDomain: "controlegasto-df3f1.firebaseapp.com",
-            databaseURL: "https://controlegasto-df3f1-default-rtdb.firebaseio.com",
-            projectId: "controlegasto-df3f1",
-            storageBucket: "controlegasto-df3f1.firebasestorage.app",
-            messagingSenderId: "1034936676414",
-            appId: "1:1034936676414:web:61c67ce39c3ab71a07a16f",
-            measurementId: "G-PTN43GZHGR"
+  <!-- Seção de Pagar Despesa -->
+  <div class="container">
+    <h2>Pagar Despesa</h2>
+    <label>Pesquisar Despesa:</label>
+    <input type="text" id="despesaSearch" placeholder="Digite parte da descrição...">
+    <select id="despesaSelect" size="5"></select>
+    <button onclick="pagarDespesaSelecionada()">Pagar Despesa Selecionada</button>
+  </div>
+
+  <!-- Seção de Relatório Mensal -->
+  <div class="container" id="relatorioMensalSection">
+    <h2>Relatório Mensal de Despesas Pagas</h2>
+    <button onclick="loadRelatorioMensal()">Atualizar Relatório</button>
+    <div id="relatorioMensalContainer"></div>
+  </div>
+
+  <!-- Modal de Calendário -->
+  <div id="calendarModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('calendarModal')">&times;</span>
+      <h2>Calendário de Despesas</h2>
+      <div id="calendarHeader">
+        <button onclick="prevMonth()">&#9664;</button>
+        <span id="calendarMonthYear" onclick="toggleMonthYearSelect()"></span>
+        <button onclick="nextMonth()">&#9654;</button>
+      </div>
+      <div id="monthYearSelect">
+        <select id="selectMonth" onchange="updateCalendarFromSelect()">
+          <option value="0">Janeiro</option>
+          <option value="1">Fevereiro</option>
+          <option value="2">Março</option>
+          <option value="3">Abril</option>
+          <option value="4">Maio</option>
+          <option value="5">Junho</option>
+          <option value="6">Julho</option>
+          <option value="7">Agosto</option>
+          <option value="8">Setembro</option>
+          <option value="9">Outubro</option>
+          <option value="10">Novembro</option>
+          <option value="11">Dezembro</option>
+        </select>
+        <select id="selectYear" onchange="updateCalendarFromSelect()">
+          <!-- Preenchido dinamicamente -->
+        </select>
+        <button onclick="toggleMonthYearSelect()">Ok</button>
+      </div>
+      <div id="calendarGrid"></div>
+    </div>
+  </div>
+
+  <!-- Modal de Cadastro de Renda (Conteúdo simplificado) -->
+  <div id="cadastroModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('cadastroModal')">&times;</span>
+      <h2>Nova Renda</h2>
+      <p>Conteúdo do cadastro de renda...</p>
+    </div>
+  </div>
+
+  <!-- Modal Fonte de Renda (Conteúdo simplificado) -->
+  <div id="fonteModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('fonteModal')">&times;</span>
+      <h2>Fonte de Renda</h2>
+      <p>Conteúdo da fonte de renda...</p>
+    </div>
+  </div>
+
+  <!-- Modal Gerenciar Categorias -->
+  <div id="categoriasModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('categoriasModal')">&times;</span>
+      <h2>Gerenciar Categorias</h2>
+      <label>Nome da Categoria:</label>
+      <input type="text" id="categoriaNome" placeholder="Nome da categoria">
+      <button onclick="salvarCategoria()">Salvar Categoria</button>
+      <div id="categoriasLista"></div>
+    </div>
+  </div>
+
+  <!-- Modal Gerenciar Cartões -->
+  <div id="cartaoModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('cartaoModal')">&times;</span>
+      <h2>Gerenciar Cartões</h2>
+      <label>Nome do Cartão:</label>
+      <input type="text" id="nomeCartao" placeholder="Nome do Cartão">
+      <label>Dia da Fatura:</label>
+      <input type="number" id="diaFatura" placeholder="Ex.: 20" min="1" max="31">
+      <label>Dia do Fechamento:</label>
+      <input type="number" id="diaFechamento" placeholder="Ex.: 11" min="1" max="31">
+      <label>Limite do Cartão (R$):</label>
+      <input type="number" id="limiteCartao" placeholder="Limite" step="0.01">
+      <button onclick="salvarCartao()">Salvar Cartão</button>
+      <div id="cartoesLista"></div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Configuração – utilize os dados fornecidos
+    const firebaseConfig = {
+      apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
+      authDomain: "controlegasto-df3f1.firebaseapp.com",
+      databaseURL: "https://controlegasto-df3f1-default-rtdb.firebaseio.com",
+      projectId: "controlegasto-df3f1",
+      storageBucket: "controlegasto-df3f1.firebasestorage.app",
+      messagingSenderId: "1034936676414",
+      appId: "1:1034936676414:web:61c67ce39c3ab71a07a16f",
+      measurementId: "G-PTN43GZHGR"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Variáveis para o calendário
+    let currentCalendarMonth = new Date().getMonth();
+    let currentCalendarYear = new Date().getFullYear();
+
+    // Ao carregar, atualiza campos e selects
+    window.onload = function() {
+      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
+      updateCategoriaSelect();
+      updateCartaoSelect();
+      loadDespesasNaoPagasSelect();
+      loadCategorias();
+      loadCartoes();
+    };
+
+    /* ----- Funções de Modal ----- */
+    function abrirModal(id) {
+      document.getElementById(id).style.display = "flex";
+      if (id === "fonteModal") { /* Carregar fonte de renda, se necessário */ }
+      if (id === "categoriasModal") loadCategorias();
+      if (id === "cartaoModal") loadCartoes();
+      if (id === "calendarModal") renderCalendar();
+    }
+    function fecharModal(id) {
+      document.getElementById(id).style.display = "none";
+    }
+
+    /* ----- Módulo Despesa ----- */
+    function toggleParcelamento() {
+      const forma = document.getElementById("formaPagamento").value;
+      document.getElementById("parcelamentoDiv").classList.toggle("hidden", forma !== "cartao");
+    }
+
+    function salvarDespesa() {
+      const descricao = document.getElementById("despesaDescricao").value;
+      const valor = parseFloat(document.getElementById("despesaValor").value);
+      const dataCompra = document.getElementById("dataCompra").value;
+      const categoria = document.getElementById("categoriaDespesa").value;
+      const formaPagamento = document.getElementById("formaPagamento").value;
+      const despesasRef = db.ref("despesas");
+
+      if (formaPagamento === "cartao") {
+        const selectCartao = document.getElementById("cartaoDespesa");
+        if (!selectCartao.value) {
+          alert("Selecione um cartão para despesas no cartão.");
+          return;
+        }
+        const numParcelas = parseInt(document.getElementById("numParcelasDespesa").value);
+        const cardOption = selectCartao.selectedOptions[0];
+        const diaFatura = parseInt(cardOption.getAttribute("data-fatura"));
+        const diaFechamento = parseInt(cardOption.getAttribute("data-fechamento"));
+        let parcelas = [];
+        const purchaseDate = new Date(dataCompra);
+        const purchaseDay = purchaseDate.getDate();
+        let firstDueDate = new Date(purchaseDate);
+        // Se a compra ocorreu após o fechamento, a 1ª parcela vence no mês seguinte
+        if (purchaseDay > diaFechamento) {
+          firstDueDate.setMonth(firstDueDate.getMonth() + 1);
+          firstDueDate.setDate(diaFatura);
+        } else {
+          firstDueDate.setDate(diaFatura);
+        }
+        const valorParcela = parseFloat((valor / numParcelas).toFixed(2));
+        for (let i = 0; i < numParcelas; i++) {
+          let parcelaDate = new Date(firstDueDate);
+          parcelaDate.setMonth(parcelaDate.getMonth() + i);
+          parcelas.push({
+            valor: valorParcela,
+            vencimento: parcelaDate.toISOString().split("T")[0],
+            pago: false
+          });
+        }
+        const despesaData = {
+          descricao,
+          formaPagamento,
+          dataCompra,
+          categoria,
+          parcelas,
+          cartao: {
+            id: selectCartao.value,
+            nome: selectCartao.selectedOptions[0].text,
+            diaFatura,
+            diaFechamento
+          },
+          timestamp: new Date().toISOString()
         };
+        despesasRef.push(despesaData)
+          .then(() => {
+            alert("Despesa com cartão cadastrada com sucesso!");
+            document.getElementById("despesaForm").reset();
+            toggleParcelamento();
+            loadDespesasNaoPagasSelect();
+            renderCalendar();
+            updateCartaoSelect();
+          })
+          .catch(err => alert("Erro: " + err));
+      } else {
+        // Despesa à vista
+        const despesaData = {
+          descricao,
+          valor,
+          dataCompra,
+          formaPagamento,
+          categoria,
+          pago: false,
+          timestamp: new Date().toISOString()
+        };
+        despesasRef.push(despesaData)
+          .then(() => {
+            alert("Despesa à vista cadastrada com sucesso!");
+            document.getElementById("despesaForm").reset();
+            loadDespesasNaoPagasSelect();
+            renderCalendar();
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        // Variáveis de Estado
-        let currentMonth = new Date().getMonth();
-        let currentYear = new Date().getFullYear();
-
-        // Funções Principais
-        function abrirModal(id) {
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            document.getElementById(id).style.display = 'flex';
-        }
-
-        function salvarRenda() {
-            const renda = {
-                fonte: document.getElementById('fonteRenda').value,
-                valor: parseFloat(document.getElementById('valorRenda').value),
-                data: new Date().toISOString()
-            };
-
-            db.ref('rendas').push(renda)
-                .then(() => {
-                    alert('Renda salva com sucesso!');
-                    abrirModal('rendaModal');
-                });
-        }
-
-        // Funções do Calendário
-        function mostrarCalendario() {
-            document.getElementById('calendarioSection').classList.remove('hidden');
-            atualizarCalendario();
-        }
-
-        function atualizarCalendario() {
-            const calendarDiv = document.getElementById('calendar');
-            calendarDiv.innerHTML = '';
-            
-            // Lógica completa de geração do calendário
-            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-            
-            for(let i = 1; i <= daysInMonth; i++) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'day';
-                dayDiv.innerHTML = `<strong>${i}</strong>`;
-                calendarDiv.appendChild(dayDiv);
-            }
-            
-            document.getElementById('mesAtual').textContent = 
-                `${new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' })} ${currentYear}`;
-        }
-
-        function mesAnterior() {
-            currentMonth--;
-            if(currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            }
-            atualizarCalendario();
-        }
-
-        function proximoMes() {
-            currentMonth++;
-            if(currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            }
-            atualizarCalendario();
-        }
-
-        // Inicialização
-        window.onload = () => {
-            db.ref('rendas').on('value', snapshot => {
-                console.log('Dados atualizados:', snapshot.val());
+    /* ----- Módulo Pagar Despesa ----- */
+    // Carrega as despesas não pagas para o select; para cartão, cada parcela individualmente
+    function loadDespesasNaoPagasSelect() {
+      const select = document.getElementById("despesaSelect");
+      select.innerHTML = "";
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const despesa = child.val();
+          const id = child.key;
+          if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach((parcela, idx) => {
+              if (!parcela.pago) {
+                let opt = document.createElement("option");
+                opt.value = ${id}|${idx};
+                opt.text = ${despesa.descricao} - Parcela ${idx+1}/${despesa.parcelas.length} - ${parcela.vencimento} - R$ ${parcela.valor};
+                select.appendChild(opt);
+              }
             });
-        };
-    </script>
+          } else if (!despesa.pago) {
+            let opt = document.createElement("option");
+            opt.value = id;
+            opt.text = ${despesa.descricao} - ${despesa.dataCompra} - R$ ${despesa.valor};
+            select.appendChild(opt);
+          }
+        });
+      });
+    }
+    document.getElementById("despesaSearch").addEventListener("input", function() {
+      const termo = document.getElementById("despesaSearch").value.toLowerCase();
+      const select = document.getElementById("despesaSelect");
+      for (let i = 0; i < select.options.length; i++) {
+        const txt = select.options[i].text.toLowerCase();
+        select.options[i].style.display = txt.includes(termo) ? "" : "none";
+      }
+    });
+    function pagarDespesaSelecionada() {
+      const select = document.getElementById("despesaSelect");
+      const val = select.value;
+      if (!val) { alert("Selecione uma despesa!"); return; }
+      if (val.indexOf("|") !== -1) {
+        const [id, idx] = val.split("|");
+        const ref = db.ref("despesas").child(id);
+        ref.once("value").then(snapshot => {
+          let desp = snapshot.val();
+          desp.parcelas[idx].pago = true;
+          ref.update({ parcelas: desp.parcelas })
+            .then(() => { 
+              alert("Parcela paga com sucesso!"); 
+              loadDespesasNaoPagasSelect();
+              renderCalendar();
+              updateCartaoSelect();
+            });
+        });
+      } else {
+        db.ref("despesas").child(val).update({ pago: true })
+          .then(() => { 
+            alert("Despesa à vista paga!"); 
+            loadDespesasNaoPagasSelect();
+            renderCalendar();
+            updateCartaoSelect();
+          });
+      }
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA===yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = <td>${key}</td><td>${totals[key].toFixed(2)}</td>;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
+    /* ----- Módulo Calendário ----- */
+    function loadCalendarExpenses(month, year, callback) {
+      let totals = {};
+      for (let d = 1; d <= 31; d++) { totals[d] = 0; }
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(parcela => {
+              if (!parcela.pago) {
+                let due = new Date(parcela.vencimento);
+                if (due.getFullYear() === year && due.getMonth() === month) {
+                  totals[due.getDate()] += parseFloat(parcela.valor);
+                }
+              }
+            });
+          } else if (desp.formaPagamento === "avista" && !desp.pago) {
+            let d = new Date(desp.dataCompra);
+            if (d.getFullYear() === year && d.getMonth() === month) {
+              totals[d.getDate()] += parseFloat(desp.valor);
+            }
+          }
+        });
+        callback(totals);
+      });
+    }
+    function renderCalendar() {
+      document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
+      populateMonthYearSelect();
+      loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
+        let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+        let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].forEach(dia => {
+          let th = document.createElement("th");
+          th.innerText = dia;
+          header.appendChild(th);
+        });
+        table.appendChild(header);
+        let row = document.createElement("tr");
+        for (let i = 0; i < firstDay; i++) {
+          let cell = document.createElement("td");
+          cell.innerText = "";
+          row.appendChild(cell);
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+          let cell = document.createElement("td");
+          cell.innerHTML = <strong>${d}</strong><br>;
+          if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
+          row.appendChild(cell);
+          if ((firstDay + d) % 7 === 0) {
+            table.appendChild(row);
+            row = document.createElement("tr");
+          }
+        }
+        if (row.children.length > 0) {
+          while (row.children.length < 7) {
+            let cell = document.createElement("td");
+            cell.innerText = "";
+            row.appendChild(cell);
+          }
+          table.appendChild(row);
+        }
+        document.getElementById("calendarGrid").innerHTML = "";
+        document.getElementById("calendarGrid").appendChild(table);
+      });
+    }
+    function getMonthName(i) {
+      return ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][i];
+    }
+    function prevMonth() {
+      currentCalendarMonth--;
+      if (currentCalendarMonth < 0) { currentCalendarMonth = 11; currentCalendarYear--; }
+      renderCalendar();
+    }
+    function nextMonth() {
+      currentCalendarMonth++;
+      if (currentCalendarMonth > 11) { currentCalendarMonth = 0; currentCalendarYear++; }
+      renderCalendar();
+    }
+    function populateMonthYearSelect() {
+      const selectYear = document.getElementById("selectYear");
+      selectYear.innerHTML = "";
+      const currentY = new Date().getFullYear();
+      for (let y = currentY - 10; y <= currentY + 10; y++) {
+        let option = document.createElement("option");
+        option.value = y;
+        option.innerText = y;
+        if (y === currentCalendarYear) option.selected = true;
+        selectYear.appendChild(option);
+      }
+      document.getElementById("selectMonth").value = currentCalendarMonth;
+    }
+    function toggleMonthYearSelect() {
+      const container = document.getElementById("monthYearSelect");
+      container.style.display = container.style.display === "none" ? "block" : "none";
+    }
+    function updateCalendarFromSelect() {
+      currentCalendarMonth = parseInt(document.getElementById("selectMonth").value);
+      currentCalendarYear = parseInt(document.getElementById("selectYear").value);
+      renderCalendar();
+    }
+
+    /* ===== Módulo Relatório Mensal ===== */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA === yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = <td>${key}</td><td>${totals[key].toFixed(2)}</td>;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+  </script>
+
 </body>
 </html>
