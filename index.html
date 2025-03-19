@@ -249,12 +249,21 @@
     </div>
   </div>
 
-  <!-- Modal de Cadastro de Renda (Conteúdo simplificado) -->
+  <!-- Modal de Cadastro de Renda -->
   <div id="cadastroModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal('cadastroModal')">&times;</span>
-      <h2>Nova Renda</h2>
-      <p>Conteúdo do cadastro de renda...</p>
+      <h2>Cadastrar Nova Renda</h2>
+      <label>Descrição:</label>
+      <input type="text" id="rendaDescricao" placeholder="Descrição da renda" required>
+      
+      <label>Valor (R$):</label>
+      <input type="number" id="rendaValor" placeholder="Valor" step="0.01" required>
+      
+      <label>Data:</label>
+      <input type="date" id="rendaData" required>
+      
+      <button onclick="salvarRenda()">Salvar Renda</button>
     </div>
   </div>
 
@@ -311,10 +320,6 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    // Variáveis para o calendário
-    let currentCalendarMonth = new Date().getMonth();
-    let currentCalendarYear = new Date().getFullYear();
 
     // Funções de Modal
     function abrirModal(id) {
@@ -612,6 +617,30 @@
       currentCalendarMonth = parseInt(document.getElementById("selectMonth").value);
       currentCalendarYear = parseInt(document.getElementById("selectYear").value);
       renderCalendar();
+    }
+
+    // Funções de Cadastro de Renda
+    function salvarRenda() {
+      const descricao = document.getElementById("rendaDescricao").value;
+      const valor = parseFloat(document.getElementById("rendaValor").value);
+      const data = document.getElementById("rendaData").value;
+      const rendasRef = db.ref("rendas");
+
+      const rendaData = {
+        descricao,
+        valor,
+        data,
+        timestamp: new Date().toISOString()
+      };
+
+      rendasRef.push(rendaData)
+        .then(() => {
+          alert("Renda cadastrada com sucesso!");
+          document.getElementById("rendaDescricao").value = "";
+          document.getElementById("rendaValor").value = "";
+          document.getElementById("rendaData").value = "";
+        })
+        .catch(err => alert("Erro: " + err));
     }
   </script>
 </body>
