@@ -378,18 +378,13 @@
             <strong>Salário Bruto:</strong> ${usuario.salarioBruto} <br>
             <strong>Salário Líquido:</strong> ${usuario.salarioLiquido} <br>
           `;
-
           if (usuario.pagamentos && usuario.pagamentos.length > 0) {
             div.innerHTML += `<strong>Pagamentos:</strong><br>`;
             usuario.pagamentos.forEach(pag => {
               div.innerHTML += `Dia ${pag.dia}: R$ ${pag.valor} <br>`;
             });
           }
-
-          div.innerHTML += `
-            <strong>Data:</strong> ${usuario.timestamp} <br>
-            <button onclick="excluirUsuario('${key}')">Excluir</button>
-          `;
+          div.innerHTML += `<button onclick="excluirUsuario('${key}')">Excluir</button>`;
           usuariosLista.appendChild(div);
         });
       });
