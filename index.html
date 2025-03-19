@@ -270,42 +270,30 @@
       let salarioLiquido = salarioBruto - inss - irrf;
       document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
     }
+
+    // Gera os campos de dia e valor para cada pagamento
     function gerarCamposPagamentos() {
       let container = document.getElementById("pagamentosContainer");
       container.innerHTML = "";
       let numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
 
-      if (numPagamentos > 1) {
+      if (numPagamentos >= 1) {
         for (let i = 1; i <= numPagamentos; i++) {
           let div = document.createElement("div");
           div.className = "pagamento-item";
           div.innerHTML = `
-            <label>Dia do Pagamento ${i}:</label>
+            <label>Dia do Pagamento ${numPagamentos > 1 ? i : ""}:</label>
             <input type="number" placeholder="Dia" min="1" max="31" required>
-            <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()" required>
+            <label>Valor R$:</label>
+            <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" ${numPagamentos === 1 ? `value="${salarioLiquido.toFixed(2)}" readonly` : ""} required>
           `;
           container.appendChild(div);
         }
-      } else if (numPagamentos === 1) {
-        let div = document.createElement("div");
-        div.className = "pagamento-item";
-        div.innerHTML = `
-          <label>Dia do Pagamento:</label>
-          <input type="number" placeholder="Dia" min="1" max="31" required>
-        `;
-        container.appendChild(div);
-
-        let inputValor = document.createElement("input");
-        inputValor.type = "number";
-        inputValor.className = "valoresPagamento";
-        inputValor.placeholder = "Valor R$";
-        inputValor.step = "0.01";
-        inputValor.value = salarioLiquido.toFixed(2);
-        inputValor.readOnly = true;
-        container.appendChild(inputValor);
       }
     }
+
+    // Verifica se a soma dos pagamentos confere com o salário líquido
     function verificarSomaPagamentos() {
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let valores = document.querySelectorAll(".valoresPagamento");
@@ -318,6 +306,13 @@
       document.getElementById("avisoErro").style.display = soma !== salarioLiquido ? "block" : "none";
     }
 
+    // Atualiza a soma sempre que houver alteração em algum campo de pagamento
+    document.addEventListener("input", function(event) {
+      if (event.target.classList.contains("valoresPagamento")) {
+        verificarSomaPagamentos();
+      }
+    });
+
     // Função para salvar os dados no Realtime Database
     document.getElementById("cadastroForm").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -326,14 +321,25 @@
       const parentesco = document.getElementById("parentesco").value;
       const salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       const salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
-      const numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
+      
+      // Captura os detalhes dos pagamentos, se CLT estiver marcado
+      let pagamentos = [];
+      if (document.getElementById("cltCheckbox").checked) {
+        const container = document.getElementById("pagamentosContainer");
+        const itens = container.getElementsByClassName("pagamento-item");
+        for (let item of itens) {
+          const dia = item.querySelector("input[type=number]").value;
+          const valor = item.querySelector(".valoresPagamento").value;
+          pagamentos.push({ dia, valor });
+        }
+      }
 
       const dados = {
         nome: nome,
         parentesco: parentesco,
         salarioBruto: salarioBruto,
         salarioLiquido: salarioLiquido,
-        numPagamentos: numPagamentos,
+        pagamentos: pagamentos,
         timestamp: new Date().toISOString()
       };
 
@@ -346,6 +352,9 @@
             msg.style.display = "none";
             fecharModal();
             document.getElementById("cadastroForm").reset();
+            // Reseta e esconde os campos CLT
+            document.getElementById("cltFields").style.display = "none";
+            document.getElementById("pagamentosContainer").innerHTML = "";
           }, 3000);
         })
         .catch((error) => {
@@ -362,13 +371,22 @@
         snapshot.forEach(childSnapshot => {
           const usuario = childSnapshot.val();
           const key = childSnapshot.key;
-          const div = document.createElement("div");
+          let div = document.createElement("div");
           div.innerHTML = `
             <strong>Nome:</strong> ${usuario.nome} <br>
             <strong>Parentesco:</strong> ${usuario.parentesco} <br>
             <strong>Salário Bruto:</strong> ${usuario.salarioBruto} <br>
             <strong>Salário Líquido:</strong> ${usuario.salarioLiquido} <br>
-            <strong>Número de Pagamentos:</strong> ${usuario.numPagamentos} <br>
+          `;
+
+          if (usuario.pagamentos && usuario.pagamentos.length > 0) {
+            div.innerHTML += `<strong>Pagamentos:</strong><br>`;
+            usuario.pagamentos.forEach(pag => {
+              div.innerHTML += `Dia ${pag.dia}: R$ ${pag.valor} <br>`;
+            });
+          }
+
+          div.innerHTML += `
             <strong>Data:</strong> ${usuario.timestamp} <br>
             <button onclick="excluirUsuario('${key}')">Excluir</button>
           `;
