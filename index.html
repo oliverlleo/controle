@@ -322,7 +322,7 @@
       const salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       const salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       
-      // Captura os detalhes dos pagamentos, se CLT estiver marcado
+      // Só captura os dados de pagamento se o checkbox CLT estiver marcado
       let pagamentos = [];
       if (document.getElementById("cltCheckbox").checked) {
         const container = document.getElementById("pagamentosContainer");
@@ -333,6 +333,9 @@
           pagamentos.push({ dia, valor });
         }
       }
+      
+      // Log de depuração para verificar se os dados de pagamento foram capturados
+      console.log("Pagamentos capturados:", pagamentos);
 
       const dados = {
         nome: nome,
