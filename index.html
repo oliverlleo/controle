@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro de Pessoa</title>
+  <title>Cadastro de Renda</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -141,7 +141,7 @@
       width: 48%;
     }
     .user-pagamentos {
-      /* Pode ajustar a formatação se desejar, ex.: text-align: right; */
+      /* Ajuste a formatação conforme necessário */
     }
     #usuariosLista div button {
       background: #dc3545;
@@ -158,17 +158,17 @@
 </head>
 <body>
   <div class="container">
-    <h1>Cadastro de Pessoa</h1>
-    <button onclick="abrirModal()">Cadastrar Pessoa</button>
-    <button onclick="abrirPerfil()">Visualizar Perfil</button>
+    <h1>Cadastro de Renda</h1>
+    <button onclick="abrirModal()">Cadastra Nova Renda</button>
+    <button onclick="abrirPerfil()">Fonte de Renda</button>
   </div>
 
   <!-- Modal de Cadastro -->
   <div id="cadastroModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal()">&times;</span>
-      <h2>Novo Cadastro</h2>
-      <!-- Mensagem de sucesso será exibida aqui -->
+      <h2>Nova Renda</h2>
+      <!-- Mensagem de sucesso -->
       <div id="mensagemSucesso"></div>
       <form id="cadastroForm">
         <label for="nome">Nome:</label>
@@ -195,7 +195,7 @@
           <input type="number" id="salarioBruto" placeholder="Digite o salário bruto" step="0.01" oninput="atualizarSalarioLiquido()">
 
           <label for="salarioLiquido">Salário Líquido (R$):</label>
-          <!-- Campo editável para que o valor calculado seja apenas sugestão -->
+          <!-- Campo editável: o valor calculado é apenas sugestão -->
           <input type="number" id="salarioLiquido" placeholder="Salário líquido calculado" step="0.01">
 
           <label for="numPagamentos">Número de Pagamentos no Mês:</label>
@@ -210,17 +210,17 @@
     </div>
   </div>
 
-  <!-- Modal de Visualização de Perfil -->
+  <!-- Modal de Fonte de Renda -->
   <div id="perfilModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharPerfil()">&times;</span>
-      <h2>Visualizar Perfil</h2>
+      <h2>Fonte de Renda</h2>
       <div id="usuariosLista"></div>
     </div>
   </div>
 
   <script>
-    // Configuração do Firebase (verifique se as credenciais estão corretas)
+    // Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
       authDomain: "controlegasto-df3f1.firebaseapp.com",
@@ -232,11 +232,10 @@
       measurementId: "G-PTN43GZHGR"
     };
 
-    // Inicialize o Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Funções para abrir/fechar os modais
+    // Funções para abrir/fechar modais
     function abrirModal() {
       document.getElementById("cadastroModal").style.display = "flex";
     }
@@ -257,7 +256,7 @@
         document.getElementById("cltCheckbox").checked ? "block" : "none";
     }
 
-    // Funções de cálculo de INSS, IRRF e atualização do salário líquido
+    // Cálculo de INSS, IRRF e atualização do salário líquido
     function calcularINSS(salario) {
       if (salario <= 1320.00) return salario * 0.075;
       else if (salario <= 2571.29) return (1320 * 0.075) + ((salario - 1320) * 0.09);
@@ -277,7 +276,7 @@
       let inss = calcularINSS(salarioBruto);
       let irrf = calcularIRRF(salarioBruto - inss);
       let salarioLiquido = salarioBruto - inss - irrf;
-      // Atualiza o campo com o valor sugerido, mas permite edição
+      // Atualiza o campo com o valor sugerido, permitindo edição
       document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
     }
 
@@ -287,7 +286,6 @@
       container.innerHTML = "";
       let numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
-
       if (numPagamentos >= 1) {
         for (let i = 1; i <= numPagamentos; i++) {
           let div = document.createElement("div");
@@ -316,23 +314,21 @@
       document.getElementById("avisoErro").style.display = soma !== salarioLiquido ? "block" : "none";
     }
 
-    // Atualiza a soma sempre que houver alteração em algum campo de pagamento
+    // Atualiza a soma quando houver alteração em algum campo de pagamento
     document.addEventListener("input", function(event) {
       if (event.target.classList.contains("valoresPagamento")) {
         verificarSomaPagamentos();
       }
     });
 
-    // Função para salvar os dados no Realtime Database
+    // Função para salvar os dados no Realtime Database sem fechar o modal
     document.getElementById("cadastroForm").addEventListener("submit", function (e) {
       e.preventDefault();
-
       const nome = document.getElementById("nome").value;
       const parentesco = document.getElementById("parentesco").value;
       const salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       const salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       
-      // Só captura os dados de pagamento se o checkbox CLT estiver marcado
       let pagamentos = [];
       if (document.getElementById("cltCheckbox").checked) {
         const container = document.getElementById("pagamentosContainer");
@@ -360,14 +356,14 @@
           const msg = document.getElementById("mensagemSucesso");
           msg.innerText = "Dados salvos com sucesso!";
           msg.style.display = "block";
+          // Exibe a mensagem por 3 segundos e depois a oculta
           setTimeout(() => {
             msg.style.display = "none";
-            fecharModal();
-            document.getElementById("cadastroForm").reset();
-            // Reseta e esconde os campos CLT
-            document.getElementById("cltFields").style.display = "none";
-            document.getElementById("pagamentosContainer").innerHTML = "";
           }, 3000);
+          // Limpa o formulário e reseta os campos CLT
+          document.getElementById("cadastroForm").reset();
+          document.getElementById("cltFields").style.display = "none";
+          document.getElementById("pagamentosContainer").innerHTML = "";
         })
         .catch((error) => {
           console.error("Erro ao salvar os dados: ", error);
@@ -375,7 +371,7 @@
         });
     });
 
-    // Função para carregar os usuários salvos e exibi-los em duas colunas
+    // Função para carregar os dados e exibi-los em duas colunas
     function loadUsuarios() {
       const usuariosLista = document.getElementById("usuariosLista");
       usuariosLista.innerHTML = "";
@@ -383,12 +379,10 @@
         snapshot.forEach(childSnapshot => {
           const usuario = childSnapshot.val();
           const key = childSnapshot.key;
-          
-          // Cria o container principal com 2 colunas
           let userContainer = document.createElement("div");
           userContainer.className = "user-container";
           
-          // Coluna da esquerda: Informações gerais
+          // Coluna com informações gerais
           let infoDiv = document.createElement("div");
           infoDiv.className = "user-info";
           infoDiv.innerHTML = `
@@ -398,7 +392,7 @@
             <strong>Salário Líquido:</strong> ${usuario.salarioLiquido} <br>
           `;
           
-          // Coluna da direita: Detalhes dos pagamentos
+          // Coluna com os detalhes dos pagamentos
           let pagamentosDiv = document.createElement("div");
           pagamentosDiv.className = "user-pagamentos";
           if (usuario.pagamentos && usuario.pagamentos.length > 0) {
@@ -413,7 +407,6 @@
           userContainer.appendChild(infoDiv);
           userContainer.appendChild(pagamentosDiv);
           
-          // Botão de exclusão abaixo do container
           let deleteButton = document.createElement("button");
           deleteButton.textContent = "Excluir";
           deleteButton.onclick = function() {
@@ -429,17 +422,17 @@
       });
     }
 
-    // Função para excluir um usuário
+    // Função para excluir um registro
     function excluirUsuario(key) {
-      if (confirm("Deseja realmente excluir este usuário?")) {
+      if (confirm("Deseja realmente excluir este registro?")) {
         database.ref("pessoas/" + key).remove()
           .then(() => {
-            alert("Usuário excluído com sucesso!");
+            alert("Registro excluído com sucesso!");
             loadUsuarios();
           })
           .catch(error => {
-            console.error("Erro ao excluir o usuário:", error);
-            alert("Erro ao excluir o usuário.");
+            console.error("Erro ao excluir o registro:", error);
+            alert("Erro ao excluir o registro.");
           });
       }
     }
