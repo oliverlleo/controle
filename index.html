@@ -499,7 +499,6 @@
     // --- MÓDULO DESPESA ---
     function toggleDespesaPagamento() {
       const forma = document.querySelector('input[name="formaPagamento"]:checked').value;
-      // Se for cartão, exibe os campos de vencimento; se for à vista, esconde
       document.getElementById("despesaCartaoFields").style.display = forma === "cartao" ? "block" : "none";
     }
     document.getElementById("despesaForm").addEventListener("submit", function(e) {
@@ -534,7 +533,6 @@
 
     // --- Calendário Interativo (Modal) ---
     function renderCalendar() {
-      // Atualiza o cabeçalho com mês/ano atual
       document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
       populateMonthYearSelect();
       loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
@@ -610,17 +608,24 @@
         snapshot.forEach(child => {
           const despesa = child.val();
           if(despesa.formaPagamento === "cartao" && despesa.dia) {
-            // Usa o campo dataCompra se existir; caso contrário, usa timestamp
+            // Usa dataCompra se existir, senão timestamp
             let purchaseDate = despesa.dataCompra ? new Date(despesa.dataCompra) : new Date(despesa.timestamp);
             let startYear = purchaseDate.getFullYear();
             let startMonth = purchaseDate.getMonth();
             let installments = parseInt(despesa.numParcelas) || 1;
-            let lastDate = new Date(startYear, startMonth + installments - 1, 1);
-            let currentDate = new Date(year, month, 1);
-            if(currentDate >= new Date(startYear, startMonth, 1) && currentDate <= lastDate) {
+            // Calcula o índice da parcela (0 a installments-1)
+            let installmentIndex = (year - startYear) * 12 + (month - startMonth);
+            if(installmentIndex >= 0 && installmentIndex < installments) {
               let dia = parseInt(despesa.dia);
               let amount = parseFloat(despesa.valorDespesa) / installments;
               totals[dia] += amount;
+            }
+          } else if(despesa.formaPagamento === "avista") {
+            // Se for à vista, usar dataCompra para o lançamento
+            let purchaseDate = despesa.dataCompra ? new Date(despesa.dataCompra) : new Date(despesa.timestamp);
+            if(purchaseDate.getFullYear() === year && purchaseDate.getMonth() === month) {
+              let day = purchaseDate.getDate();
+              totals[day] += parseFloat(despesa.valorDespesa);
             }
           }
         });
@@ -702,13 +707,8 @@
       });
     }
     
-    // Atualiza o select de categorias na página assim que possível
-    updateCategoriaSelect();
-
     // --- Atualização do Formulário de Despesa ---
-    // Agora, o formulário de despesa inclui o campo "Data da Compra"
-    // (o input com id="dataCompra" deve ser adicionado ao HTML abaixo do campo Valor)
-    // Se não existir, criaremos ele dinamicamente.
+    // Se o campo Data da Compra não existir, cria-o dinamicamente
     if(!document.getElementById("dataCompra")){
       let form = document.getElementById("despesaForm");
       let label = document.createElement("label");
@@ -718,13 +718,10 @@
       input.type = "date";
       input.id = "dataCompra";
       input.required = true;
-      // Insere logo após o campo de valor
       form.insertBefore(label, form.children[4]);
       form.insertBefore(input, form.children[5]);
-      // Define a data atual como padrão
       input.value = new Date().toISOString().split("T")[0];
     }
-
   </script>
 </body>
 </html>
