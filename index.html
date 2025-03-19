@@ -37,7 +37,7 @@
     .container button:hover {
       background: #0056b3;
     }
-    /* Formulários e seções na tela inicial */
+    /* Seções da tela inicial */
     .section {
       width: 100%;
       max-width: 600px;
@@ -78,24 +78,42 @@
     .section button:hover {
       background: #0056b3;
     }
-    /* Exibição de mensagens de sucesso */
     .mensagem {
       text-align: center;
       color: green;
       margin-bottom: 10px;
       display: none;
     }
-    /* Calendário simples: tabela de 31 linhas */
-    #calendario {
+    /* Calendário interativo */
+    #calendarHeader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    #calendarHeader button {
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      margin: 0 10px;
+    }
+    #calendarMonthYear {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    #calendarGrid table {
       width: 100%;
       border-collapse: collapse;
     }
-    #calendario th, #calendario td {
+    #calendarGrid th, #calendarGrid td {
       border: 1px solid #ddd;
       padding: 8px;
       text-align: center;
+      min-height: 60px;
+      vertical-align: top;
     }
-    #calendario th {
+    #calendarGrid th {
       background: #007bff;
       color: #fff;
     }
@@ -190,7 +208,7 @@
       <label><input type="radio" name="formaPagamento" value="avista" checked onclick="toggleDespesaPagamento()"> À vista</label>
       <label><input type="radio" name="formaPagamento" value="cartao" onclick="toggleDespesaPagamento()"> Cartão</label>
       
-      <!-- Campos para Cartão -->
+      <!-- Campos para pagamento no cartão -->
       <div id="despesaCartaoFields" style="display: none;">
         <label for="despesaDia">Dia do Pagamento:</label>
         <input type="number" id="despesaDia" placeholder="Ex.: 20" min="1" max="31">
@@ -205,17 +223,12 @@
   <!-- Seção do Calendário de Despesas -->
   <div class="section" id="calendarioSection">
     <h2>Calendário de Despesas (Cartão)</h2>
-    <table id="calendario">
-      <thead>
-        <tr>
-          <th>Dia</th>
-          <th>Total a Pagar (R$)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Linhas serão geradas via JavaScript -->
-      </tbody>
-    </table>
+    <div id="calendarHeader">
+      <button onclick="prevMonth()">&#9664;</button>
+      <span id="calendarMonthYear"></span>
+      <button onclick="nextMonth()">&#9654;</button>
+    </div>
+    <div id="calendarGrid"></div>
   </div>
 
   <!-- Modal de Cadastro de Renda -->
@@ -249,6 +262,7 @@
           <input type="number" id="salarioBruto" placeholder="Digite o salário bruto" step="0.01" oninput="atualizarSalarioLiquido()">
           
           <label for="salarioLiquido">Salário Líquido (R$):</label>
+          <!-- Campo editável: o valor calculado é apenas sugestão -->
           <input type="number" id="salarioLiquido" placeholder="Salário líquido calculado" step="0.01">
           
           <label for="numPagamentos">Número de Pagamentos no Mês:</label>
@@ -302,12 +316,15 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Funções para abrir e fechar modais
+    // Variáveis globais para o calendário
+    let currentCalendarMonth = new Date().getMonth(); // 0-indexado
+    let currentCalendarYear = new Date().getFullYear();
+
+    // Funções para abrir/fechar modais
     function abrirModal(id) {
       document.getElementById(id).style.display = "flex";
       if(id === "fonteModal") loadUsuarios();
       if(id === "categoriasModal") loadCategorias();
-      if(id === "cadastroModal") loadCategorias(); // Caso queira atualizar categorias no formulário de renda
     }
     function fecharModal(id) {
       document.getElementById(id).style.display = "none";
@@ -445,48 +462,113 @@
           setTimeout(() => { msg.style.display = "none"; }, 3000);
           document.getElementById("despesaForm").reset();
           document.getElementById("despesaCartaoFields").style.display = "none";
-          loadCalendario();
+          renderCalendar();
         })
         .catch((error) => { alert("Erro ao salvar a despesa."); });
     });
 
-    // Função para carregar o calendário de despesas (para despesas de cartão)
-    function loadCalendario() {
-      // Inicializa um objeto para os dias 1 a 31 com valor zero
-      let totalPorDia = {};
+    // --- Calendário Interativo ---
+    function renderCalendar() {
+      // Atualiza o cabeçalho com o mês/ano atual
+      document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
+      loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
+        // Cria a tabela do calendário
+        let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay(); // 0 (Dom) a 6 (Sáb)
+        let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+        let table = document.createElement("table");
+        // Cabeçalho com dias da semana
+        let headerRow = document.createElement("tr");
+        const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+        diasSemana.forEach(function(dia) {
+          let th = document.createElement("th");
+          th.innerText = dia;
+          headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+        // Linhas do calendário
+        let row = document.createElement("tr");
+        // Células vazias antes do primeiro dia
+        for (let i = 0; i < firstDay; i++) {
+          let cell = document.createElement("td");
+          cell.innerText = "";
+          row.appendChild(cell);
+        }
+        // Preenche os dias
+        for (let d = 1; d <= daysInMonth; d++) {
+          let cell = document.createElement("td");
+          cell.innerHTML = "<strong>" + d + "</strong><br>";
+          if(totals[d] && totals[d] > 0) {
+            cell.innerHTML += "R$ " + totals[d].toFixed(2);
+          }
+          row.appendChild(cell);
+          if ((firstDay + d) % 7 === 0) {
+            table.appendChild(row);
+            row = document.createElement("tr");
+          }
+        }
+        // Células vazias no final, se necessário
+        if(row.children.length > 0) {
+          while(row.children.length < 7) {
+            let cell = document.createElement("td");
+            cell.innerText = "";
+            row.appendChild(cell);
+          }
+          table.appendChild(row);
+        }
+        // Exibe o calendário
+        let calendarGrid = document.getElementById("calendarGrid");
+        calendarGrid.innerHTML = "";
+        calendarGrid.appendChild(table);
+      });
+    }
+    function getMonthName(monthIndex) {
+      const nomes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+      return nomes[monthIndex];
+    }
+    function prevMonth() {
+      currentCalendarMonth--;
+      if(currentCalendarMonth < 0) {
+        currentCalendarMonth = 11;
+        currentCalendarYear--;
+      }
+      renderCalendar();
+    }
+    function nextMonth() {
+      currentCalendarMonth++;
+      if(currentCalendarMonth > 11) {
+        currentCalendarMonth = 0;
+        currentCalendarYear++;
+      }
+      renderCalendar();
+    }
+    function loadCalendarExpenses(month, year, callback) {
+      let totals = {};
       for(let d = 1; d <= 31; d++){
-        totalPorDia[d] = 0;
+        totals[d] = 0;
       }
       database.ref("despesas").once("value", snapshot => {
         snapshot.forEach(child => {
           const despesa = child.val();
-          // Considere apenas despesas com forma "cartao" e com dia definido
-          if(despesa.formaPagamento === "cartao" && despesa.dia){
-            let dia = parseInt(despesa.dia);
-            let parcelas = parseInt(despesa.numParcelas) || 1;
-            // Soma o valor mensal (valorDespesa dividido pelo número de parcelas)
-            totalPorDia[dia] += parseFloat(despesa.valorDespesa) / parcelas;
+          if(despesa.formaPagamento === "cartao" && despesa.dia) {
+            let purchaseDate = new Date(despesa.timestamp);
+            let startYear = purchaseDate.getFullYear();
+            let startMonth = purchaseDate.getMonth();
+            let installments = parseInt(despesa.numParcelas) || 1;
+            let lastDate = new Date(startYear, startMonth + installments - 1, 1);
+            let currentDate = new Date(year, month, 1);
+            if(currentDate >= new Date(startYear, startMonth, 1) && currentDate <= lastDate) {
+              let dia = parseInt(despesa.dia);
+              let amount = parseFloat(despesa.valorDespesa) / installments;
+              totals[dia] += amount;
+            }
           }
         });
-        renderCalendario(totalPorDia);
+        callback(totals);
       });
     }
-    function renderCalendario(totalPorDia) {
-      let tbody = document.querySelector("#calendario tbody");
-      tbody.innerHTML = "";
-      for(let d = 1; d <= 31; d++){
-        let tr = document.createElement("tr");
-        let tdDia = document.createElement("td");
-        tdDia.innerText = d;
-        let tdTotal = document.createElement("td");
-        tdTotal.innerText = totalPorDia[d].toFixed(2);
-        tr.appendChild(tdDia);
-        tr.appendChild(tdTotal);
-        tbody.appendChild(tr);
-      }
-    }
-    // Carrega o calendário ao iniciar a página
-    loadCalendario();
+    // Renderiza o calendário ao carregar a página
+    renderCalendar();
 
     // --- MÓDULO CATEGORIAS ---
     document.getElementById("categoriaForm").addEventListener("submit", function(e) {
