@@ -298,7 +298,7 @@
   </div>
 
   <script>
-    // Firebase Configuração – utilize os dados fornecidos
+    // Firebase Configuração
     const firebaseConfig = {
       apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
       authDomain: "controlegasto-df3f1.firebaseapp.com",
@@ -316,29 +316,15 @@
     let currentCalendarMonth = new Date().getMonth();
     let currentCalendarYear = new Date().getFullYear();
 
-    // Ao carregar, atualiza campos e selects
-    window.onload = function() {
-      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
-      updateCategoriaSelect();
-      updateCartaoSelect();
-      loadDespesasNaoPagasSelect();
-      loadCategorias();
-      loadCartoes();
-    };
-
-    /* ----- Funções de Modal ----- */
+    // Funções de Modal
     function abrirModal(id) {
       document.getElementById(id).style.display = "flex";
-      if (id === "fonteModal") { /* Carregar fonte de renda, se necessário */ }
-      if (id === "categoriasModal") loadCategorias();
-      if (id === "cartaoModal") loadCartoes();
-      if (id === "calendarModal") renderCalendar();
     }
     function fecharModal(id) {
       document.getElementById(id).style.display = "none";
     }
 
-    /* ----- Módulo Despesa ----- */
+    // Funções de Despesa
     function toggleParcelamento() {
       const forma = document.getElementById("formaPagamento").value;
       document.getElementById("parcelamentoDiv").classList.toggle("hidden", forma !== "cartao");
@@ -366,7 +352,6 @@
         const purchaseDate = new Date(dataCompra);
         const purchaseDay = purchaseDate.getDate();
         let firstDueDate = new Date(purchaseDate);
-        // Se a compra ocorreu após o fechamento, a 1ª parcela vence no mês seguinte
         if (purchaseDay > diaFechamento) {
           firstDueDate.setMonth(firstDueDate.getMonth() + 1);
           firstDueDate.setDate(diaFatura);
@@ -408,7 +393,6 @@
           })
           .catch(err => alert("Erro: " + err));
       } else {
-        // Despesa à vista
         const despesaData = {
           descricao,
           valor,
@@ -429,8 +413,7 @@
       }
     }
 
-    /* ----- Módulo Pagar Despesa ----- */
-    // Carrega as despesas não pagas para o select; para cartão, cada parcela individualmente
+    // Funções de Pagar Despesa
     function loadDespesasNaoPagasSelect() {
       const select = document.getElementById("despesaSelect");
       select.innerHTML = "";
@@ -442,15 +425,15 @@
             despesa.parcelas.forEach((parcela, idx) => {
               if (!parcela.pago) {
                 let opt = document.createElement("option");
-                opt.value = ${id}|${idx};
-                opt.text = ${despesa.descricao} - Parcela ${idx+1}/${despesa.parcelas.length} - ${parcela.vencimento} - R$ ${parcela.valor};
+                opt.value = `${id}|${idx}`;
+                opt.text = `${despesa.descricao} - Parcela ${idx+1}/${despesa.parcelas.length} - ${parcela.vencimento} - R$ ${parcela.valor}`;
                 select.appendChild(opt);
               }
             });
           } else if (!despesa.pago) {
             let opt = document.createElement("option");
             opt.value = id;
-            opt.text = ${despesa.descricao} - ${despesa.dataCompra} - R$ ${despesa.valor};
+            opt.text = `${despesa.descricao} - ${despesa.dataCompra} - R$ ${despesa.valor}`;
             select.appendChild(opt);
           }
         });
@@ -493,7 +476,7 @@
       }
     }
 
-    /* ----- Módulo Relatório Mensal ----- */
+    // Funções de Relatório Mensal
     function loadRelatorioMensal() {
       let totals = {};
       db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
@@ -520,14 +503,14 @@
           return (yA===yB) ? mA - mB : yA - yB;
         }).forEach(key => {
           let row = document.createElement("tr");
-          row.innerHTML = <td>${key}</td><td>${totals[key].toFixed(2)}</td>;
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
           table.appendChild(row);
         });
         container.appendChild(table);
       });
     }
 
-    /* ----- Módulo Calendário ----- */
+    // Funções de Calendário
     function loadCalendarExpenses(month, year, callback) {
       let totals = {};
       for (let d = 1; d <= 31; d++) { totals[d] = 0; }
@@ -575,7 +558,7 @@
         }
         for (let d = 1; d <= daysInMonth; d++) {
           let cell = document.createElement("td");
-          cell.innerHTML = <strong>${d}</strong><br>;
+          cell.innerHTML = `<strong>${d}</strong><br>`;
           if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
           row.appendChild(cell);
           if ((firstDay + d) % 7 === 0) {
@@ -630,41 +613,6 @@
       currentCalendarYear = parseInt(document.getElementById("selectYear").value);
       renderCalendar();
     }
-
-    /* ===== Módulo Relatório Mensal ===== */
-    function loadRelatorioMensal() {
-      let totals = {};
-      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          const desp = child.val();
-          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
-          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
-          if (!totals[key]) totals[key] = 0;
-          if (desp.formaPagamento === "cartao" && desp.parcelas) {
-            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
-          } else {
-            totals[key] += parseFloat(desp.valor);
-          }
-        });
-        const container = document.getElementById("relatorioMensalContainer");
-        container.innerHTML = "";
-        let table = document.createElement("table");
-        let header = document.createElement("tr");
-        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
-        table.appendChild(header);
-        Object.keys(totals).sort((a, b) => {
-          let [mA, yA] = a.split("/").map(Number);
-          let [mB, yB] = b.split("/").map(Number);
-          return (yA === yB) ? mA - mB : yA - yB;
-        }).forEach(key => {
-          let row = document.createElement("tr");
-          row.innerHTML = <td>${key}</td><td>${totals[key].toFixed(2)}</td>;
-          table.appendChild(row);
-        });
-        container.appendChild(table);
-      });
-    }
   </script>
-
 </body>
 </html>
