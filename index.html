@@ -48,9 +48,7 @@
     button:hover {
       background: #0056b3;
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
     /* Modal e Calendário */
     .modal {
       display: none;
@@ -134,10 +132,7 @@
       min-height: 60px;
       vertical-align: top;
     }
-    #calendarGrid th {
-      background: #007bff;
-      color: #fff;
-    }
+    #calendarGrid th { background: #007bff; color: #fff; }
     /* Relatório */
     #relatorioMensalSection table {
       width: 100%;
@@ -149,10 +144,7 @@
       padding: 8px;
       text-align: center;
     }
-    #relatorioMensalSection th {
-      background: #007bff;
-      color: #fff;
-    }
+    #relatorioMensalSection th { background: #007bff; color: #fff; }
   </style>
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
@@ -257,7 +249,7 @@
     </div>
   </div>
 
-  <!-- Modal de Cadastro de Renda (Conteúdo simplificado) -->
+  <!-- Modal de Cadastro de Renda (conteúdo simplificado) -->
   <div id="cadastroModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal('cadastroModal')">&times;</span>
@@ -266,7 +258,7 @@
     </div>
   </div>
 
-  <!-- Modal Fonte de Renda (Conteúdo simplificado) -->
+  <!-- Modal Fonte de Renda (conteúdo simplificado) -->
   <div id="fonteModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal('fonteModal')">&times;</span>
@@ -306,7 +298,11 @@
   </div>
 
   <script>
-    // Firebase Configuração – utilize os dados fornecidos
+    // Declaração global das variáveis do calendário com var para garantir escopo global
+    var currentCalendarMonth = new Date().getMonth();
+    var currentCalendarYear = new Date().getFullYear();
+
+    // Firebase Configuração – use os seus dados
     const firebaseConfig = {
       apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
       authDomain: "controlegasto-df3f1.firebaseapp.com",
@@ -320,25 +316,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- Função updateCategoriaSelect: Disponibiliza o select de categorias ---
-    function updateCategoriaSelect() {
-      const select = document.getElementById("categoriaDespesa");
-      if (!select) return;
-      select.innerHTML = "<option value=''>Selecione a Categoria</option>";
-      db.ref("categorias").once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          const cat = child.val();
-          select.innerHTML += `<option value="${cat.nome}">${cat.nome}</option>`;
-        });
-      });
-    }
-
-    /* ----- Módulo Despesa ----- */
+    /* ===== MÓDULO DESPESA ===== */
     function toggleParcelamento() {
       const forma = document.getElementById("formaPagamento").value;
       document.getElementById("parcelamentoDiv").classList.toggle("hidden", forma !== "cartao");
     }
-
     function salvarDespesa() {
       const descricao = document.getElementById("despesaDescricao").value;
       const valor = parseFloat(document.getElementById("despesaValor").value);
@@ -382,12 +364,12 @@
           formaPagamento,
           dataCompra,
           categoria,
-          parcelas,
+          parcelas: parcelas,
           cartao: {
             id: selectCartao.value,
             nome: selectCartao.selectedOptions[0].text,
-            diaFatura,
-            diaFechamento
+            diaFatura: diaFatura,
+            diaFechamento: diaFechamento
           },
           timestamp: new Date().toISOString()
         };
@@ -404,7 +386,7 @@
       } else {
         const despesaData = {
           descricao,
-          valor,
+          valor: valor,
           dataCompra,
           formaPagamento,
           categoria,
@@ -422,7 +404,7 @@
       }
     }
 
-    /* ----- Módulo Pagar Despesa ----- */
+    /* ===== MÓDULO PAGAR DESPESA ===== */
     function loadDespesasNaoPagasSelect() {
       const select = document.getElementById("despesaSelect");
       select.innerHTML = "";
@@ -485,7 +467,7 @@
       }
     }
 
-    /* ----- Módulo Relatório Mensal ----- */
+    /* ===== MÓDULO RELATÓRIO MENSAL ===== */
     function loadRelatorioMensal() {
       let totals = {};
       db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
@@ -507,8 +489,8 @@
         header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
         table.appendChild(header);
         Object.keys(totals).sort((a, b) => {
-          let [mA, yA] = a.split("/").map(Number);
-          let [mB, yB] = b.split("/").map(Number);
+          let [mA,yA] = a.split("/").map(Number);
+          let [mB,yB] = b.split("/").map(Number);
           return (yA===yB) ? mA - mB : yA - yB;
         }).forEach(key => {
           let row = document.createElement("tr");
@@ -519,7 +501,7 @@
       });
     }
 
-    /* ----- Módulo Calendário ----- */
+    /* ===== MÓDULO CALENDÁRIO ===== */
     function loadCalendarExpenses(month, year, callback) {
       let totals = {};
       for (let d = 1; d <= 31; d++) { totals[d] = 0; }
@@ -623,40 +605,6 @@
       renderCalendar();
     }
 
-    /* ----- Módulo Relatório Mensal ----- */
-    function loadRelatorioMensal() {
-      let totals = {};
-      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          const desp = child.val();
-          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
-          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
-          if (!totals[key]) totals[key] = 0;
-          if (desp.formaPagamento === "cartao" && desp.parcelas) {
-            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
-          } else {
-            totals[key] += parseFloat(desp.valor);
-          }
-        });
-        const container = document.getElementById("relatorioMensalContainer");
-        container.innerHTML = "";
-        let table = document.createElement("table");
-        let header = document.createElement("tr");
-        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
-        table.appendChild(header);
-        Object.keys(totals).sort((a, b) => {
-          let [mA, yA] = a.split("/").map(Number);
-          let [mB, yB] = b.split("/").map(Number);
-          return (yA===yB) ? mA - mB : yA - yB;
-        }).forEach(key => {
-          let row = document.createElement("tr");
-          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
-          table.appendChild(row);
-        });
-        container.appendChild(table);
-      });
-    }
-
     /* ----- Módulo Cartões ----- */
     function salvarCartao() {
       const nomeCartao = document.getElementById("nomeCartao").value;
@@ -684,9 +632,7 @@
             let used = 0;
             snap.forEach(child2 => {
               const desp = child2.val();
-              if (!desp.pago) { 
-                used += parseFloat(desp.valor || 0);
-              }
+              if (!desp.pago) { used += parseFloat(desp.valor || 0); }
             });
             let available = cartao.limite - used;
             let div = document.createElement("div");
@@ -762,7 +708,7 @@
           .catch(err => alert("Erro: " + err));
       }
     }
-    // updateCategoriaSelect já foi definida no início deste script.
+    // A função updateCategoriaSelect foi definida no início deste script.
 
     /* ----- Módulo Calendário ----- */
     function loadCalendarExpenses(month, year, callback) {
@@ -875,7 +821,7 @@
         snapshot.forEach(child => {
           const desp = child.val();
           let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
-          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          let key = (d.getMonth()+1).toString().padStart(2, "0") + "/" + d.getFullYear();
           if (!totals[key]) totals[key] = 0;
           if (desp.formaPagamento === "cartao" && desp.parcelas) {
             desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
@@ -890,9 +836,9 @@
         header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
         table.appendChild(header);
         Object.keys(totals).sort((a, b) => {
-          let [mA,yA] = a.split("/").map(Number);
-          let [mB,yB] = b.split("/").map(Number);
-          return (yA===yB) ? mA - mB : yA - yB;
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA === yB) ? mA - mB : yA - yB;
         }).forEach(key => {
           let row = document.createElement("tr");
           row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
@@ -943,11 +889,7 @@
     function excluirCartao(key) {
       if (confirm("Deseja realmente excluir este cartão?")) {
         db.ref("cartoes").child(key).remove()
-          .then(() => { 
-            alert("Cartão excluído com sucesso!"); 
-            loadCartoes(); 
-            updateCartaoSelect(); 
-          })
+          .then(() => { alert("Cartão excluído com sucesso!"); loadCartoes(); updateCartaoSelect(); })
           .catch(err => alert("Erro: " + err));
       }
     }
@@ -1010,7 +952,7 @@
     /* ----- Módulo Calendário ----- */
     function loadCalendarExpenses(month, year, callback) {
       let totals = {};
-      for (let d = 1; d <= 31; d++) { totals[d] = 0; }
+      for (var d = 1; d <= 31; d++) { totals[d] = 0; }
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           const desp = child.val();
@@ -1048,12 +990,12 @@
         });
         table.appendChild(header);
         let row = document.createElement("tr");
-        for (let i = 0; i < firstDay; i++) {
+        for (var i = 0; i < firstDay; i++) {
           let cell = document.createElement("td");
           cell.innerText = "";
           row.appendChild(cell);
         }
-        for (let d = 1; d <= daysInMonth; d++) {
+        for (var d = 1; d <= daysInMonth; d++) {
           let cell = document.createElement("td");
           cell.innerHTML = `<strong>${d}</strong><br>`;
           if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
@@ -1092,7 +1034,260 @@
       const selectYear = document.getElementById("selectYear");
       selectYear.innerHTML = "";
       const currentY = new Date().getFullYear();
-      for (let y = currentY - 10; y <= currentY + 10; y++) {
+      for (var y = currentY - 10; y <= currentY + 10; y++) {
+        let option = document.createElement("option");
+        option.value = y;
+        option.innerText = y;
+        if (y === currentCalendarYear) option.selected = true;
+        selectYear.appendChild(option);
+      }
+      document.getElementById("selectMonth").value = currentCalendarMonth;
+    }
+    function toggleMonthYearSelect() {
+      const container = document.getElementById("monthYearSelect");
+      container.style.display = container.style.display === "none" ? "block" : "none";
+    }
+    function updateCalendarFromSelect() {
+      currentCalendarMonth = parseInt(document.getElementById("selectMonth").value);
+      currentCalendarYear = parseInt(document.getElementById("selectYear").value);
+      renderCalendar();
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA === yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
+    /* ----- Módulo Cartões ----- */
+    function salvarCartao() {
+      const nomeCartao = document.getElementById("nomeCartao").value;
+      const diaFatura = parseInt(document.getElementById("diaFatura").value);
+      const diaFechamento = parseInt(document.getElementById("diaFechamento").value);
+      const limiteCartao = parseFloat(document.getElementById("limiteCartao").value) || 0;
+      const cartao = { nome: nomeCartao, diaFatura, diaFechamento, limite: limiteCartao };
+      db.ref("cartoes").push(cartao)
+        .then(() => { 
+          alert("Cartão salvo com sucesso!"); 
+          document.getElementById("cartaoForm").reset(); 
+          loadCartoes(); 
+          updateCartaoSelect(); 
+        })
+        .catch(err => alert("Erro: " + err));
+    }
+    function loadCartoes() {
+      const lista = document.getElementById("cartoesLista");
+      lista.innerHTML = "";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const key = child.key;
+          db.ref("despesas").orderByChild("cartao/id").equalTo(key).once("value").then(snap => {
+            let used = 0;
+            snap.forEach(child2 => {
+              const desp = child2.val();
+              if (!desp.pago) { used += parseFloat(desp.valor || 0); }
+            });
+            let available = cartao.limite - used;
+            let div = document.createElement("div");
+            div.innerHTML = `<strong>${cartao.nome}</strong> (Fatura: ${cartao.diaFatura}, Fechamento: ${cartao.diaFechamento}, Limite: R$ ${cartao.limite.toFixed(2)}, Disponível: R$ ${available.toFixed(2)}) 
+                             <button onclick="excluirCartao('${key}')">Excluir</button>`;
+            lista.appendChild(div);
+          });
+        });
+      });
+    }
+    function excluirCartao(key) {
+      if (confirm("Deseja realmente excluir este cartão?")) {
+        db.ref("cartoes").child(key).remove()
+          .then(() => { 
+            alert("Cartão excluído com sucesso!"); 
+            loadCartoes(); 
+            updateCartaoSelect(); 
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
+    function updateCartaoSelect() {
+      const select = document.getElementById("cartaoDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione o Cartão</option>";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          let option = document.createElement("option");
+          option.value = child.key;
+          option.text = cartao.nome;
+          option.setAttribute("data-fatura", cartao.diaFatura);
+          option.setAttribute("data-fechamento", cartao.diaFechamento);
+          select.appendChild(option);
+        });
+      });
+    }
+
+    /* ----- Módulo Categorias ----- */
+    function salvarCategoria() {
+      const nomeCat = document.getElementById("categoriaNome").value;
+      if (!nomeCat) return;
+      db.ref("categorias").push({ nome: nomeCat })
+        .then(() => { 
+          alert("Categoria salva com sucesso!"); 
+          document.getElementById("categoriaNome").value = ""; 
+          loadCategorias(); 
+          updateCategoriaSelect(); 
+        })
+        .catch(err => alert("Erro: " + err));
+    }
+    function loadCategorias() {
+      const lista = document.getElementById("categoriasLista");
+      lista.innerHTML = "";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          const key = child.key;
+          let div = document.createElement("div");
+          div.innerHTML = `<strong>${cat.nome}</strong> <button onclick="excluirCategoria('${key}')">Excluir</button>`;
+          lista.appendChild(div);
+        });
+      });
+    }
+    function excluirCategoria(key) {
+      if (confirm("Deseja realmente excluir esta categoria?")) {
+        db.ref("categorias").child(key).remove()
+          .then(() => { 
+            alert("Categoria excluída com sucesso!"); 
+            loadCategorias(); 
+            updateCategoriaSelect(); 
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione a Categoria</option>";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          select.innerHTML += `<option value="${cat.nome}">${cat.nome}</option>`;
+        });
+      });
+    }
+
+    /* ----- Módulo Calendário ----- */
+    function loadCalendarExpenses(month, year, callback) {
+      let totals = {};
+      for (var d = 1; d <= 31; d++) { totals[d] = 0; }
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(parcela => {
+              if (!parcela.pago) {
+                let due = new Date(parcela.vencimento);
+                if (due.getFullYear() === year && due.getMonth() === month) {
+                  totals[due.getDate()] += parseFloat(parcela.valor);
+                }
+              }
+            });
+          } else if (desp.formaPagamento === "avista" && !desp.pago) {
+            let d = new Date(desp.dataCompra);
+            if (d.getFullYear() === year && d.getMonth() === month) {
+              totals[d.getDate()] += parseFloat(desp.valor);
+            }
+          }
+        });
+        callback(totals);
+      });
+    }
+    function renderCalendar() {
+      document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
+      populateMonthYearSelect();
+      loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
+        let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+        let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].forEach(dia => {
+          let th = document.createElement("th");
+          th.innerText = dia;
+          header.appendChild(th);
+        });
+        table.appendChild(header);
+        let row = document.createElement("tr");
+        for (var i = 0; i < firstDay; i++) {
+          let cell = document.createElement("td");
+          cell.innerText = "";
+          row.appendChild(cell);
+        }
+        for (var d = 1; d <= daysInMonth; d++) {
+          let cell = document.createElement("td");
+          cell.innerHTML = `<strong>${d}</strong><br>`;
+          if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
+          row.appendChild(cell);
+          if ((firstDay + d) % 7 === 0) {
+            table.appendChild(row);
+            row = document.createElement("tr");
+          }
+        }
+        if (row.children.length > 0) {
+          while (row.children.length < 7) {
+            let cell = document.createElement("td");
+            cell.innerText = "";
+            row.appendChild(cell);
+          }
+          table.appendChild(row);
+        }
+        document.getElementById("calendarGrid").innerHTML = "";
+        document.getElementById("calendarGrid").appendChild(table);
+      });
+    }
+    function getMonthName(i) {
+      return ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][i];
+    }
+    function prevMonth() {
+      currentCalendarMonth--;
+      if (currentCalendarMonth < 0) { currentCalendarMonth = 11; currentCalendarYear--; }
+      renderCalendar();
+    }
+    function nextMonth() {
+      currentCalendarMonth++;
+      if (currentCalendarMonth > 11) { currentCalendarMonth = 0; currentCalendarYear++; }
+      renderCalendar();
+    }
+    function populateMonthYearSelect() {
+      const selectYear = document.getElementById("selectYear");
+      selectYear.innerHTML = "";
+      const currentY = new Date().getFullYear();
+      for (var y = currentY - 10; y <= currentY + 10; y++) {
         let option = document.createElement("option");
         option.value = y;
         option.innerText = y;
@@ -1244,12 +1439,56 @@
           .catch(err => alert("Erro: " + err));
       }
     }
-    // updateCategoriaSelect já foi definida no início deste script.
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione a Categoria</option>";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          select.innerHTML += `<option value="${cat.nome}">${cat.nome}</option>`;
+        });
+      });
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA === yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
 
     /* ----- Módulo Calendário ----- */
     function loadCalendarExpenses(month, year, callback) {
       let totals = {};
-      for (let d = 1; d <= 31; d++) { totals[d] = 0; }
+      for (var d = 1; d <= 31; d++) { totals[d] = 0; }
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           const desp = child.val();
@@ -1287,12 +1526,12 @@
         });
         table.appendChild(header);
         let row = document.createElement("tr");
-        for (let i = 0; i < firstDay; i++) {
+        for (var i = 0; i < firstDay; i++) {
           let cell = document.createElement("td");
           cell.innerText = "";
           row.appendChild(cell);
         }
-        for (let d = 1; d <= daysInMonth; d++) {
+        for (var d = 1; d <= daysInMonth; d++) {
           let cell = document.createElement("td");
           cell.innerHTML = `<strong>${d}</strong><br>`;
           if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
@@ -1331,7 +1570,260 @@
       const selectYear = document.getElementById("selectYear");
       selectYear.innerHTML = "";
       const currentY = new Date().getFullYear();
-      for (let y = currentY - 10; y <= currentY + 10; y++) {
+      for (var y = currentY - 10; y <= currentY + 10; y++) {
+        let option = document.createElement("option");
+        option.value = y;
+        option.innerText = y;
+        if (y === currentCalendarYear) option.selected = true;
+        selectYear.appendChild(option);
+      }
+      document.getElementById("selectMonth").value = currentCalendarMonth;
+    }
+    function toggleMonthYearSelect() {
+      const container = document.getElementById("monthYearSelect");
+      container.style.display = container.style.display === "none" ? "block" : "none";
+    }
+    function updateCalendarFromSelect() {
+      currentCalendarMonth = parseInt(document.getElementById("selectMonth").value);
+      currentCalendarYear = parseInt(document.getElementById("selectYear").value);
+      renderCalendar();
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA === yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
+    /* ----- Módulo Cartões ----- */
+    function salvarCartao() {
+      const nomeCartao = document.getElementById("nomeCartao").value;
+      const diaFatura = parseInt(document.getElementById("diaFatura").value);
+      const diaFechamento = parseInt(document.getElementById("diaFechamento").value);
+      const limiteCartao = parseFloat(document.getElementById("limiteCartao").value) || 0;
+      const cartao = { nome: nomeCartao, diaFatura, diaFechamento, limite: limiteCartao };
+      db.ref("cartoes").push(cartao)
+        .then(() => { 
+          alert("Cartão salvo com sucesso!"); 
+          document.getElementById("cartaoForm").reset(); 
+          loadCartoes(); 
+          updateCartaoSelect(); 
+        })
+        .catch(err => alert("Erro: " + err));
+    }
+    function loadCartoes() {
+      const lista = document.getElementById("cartoesLista");
+      lista.innerHTML = "";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const key = child.key;
+          db.ref("despesas").orderByChild("cartao/id").equalTo(key).once("value").then(snap => {
+            let used = 0;
+            snap.forEach(child2 => {
+              const desp = child2.val();
+              if (!desp.pago) { used += parseFloat(desp.valor || 0); }
+            });
+            let available = cartao.limite - used;
+            let div = document.createElement("div");
+            div.innerHTML = `<strong>${cartao.nome}</strong> (Fatura: ${cartao.diaFatura}, Fechamento: ${cartao.diaFechamento}, Limite: R$ ${cartao.limite.toFixed(2)}, Disponível: R$ ${available.toFixed(2)}) 
+                             <button onclick="excluirCartao('${key}')">Excluir</button>`;
+            lista.appendChild(div);
+          });
+        });
+      });
+    }
+    function excluirCartao(key) {
+      if (confirm("Deseja realmente excluir este cartão?")) {
+        db.ref("cartoes").child(key).remove()
+          .then(() => { 
+            alert("Cartão excluído com sucesso!"); 
+            loadCartoes(); 
+            updateCartaoSelect(); 
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
+    function updateCartaoSelect() {
+      const select = document.getElementById("cartaoDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione o Cartão</option>";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          let option = document.createElement("option");
+          option.value = child.key;
+          option.text = cartao.nome;
+          option.setAttribute("data-fatura", cartao.diaFatura);
+          option.setAttribute("data-fechamento", cartao.diaFechamento);
+          select.appendChild(option);
+        });
+      });
+    }
+
+    /* ----- Módulo Categorias ----- */
+    function salvarCategoria() {
+      const nomeCat = document.getElementById("categoriaNome").value;
+      if (!nomeCat) return;
+      db.ref("categorias").push({ nome: nomeCat })
+        .then(() => { 
+          alert("Categoria salva com sucesso!"); 
+          document.getElementById("categoriaNome").value = ""; 
+          loadCategorias(); 
+          updateCategoriaSelect(); 
+        })
+        .catch(err => alert("Erro: " + err));
+    }
+    function loadCategorias() {
+      const lista = document.getElementById("categoriasLista");
+      lista.innerHTML = "";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          const key = child.key;
+          let div = document.createElement("div");
+          div.innerHTML = `<strong>${cat.nome}</strong> <button onclick="excluirCategoria('${key}')">Excluir</button>`;
+          lista.appendChild(div);
+        });
+      });
+    }
+    function excluirCategoria(key) {
+      if (confirm("Deseja realmente excluir esta categoria?")) {
+        db.ref("categorias").child(key).remove()
+          .then(() => { 
+            alert("Categoria excluída com sucesso!"); 
+            loadCategorias(); 
+            updateCategoriaSelect(); 
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione a Categoria</option>";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          select.innerHTML += `<option value="${cat.nome}">${cat.nome}</option>`;
+        });
+      });
+    }
+
+    /* ----- Módulo Calendário ----- */
+    function loadCalendarExpenses(month, year, callback) {
+      let totals = {};
+      for (var d = 1; d <= 31; d++) { totals[d] = 0; }
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(parcela => {
+              if (!parcela.pago) {
+                let due = new Date(parcela.vencimento);
+                if (due.getFullYear() === year && due.getMonth() === month) {
+                  totals[due.getDate()] += parseFloat(parcela.valor);
+                }
+              }
+            });
+          } else if (desp.formaPagamento === "avista" && !desp.pago) {
+            let d = new Date(desp.dataCompra);
+            if (d.getFullYear() === year && d.getMonth() === month) {
+              totals[d.getDate()] += parseFloat(desp.valor);
+            }
+          }
+        });
+        callback(totals);
+      });
+    }
+    function renderCalendar() {
+      document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
+      populateMonthYearSelect();
+      loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
+        let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+        let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].forEach(dia => {
+          let th = document.createElement("th");
+          th.innerText = dia;
+          header.appendChild(th);
+        });
+        table.appendChild(header);
+        let row = document.createElement("tr");
+        for (var i = 0; i < firstDay; i++) {
+          let cell = document.createElement("td");
+          cell.innerText = "";
+          row.appendChild(cell);
+        }
+        for (var d = 1; d <= daysInMonth; d++) {
+          let cell = document.createElement("td");
+          cell.innerHTML = `<strong>${d}</strong><br>`;
+          if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
+          row.appendChild(cell);
+          if ((firstDay + d) % 7 === 0) {
+            table.appendChild(row);
+            row = document.createElement("tr");
+          }
+        }
+        if (row.children.length > 0) {
+          while (row.children.length < 7) {
+            let cell = document.createElement("td");
+            cell.innerText = "";
+            row.appendChild(cell);
+          }
+          table.appendChild(row);
+        }
+        document.getElementById("calendarGrid").innerHTML = "";
+        document.getElementById("calendarGrid").appendChild(table);
+      });
+    }
+    function getMonthName(i) {
+      return ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][i];
+    }
+    function prevMonth() {
+      currentCalendarMonth--;
+      if (currentCalendarMonth < 0) { currentCalendarMonth = 11; currentCalendarYear--; }
+      renderCalendar();
+    }
+    function nextMonth() {
+      currentCalendarMonth++;
+      if (currentCalendarMonth > 11) { currentCalendarMonth = 0; currentCalendarYear++; }
+      renderCalendar();
+    }
+    function populateMonthYearSelect() {
+      const selectYear = document.getElementById("selectYear");
+      selectYear.innerHTML = "";
+      const currentY = new Date().getFullYear();
+      for (var y = currentY - 10; y <= currentY + 10; y++) {
         let option = document.createElement("option");
         option.value = y;
         option.innerText = y;
@@ -1425,7 +1917,11 @@
     function excluirCartao(key) {
       if (confirm("Deseja realmente excluir este cartão?")) {
         db.ref("cartoes").child(key).remove()
-          .then(() => { alert("Cartão excluído com sucesso!"); loadCartoes(); updateCartaoSelect(); })
+          .then(() => { 
+            alert("Cartão excluído com sucesso!"); 
+            loadCartoes(); 
+            updateCartaoSelect(); 
+          })
           .catch(err => alert("Erro: " + err));
       }
     }
@@ -1483,12 +1979,56 @@
           .catch(err => alert("Erro: " + err));
       }
     }
-    // updateCategoriaSelect já está definida no início.
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione a Categoria</option>";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          select.innerHTML += `<option value="${cat.nome}">${cat.nome}</option>`;
+        });
+      });
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA,yA] = a.split("/").map(Number);
+          let [mB,yB] = b.split("/").map(Number);
+          return (yA===yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
 
     /* ----- Módulo Calendário ----- */
     function loadCalendarExpenses(month, year, callback) {
       let totals = {};
-      for (let d = 1; d <= 31; d++) { totals[d] = 0; }
+      for (var d = 1; d <= 31; d++) { totals[d] = 0; }
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           const desp = child.val();
@@ -1526,12 +2066,12 @@
         });
         table.appendChild(header);
         let row = document.createElement("tr");
-        for (let i = 0; i < firstDay; i++) {
+        for (var i = 0; i < firstDay; i++) {
           let cell = document.createElement("td");
           cell.innerText = "";
           row.appendChild(cell);
         }
-        for (let d = 1; d <= daysInMonth; d++) {
+        for (var d = 1; d <= daysInMonth; d++) {
           let cell = document.createElement("td");
           cell.innerHTML = `<strong>${d}</strong><br>`;
           if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
@@ -1570,7 +2110,294 @@
       const selectYear = document.getElementById("selectYear");
       selectYear.innerHTML = "";
       const currentY = new Date().getFullYear();
-      for (let y = currentY - 10; y <= currentY + 10; y++) {
+      for (var y = currentY - 10; y <= currentY + 10; y++) {
+        let option = document.createElement("option");
+        option.value = y;
+        option.innerText = y;
+        if (y === currentCalendarYear) option.selected = true;
+        selectYear.appendChild(option);
+      }
+      document.getElementById("selectMonth").value = currentCalendarMonth;
+    }
+    function toggleMonthYearSelect() {
+      const container = document.getElementById("monthYearSelect");
+      container.style.display = container.style.display === "none" ? "block" : "none";
+    }
+    function updateCalendarFromSelect() {
+      currentCalendarMonth = parseInt(document.getElementById("selectMonth").value);
+      currentCalendarYear = parseInt(document.getElementById("selectYear").value);
+      renderCalendar();
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2, "0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA === yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
+    /* ----- Módulo Cartões ----- */
+    function salvarCartao() {
+      const nomeCartao = document.getElementById("nomeCartao").value;
+      const diaFatura = parseInt(document.getElementById("diaFatura").value);
+      const diaFechamento = parseInt(document.getElementById("diaFechamento").value);
+      const limiteCartao = parseFloat(document.getElementById("limiteCartao").value) || 0;
+      const cartao = { nome: nomeCartao, diaFatura, diaFechamento, limite: limiteCartao };
+      db.ref("cartoes").push(cartao)
+        .then(() => { 
+          alert("Cartão salvo com sucesso!"); 
+          document.getElementById("cartaoForm").reset(); 
+          loadCartoes(); 
+          updateCartaoSelect(); 
+        })
+        .catch(err => alert("Erro: " + err));
+    }
+    function loadCartoes() {
+      const lista = document.getElementById("cartoesLista");
+      lista.innerHTML = "";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const key = child.key;
+          db.ref("despesas").orderByChild("cartao/id").equalTo(key).once("value").then(snap => {
+            let used = 0;
+            snap.forEach(child2 => {
+              const desp = child2.val();
+              if (!desp.pago) { used += parseFloat(desp.valor || 0); }
+            });
+            let available = cartao.limite - used;
+            let div = document.createElement("div");
+            div.innerHTML = `<strong>${cartao.nome}</strong> (Fatura: ${cartao.diaFatura}, Fechamento: ${cartao.diaFechamento}, Limite: R$ ${cartao.limite.toFixed(2)}, Disponível: R$ ${available.toFixed(2)}) 
+                             <button onclick="excluirCartao('${key}')">Excluir</button>`;
+            lista.appendChild(div);
+          });
+        });
+      });
+    }
+    function excluirCartao(key) {
+      if (confirm("Deseja realmente excluir este cartão?")) {
+        db.ref("cartoes").child(key).remove()
+          .then(() => { 
+            alert("Cartão excluído com sucesso!"); 
+            loadCartoes(); 
+            updateCartaoSelect(); 
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
+    function updateCartaoSelect() {
+      const select = document.getElementById("cartaoDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione o Cartão</option>";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          let option = document.createElement("option");
+          option.value = child.key;
+          option.text = cartao.nome;
+          option.setAttribute("data-fatura", cartao.diaFatura);
+          option.setAttribute("data-fechamento", cartao.diaFechamento);
+          select.appendChild(option);
+        });
+      });
+    }
+
+    /* ----- Módulo Categorias ----- */
+    function salvarCategoria() {
+      const nomeCat = document.getElementById("categoriaNome").value;
+      if (!nomeCat) return;
+      db.ref("categorias").push({ nome: nomeCat })
+        .then(() => { 
+          alert("Categoria salva com sucesso!"); 
+          document.getElementById("categoriaNome").value = ""; 
+          loadCategorias(); 
+          updateCategoriaSelect(); 
+        })
+        .catch(err => alert("Erro: " + err));
+    }
+    function loadCategorias() {
+      const lista = document.getElementById("categoriasLista");
+      lista.innerHTML = "";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          const key = child.key;
+          let div = document.createElement("div");
+          div.innerHTML = `<strong>${cat.nome}</strong> <button onclick="excluirCategoria('${key}')">Excluir</button>`;
+          lista.appendChild(div);
+        });
+      });
+    }
+    function excluirCategoria(key) {
+      if (confirm("Deseja realmente excluir esta categoria?")) {
+        db.ref("categorias").child(key).remove()
+          .then(() => { 
+            alert("Categoria excluída com sucesso!"); 
+            loadCategorias(); 
+            updateCategoriaSelect(); 
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione a Categoria</option>";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          select.innerHTML += `<option value="${cat.nome}">${cat.nome}</option>`;
+        });
+      });
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA === yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
+    /* ----- Módulo Calendário ----- */
+    function loadCalendarExpenses(month, year, callback) {
+      let totals = {};
+      for (var d = 1; d <= 31; d++) { totals[d] = 0; }
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(parcela => {
+              if (!parcela.pago) {
+                let due = new Date(parcela.vencimento);
+                if (due.getFullYear() === year && due.getMonth() === month) {
+                  totals[due.getDate()] += parseFloat(parcela.valor);
+                }
+              }
+            });
+          } else if (desp.formaPagamento === "avista" && !desp.pago) {
+            let d = new Date(desp.dataCompra);
+            if (d.getFullYear() === year && d.getMonth() === month) {
+              totals[d.getDate()] += parseFloat(desp.valor);
+            }
+          }
+        });
+        callback(totals);
+      });
+    }
+    function renderCalendar() {
+      document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
+      populateMonthYearSelect();
+      loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
+        let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+        let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].forEach(dia => {
+          let th = document.createElement("th");
+          th.innerText = dia;
+          header.appendChild(th);
+        });
+        table.appendChild(header);
+        let row = document.createElement("tr");
+        for (var i = 0; i < firstDay; i++) {
+          let cell = document.createElement("td");
+          cell.innerText = "";
+          row.appendChild(cell);
+        }
+        for (var d = 1; d <= daysInMonth; d++) {
+          let cell = document.createElement("td");
+          cell.innerHTML = `<strong>${d}</strong><br>`;
+          if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
+          row.appendChild(cell);
+          if ((firstDay + d) % 7 === 0) {
+            table.appendChild(row);
+            row = document.createElement("tr");
+          }
+        }
+        if (row.children.length > 0) {
+          while (row.children.length < 7) {
+            let cell = document.createElement("td");
+            cell.innerText = "";
+            row.appendChild(cell);
+          }
+          table.appendChild(row);
+        }
+        document.getElementById("calendarGrid").innerHTML = "";
+        document.getElementById("calendarGrid").appendChild(table);
+      });
+    }
+    function getMonthName(i) {
+      return ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][i];
+    }
+    function prevMonth() {
+      currentCalendarMonth--;
+      if (currentCalendarMonth < 0) { currentCalendarMonth = 11; currentCalendarYear--; }
+      renderCalendar();
+    }
+    function nextMonth() {
+      currentCalendarMonth++;
+      if (currentCalendarMonth > 11) { currentCalendarMonth = 0; currentCalendarYear++; }
+      renderCalendar();
+    }
+    function populateMonthYearSelect() {
+      const selectYear = document.getElementById("selectYear");
+      selectYear.innerHTML = "";
+      const currentY = new Date().getFullYear();
+      for (var y = currentY - 10; y <= currentY + 10; y++) {
         let option = document.createElement("option");
         option.value = y;
         option.innerText = y;
@@ -1623,9 +2450,294 @@
       });
     }
 
-    // --- Módulo Cartões, Categorias e demais módulos permanecem como definidos acima ---
+    /* ----- Módulo Cartões ----- */
+    function salvarCartao() {
+      const nomeCartao = document.getElementById("nomeCartao").value;
+      const diaFatura = parseInt(document.getElementById("diaFatura").value);
+      const diaFechamento = parseInt(document.getElementById("diaFechamento").value);
+      const limiteCartao = parseFloat(document.getElementById("limiteCartao").value) || 0;
+      const cartao = { nome: nomeCartao, diaFatura, diaFechamento, limite: limiteCartao };
+      db.ref("cartoes").push(cartao)
+        .then(() => { 
+          alert("Cartão salvo com sucesso!"); 
+          document.getElementById("cartaoForm").reset(); 
+          loadCartoes(); 
+          updateCartaoSelect(); 
+        })
+        .catch(err => alert("Erro: " + err));
+    }
+    function loadCartoes() {
+      const lista = document.getElementById("cartoesLista");
+      lista.innerHTML = "";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const key = child.key;
+          db.ref("despesas").orderByChild("cartao/id").equalTo(key).once("value").then(snap => {
+            let used = 0;
+            snap.forEach(child2 => {
+              const desp = child2.val();
+              if (!desp.pago) { used += parseFloat(desp.valor || 0); }
+            });
+            let available = cartao.limite - used;
+            let div = document.createElement("div");
+            div.innerHTML = `<strong>${cartao.nome}</strong> (Fatura: ${cartao.diaFatura}, Fechamento: ${cartao.diaFechamento}, Limite: R$ ${cartao.limite.toFixed(2)}, Disponível: R$ ${available.toFixed(2)}) 
+                             <button onclick="excluirCartao('${key}')">Excluir</button>`;
+            lista.appendChild(div);
+          });
+        });
+      });
+    }
+    function excluirCartao(key) {
+      if (confirm("Deseja realmente excluir este cartão?")) {
+        db.ref("cartoes").child(key).remove()
+          .then(() => { 
+            alert("Cartão excluído com sucesso!"); 
+            loadCartoes(); 
+            updateCartaoSelect(); 
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
+    function updateCartaoSelect() {
+      const select = document.getElementById("cartaoDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione o Cartão</option>";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          let option = document.createElement("option");
+          option.value = child.key;
+          option.text = cartao.nome;
+          option.setAttribute("data-fatura", cartao.diaFatura);
+          option.setAttribute("data-fechamento", cartao.diaFechamento);
+          select.appendChild(option);
+        });
+      });
+    }
 
-    /* ----- Módulo Pagar Despesa (CAIXA DE SELEÇÃO COM PESQUISA) ----- */
+    /* ----- Módulo Categorias ----- */
+    function salvarCategoria() {
+      const nomeCat = document.getElementById("categoriaNome").value;
+      if (!nomeCat) return;
+      db.ref("categorias").push({ nome: nomeCat })
+        .then(() => { 
+          alert("Categoria salva com sucesso!"); 
+          document.getElementById("categoriaNome").value = ""; 
+          loadCategorias(); 
+          updateCategoriaSelect(); 
+        })
+        .catch(err => alert("Erro: " + err));
+    }
+    function loadCategorias() {
+      const lista = document.getElementById("categoriasLista");
+      lista.innerHTML = "";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          const key = child.key;
+          let div = document.createElement("div");
+          div.innerHTML = `<strong>${cat.nome}</strong> <button onclick="excluirCategoria('${key}')">Excluir</button>`;
+          lista.appendChild(div);
+        });
+      });
+    }
+    function excluirCategoria(key) {
+      if (confirm("Deseja realmente excluir esta categoria?")) {
+        db.ref("categorias").child(key).remove()
+          .then(() => { 
+            alert("Categoria excluída com sucesso!"); 
+            loadCategorias(); 
+            updateCategoriaSelect(); 
+          })
+          .catch(err => alert("Erro: " + err));
+      }
+    }
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      if (!select) return;
+      select.innerHTML = "<option value=''>Selecione a Categoria</option>";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          select.innerHTML += `<option value="${cat.nome}">${cat.nome}</option>`;
+        });
+      });
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA === yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
+    /* ----- Módulo Calendário ----- */
+    function loadCalendarExpenses(month, year, callback) {
+      let totals = {};
+      for (var d = 1; d <= 31; d++) { totals[d] = 0; }
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(parcela => {
+              if (!parcela.pago) {
+                let due = new Date(parcela.vencimento);
+                if (due.getFullYear() === year && due.getMonth() === month) {
+                  totals[due.getDate()] += parseFloat(parcela.valor);
+                }
+              }
+            });
+          } else if (desp.formaPagamento === "avista" && !desp.pago) {
+            let d = new Date(desp.dataCompra);
+            if (d.getFullYear() === year && d.getMonth() === month) {
+              totals[d.getDate()] += parseFloat(desp.valor);
+            }
+          }
+        });
+        callback(totals);
+      });
+    }
+    function renderCalendar() {
+      document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
+      populateMonthYearSelect();
+      loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
+        let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+        let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].forEach(dia => {
+          let th = document.createElement("th");
+          th.innerText = dia;
+          header.appendChild(th);
+        });
+        table.appendChild(header);
+        let row = document.createElement("tr");
+        for (var i = 0; i < firstDay; i++) {
+          let cell = document.createElement("td");
+          cell.innerText = "";
+          row.appendChild(cell);
+        }
+        for (var d = 1; d <= daysInMonth; d++) {
+          let cell = document.createElement("td");
+          cell.innerHTML = `<strong>${d}</strong><br>`;
+          if (totals[d] && totals[d] > 0) { cell.innerHTML += "R$ " + totals[d].toFixed(2); }
+          row.appendChild(cell);
+          if ((firstDay + d) % 7 === 0) {
+            table.appendChild(row);
+            row = document.createElement("tr");
+          }
+        }
+        if (row.children.length > 0) {
+          while (row.children.length < 7) {
+            let cell = document.createElement("td");
+            cell.innerText = "";
+            row.appendChild(cell);
+          }
+          table.appendChild(row);
+        }
+        document.getElementById("calendarGrid").innerHTML = "";
+        document.getElementById("calendarGrid").appendChild(table);
+      });
+    }
+    function getMonthName(i) {
+      return ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][i];
+    }
+    function prevMonth() {
+      currentCalendarMonth--;
+      if (currentCalendarMonth < 0) { currentCalendarMonth = 11; currentCalendarYear--; }
+      renderCalendar();
+    }
+    function nextMonth() {
+      currentCalendarMonth++;
+      if (currentCalendarMonth > 11) { currentCalendarMonth = 0; currentCalendarYear++; }
+      renderCalendar();
+    }
+    function populateMonthYearSelect() {
+      const selectYear = document.getElementById("selectYear");
+      selectYear.innerHTML = "";
+      const currentY = new Date().getFullYear();
+      for (var y = currentY - 10; y <= currentY + 10; y++) {
+        let option = document.createElement("option");
+        option.value = y;
+        option.innerText = y;
+        if (y === currentCalendarYear) option.selected = true;
+        selectYear.appendChild(option);
+      }
+      document.getElementById("selectMonth").value = currentCalendarMonth;
+    }
+    function toggleMonthYearSelect() {
+      const container = document.getElementById("monthYearSelect");
+      container.style.display = container.style.display === "none" ? "block" : "none";
+    }
+    function updateCalendarFromSelect() {
+      currentCalendarMonth = parseInt(document.getElementById("selectMonth").value);
+      currentCalendarYear = parseInt(document.getElementById("selectYear").value);
+      renderCalendar();
+    }
+
+    /* ----- Módulo Relatório Mensal ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA,yA] = a.split("/").map(Number);
+          let [mB,yB] = b.split("/").map(Number);
+          return (yA===yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
+    /* ----- Módulo Pagamento de Despesa (Caixa de Seleção com Pesquisa) ----- */
     document.getElementById("despesaSearch").addEventListener("input", function() {
       const termo = document.getElementById("despesaSearch").value.toLowerCase();
       const select = document.getElementById("despesaSelect");
@@ -1663,9 +2775,7 @@
       }
     }
 
-    // ----- Fim dos módulos -----
-
-    // Define window.onload para atualizar os campos após carregar todas as funções
+    /* ----- ÚNICA Chamada window.onload (para garantir que todas as funções estejam definidas) ----- */
     window.onload = function() {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
       updateCategoriaSelect();
@@ -1673,6 +2783,7 @@
       loadDespesasNaoPagasSelect();
       loadCategorias();
       loadCartoes();
+      renderCalendar();
     };
   </script>
 
