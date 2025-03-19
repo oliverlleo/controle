@@ -124,9 +124,9 @@
       margin-bottom: 10px;
     }
   </style>
-  <!-- Adicione o Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js"></script>
+  <!-- Utilize as versões de compatibilidade do Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
 </head>
 <body>
   <div class="container">
@@ -300,16 +300,14 @@
 
     // Função para salvar os dados no Realtime Database
     document.getElementById("cadastroForm").addEventListener("submit", function (e) {
-      e.preventDefault(); // Evita o recarregamento da página
+      e.preventDefault();
 
-      // Coleta os dados do formulário
       const nome = document.getElementById("nome").value;
       const parentesco = document.getElementById("parentesco").value;
       const salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       const salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       const numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
 
-      // Cria o objeto com os dados
       const dados = {
         nome: nome,
         parentesco: parentesco,
@@ -319,15 +317,12 @@
         timestamp: new Date().toISOString()
       };
 
-      // Salva os dados no Realtime Database
       database.ref("pessoas").push(dados)
         .then(() => {
-          // Exibe a mensagem de sucesso na tela
           const msg = document.getElementById("mensagemSucesso");
           msg.innerText = "Dados salvos com sucesso!";
           msg.style.display = "block";
           
-          // Fecha o modal e reseta o formulário após 3 segundos
           setTimeout(() => {
             msg.style.display = "none";
             fecharModal();
