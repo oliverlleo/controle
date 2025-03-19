@@ -228,7 +228,9 @@
       <label for="despesaValor">Valor da Despesa (R$):</label>
       <input type="number" id="despesaValor" placeholder="Valor" step="0.01" required>
       
-      <!-- Campo Categoria sempre visível -->
+      <label for="dataCompra">Data da Compra:</label>
+      <input type="date" id="dataCompra" required>
+      
       <label for="categoriaDespesa">Categoria:</label>
       <select id="categoriaDespesa">
         <option value="">Selecione a Categoria</option>
@@ -241,7 +243,7 @@
       
       <!-- Campos para pagamento no cartão -->
       <div id="despesaCartaoFields" style="display: none;">
-        <label for="despesaDia">Dia do Pagamento:</label>
+        <label for="despesaDia">Dia do Pagamento (Fatura):</label>
         <input type="number" id="despesaDia" placeholder="Ex.: 20" min="1" max="31">
         <label for="numParcelasDespesa">Número de Parcelas:</label>
         <input type="number" id="numParcelasDespesa" min="1" max="12">
@@ -277,7 +279,7 @@
           <option value="11">Dezembro</option>
         </select>
         <select id="selectYear" onchange="updateCalendarFromSelect()">
-          <!-- As opções de ano serão preenchidas dinamicamente -->
+          <!-- Opções de ano serão preenchidas dinamicamente -->
         </select>
         <button onclick="toggleMonthYearSelect()">Ok</button>
       </div>
@@ -372,6 +374,12 @@
     // Variáveis globais para o calendário
     let currentCalendarMonth = new Date().getMonth();
     let currentCalendarYear = new Date().getFullYear();
+
+    // Ao carregar a página, define a data da compra como hoje e atualiza o select de categorias
+    window.onload = function() {
+      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
+      updateCategoriaSelect();
+    };
 
     // Funções para abrir/fechar modais
     function abrirModal(id) {
@@ -491,12 +499,14 @@
     // --- MÓDULO DESPESA ---
     function toggleDespesaPagamento() {
       const forma = document.querySelector('input[name="formaPagamento"]:checked').value;
+      // Se for cartão, exibe os campos de vencimento; se for à vista, esconde
       document.getElementById("despesaCartaoFields").style.display = forma === "cartao" ? "block" : "none";
     }
     document.getElementById("despesaForm").addEventListener("submit", function(e) {
       e.preventDefault();
       const descricao = document.getElementById("despesaDescricao").value;
       const valorDespesa = parseFloat(document.getElementById("despesaValor").value) || 0;
+      const dataCompra = document.getElementById("dataCompra").value;
       const formaPagamento = document.querySelector('input[name="formaPagamento"]:checked').value;
       const categoria = document.getElementById("categoriaDespesa").value;
       let dia = "";
@@ -508,7 +518,7 @@
       } else {
         pago = true;
       }
-      const despesa = { descricao, valorDespesa, formaPagamento, categoria, dia, numParcelas, pago, timestamp: new Date().toISOString() };
+      const despesa = { descricao, valorDespesa, dataCompra, formaPagamento, categoria, dia, numParcelas, pago, timestamp: new Date().toISOString() };
       database.ref("despesas").push(despesa)
         .then(() => {
           const msg = document.getElementById("mensagemSucessoDespesa");
@@ -524,9 +534,8 @@
 
     // --- Calendário Interativo (Modal) ---
     function renderCalendar() {
-      // Atualiza o cabeçalho
+      // Atualiza o cabeçalho com mês/ano atual
       document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
-      // Popula os selects de mês e ano se estiverem ocultos
       populateMonthYearSelect();
       loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
         let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
@@ -601,7 +610,8 @@
         snapshot.forEach(child => {
           const despesa = child.val();
           if(despesa.formaPagamento === "cartao" && despesa.dia) {
-            let purchaseDate = new Date(despesa.timestamp);
+            // Usa o campo dataCompra se existir; caso contrário, usa timestamp
+            let purchaseDate = despesa.dataCompra ? new Date(despesa.dataCompra) : new Date(despesa.timestamp);
             let startYear = purchaseDate.getFullYear();
             let startMonth = purchaseDate.getMonth();
             let installments = parseInt(despesa.numParcelas) || 1;
@@ -617,10 +627,7 @@
         callback(totals);
       });
     }
-    // Popula os selects de mês e ano
     function populateMonthYearSelect() {
-      // Para o select de mês, já estão as opções no HTML.
-      // Para o select de ano, cria opções de (ano atual - 10) até (ano atual + 10)
       let selectYear = document.getElementById("selectYear");
       selectYear.innerHTML = "";
       let currentYear = new Date().getFullYear();
@@ -631,11 +638,9 @@
         if(y === currentCalendarYear) option.selected = true;
         selectYear.appendChild(option);
       }
-      // Seleciona o mês atual no select de mês
       let selectMonth = document.getElementById("selectMonth");
       selectMonth.value = currentCalendarMonth;
     }
-    // Alterna a exibição do dropdown de mês e ano
     function toggleMonthYearSelect() {
       let container = document.getElementById("monthYearSelect");
       container.style.display = container.style.display === "none" ? "block" : "none";
@@ -696,6 +701,30 @@
         });
       });
     }
+    
+    // Atualiza o select de categorias na página assim que possível
+    updateCategoriaSelect();
+
+    // --- Atualização do Formulário de Despesa ---
+    // Agora, o formulário de despesa inclui o campo "Data da Compra"
+    // (o input com id="dataCompra" deve ser adicionado ao HTML abaixo do campo Valor)
+    // Se não existir, criaremos ele dinamicamente.
+    if(!document.getElementById("dataCompra")){
+      let form = document.getElementById("despesaForm");
+      let label = document.createElement("label");
+      label.setAttribute("for", "dataCompra");
+      label.innerText = "Data da Compra:";
+      let input = document.createElement("input");
+      input.type = "date";
+      input.id = "dataCompra";
+      input.required = true;
+      // Insere logo após o campo de valor
+      form.insertBefore(label, form.children[4]);
+      form.insertBefore(input, form.children[5]);
+      // Define a data atual como padrão
+      input.value = new Date().toISOString().split("T")[0];
+    }
+
   </script>
 </body>
 </html>
