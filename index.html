@@ -117,6 +117,12 @@
       font-size: 0.9rem;
       margin-top: 10px;
     }
+    #mensagemSucesso {
+      display: none;
+      color: green;
+      text-align: center;
+      margin-bottom: 10px;
+    }
   </style>
   <!-- Adicione o Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js"></script>
@@ -132,6 +138,8 @@
     <div class="modal-content">
       <span class="close" onclick="fecharModal()">&times;</span>
       <h2>Novo Cadastro</h2>
+      <!-- Mensagem de sucesso será exibida aqui -->
+      <div id="mensagemSucesso"></div>
       <form id="cadastroForm">
         <label for="nome">Nome:</label>
         <input type="text" id="nome" placeholder="Nome" required>
@@ -172,7 +180,7 @@
   </div>
 
   <script>
-    // Configuração do Firebase (substitua com suas credenciais)
+    // Configuração do Firebase (verifique se as credenciais estão corretas)
     const firebaseConfig = {
       apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
       authDomain: "controlegasto-df3f1.firebaseapp.com",
@@ -187,6 +195,15 @@
     // Inicialize o Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+
+    // Atenção: Para testes, verifique se as regras do Realtime Database permitem leitura e escrita.
+    // Exemplo de regra para testes:
+    // {
+    //   "rules": {
+    //     ".read": true,
+    //     ".write": true
+    //   }
+    // }
 
     // Função para abrir o modal
     function abrirModal() {
@@ -237,7 +254,6 @@
       let numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
 
-      // Se houver mais de 1 pagamento, cria um campo para cada pagamento
       if(numPagamentos > 1) {
         for (let i = 1; i <= numPagamentos; i++) {
           let div = document.createElement("div");
@@ -250,7 +266,6 @@
           container.appendChild(div);
         }
       } else if(numPagamentos === 1) {
-        // Se houver apenas 1 pagamento, preenche automaticamente com o salário líquido
         let div = document.createElement("div");
         div.className = "pagamento-item";
         div.innerHTML = `
@@ -270,7 +285,7 @@
       }
     }
 
-    // Função para verificar a soma dos pagamentos (com arredondamento)
+    // Função para verificar a soma dos pagamentos
     function verificarSomaPagamentos() {
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let valores = document.querySelectorAll(".valoresPagamento");
@@ -294,7 +309,7 @@
       const salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       const numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
 
-      // Cria um objeto com os dados a serem salvos
+      // Cria o objeto com os dados
       const dados = {
         nome: nome,
         parentesco: parentesco,
@@ -307,9 +322,17 @@
       // Salva os dados no Realtime Database
       database.ref("pessoas").push(dados)
         .then(() => {
-          alert("Dados salvos com sucesso!");
-          fecharModal();
-          document.getElementById("cadastroForm").reset();
+          // Exibe a mensagem de sucesso na tela
+          const msg = document.getElementById("mensagemSucesso");
+          msg.innerText = "Dados salvos com sucesso!";
+          msg.style.display = "block";
+          
+          // Fecha o modal e reseta o formulário após 3 segundos
+          setTimeout(() => {
+            msg.style.display = "none";
+            fecharModal();
+            document.getElementById("cadastroForm").reset();
+          }, 3000);
         })
         .catch((error) => {
           console.error("Erro ao salvar os dados: ", error);
