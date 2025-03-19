@@ -70,7 +70,9 @@
       font-size: 0.9rem;
       color: #555;
     }
-    .modal-content input, .modal-content select, .modal-content button {
+    .modal-content input, 
+    .modal-content select, 
+    .modal-content button {
       width: 100%;
       padding: 10px;
       margin-bottom: 10px;
@@ -126,19 +128,27 @@
       text-align: center;
       margin-bottom: 10px;
     }
-    /* Estilos para a lista de usuários */
-    #usuariosLista div {
+    /* Estilos para a lista de usuários em 2 colunas */
+    .user-container {
+      display: flex;
+      justify-content: space-between;
       border: 1px solid #ddd;
       border-radius: 5px;
       padding: 10px;
       margin-bottom: 10px;
-      text-align: left;
     }
-    #usuariosLista button {
+    .user-info, .user-pagamentos {
+      width: 48%;
+    }
+    .user-pagamentos {
+      /* Pode ajustar a formatação se desejar, ex.: text-align: right; */
+    }
+    #usuariosLista div button {
       background: #dc3545;
       margin-top: 5px;
+      width: 100%;
     }
-    #usuariosLista button:hover {
+    #usuariosLista div button:hover {
       background: #c82333;
     }
   </style>
@@ -185,7 +195,8 @@
           <input type="number" id="salarioBruto" placeholder="Digite o salário bruto" step="0.01" oninput="atualizarSalarioLiquido()">
 
           <label for="salarioLiquido">Salário Líquido (R$):</label>
-          <input type="number" id="salarioLiquido" placeholder="Salário líquido calculado" step="0.01" readonly>
+          <!-- Campo editável para que o valor calculado seja apenas sugestão -->
+          <input type="number" id="salarioLiquido" placeholder="Salário líquido calculado" step="0.01">
 
           <label for="numPagamentos">Número de Pagamentos no Mês:</label>
           <input type="number" id="numPagamentos" placeholder="Digite o número de pagamentos" min="1" max="5" oninput="gerarCamposPagamentos()">
@@ -225,15 +236,13 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Funções para abrir/fechar o modal de cadastro
+    // Funções para abrir/fechar os modais
     function abrirModal() {
       document.getElementById("cadastroModal").style.display = "flex";
     }
     function fecharModal() {
       document.getElementById("cadastroModal").style.display = "none";
     }
-
-    // Funções para abrir/fechar o modal de perfil
     function abrirPerfil() {
       document.getElementById("perfilModal").style.display = "flex";
       loadUsuarios();
@@ -242,13 +251,13 @@
       document.getElementById("perfilModal").style.display = "none";
     }
 
-    // Função para mostrar/ocultar campos CLT
+    // Exibe ou esconde os campos CLT
     function toggleClt() {
       document.getElementById("cltFields").style.display =
         document.getElementById("cltCheckbox").checked ? "block" : "none";
     }
 
-    // Funções de cálculo de INSS, IRRF e salário líquido
+    // Funções de cálculo de INSS, IRRF e atualização do salário líquido
     function calcularINSS(salario) {
       if (salario <= 1320.00) return salario * 0.075;
       else if (salario <= 2571.29) return (1320 * 0.075) + ((salario - 1320) * 0.09);
@@ -268,6 +277,7 @@
       let inss = calcularINSS(salarioBruto);
       let irrf = calcularIRRF(salarioBruto - inss);
       let salarioLiquido = salarioBruto - inss - irrf;
+      // Atualiza o campo com o valor sugerido, mas permite edição
       document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
     }
 
@@ -334,7 +344,6 @@
         }
       }
       
-      // Log de depuração para verificar se os dados de pagamento foram capturados
       console.log("Pagamentos capturados:", pagamentos);
 
       const dados = {
@@ -366,7 +375,7 @@
         });
     });
 
-    // Função para carregar os usuários salvos e exibi-los no modal de perfil
+    // Função para carregar os usuários salvos e exibi-los em duas colunas
     function loadUsuarios() {
       const usuariosLista = document.getElementById("usuariosLista");
       usuariosLista.innerHTML = "";
@@ -374,21 +383,48 @@
         snapshot.forEach(childSnapshot => {
           const usuario = childSnapshot.val();
           const key = childSnapshot.key;
-          let div = document.createElement("div");
-          div.innerHTML = `
+          
+          // Cria o container principal com 2 colunas
+          let userContainer = document.createElement("div");
+          userContainer.className = "user-container";
+          
+          // Coluna da esquerda: Informações gerais
+          let infoDiv = document.createElement("div");
+          infoDiv.className = "user-info";
+          infoDiv.innerHTML = `
             <strong>Nome:</strong> ${usuario.nome} <br>
             <strong>Parentesco:</strong> ${usuario.parentesco} <br>
             <strong>Salário Bruto:</strong> ${usuario.salarioBruto} <br>
             <strong>Salário Líquido:</strong> ${usuario.salarioLiquido} <br>
           `;
+          
+          // Coluna da direita: Detalhes dos pagamentos
+          let pagamentosDiv = document.createElement("div");
+          pagamentosDiv.className = "user-pagamentos";
           if (usuario.pagamentos && usuario.pagamentos.length > 0) {
-            div.innerHTML += `<strong>Pagamentos:</strong><br>`;
+            pagamentosDiv.innerHTML = `<strong>Pagamentos:</strong><br>`;
             usuario.pagamentos.forEach(pag => {
-              div.innerHTML += `Dia ${pag.dia}: R$ ${pag.valor} <br>`;
+              pagamentosDiv.innerHTML += `Dia ${pag.dia}: R$ ${pag.valor} <br>`;
             });
+          } else {
+            pagamentosDiv.innerHTML = `<strong>Pagamentos:</strong><br> Nenhum`;
           }
-          div.innerHTML += `<button onclick="excluirUsuario('${key}')">Excluir</button>`;
-          usuariosLista.appendChild(div);
+          
+          userContainer.appendChild(infoDiv);
+          userContainer.appendChild(pagamentosDiv);
+          
+          // Botão de exclusão abaixo do container
+          let deleteButton = document.createElement("button");
+          deleteButton.textContent = "Excluir";
+          deleteButton.onclick = function() {
+            excluirUsuario(key);
+          };
+          
+          let containerWrapper = document.createElement("div");
+          containerWrapper.appendChild(userContainer);
+          containerWrapper.appendChild(deleteButton);
+          
+          usuariosLista.appendChild(containerWrapper);
         });
       });
     }
