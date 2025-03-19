@@ -137,7 +137,7 @@
         <input type="text" id="nome" placeholder="Nome" required>
 
         <label for="parentesco">Parentesco:</label>
-        <select id="parentesco">
+        <select id="parentesco" required>
           <option value="">Selecione o parentesco</option>
           <option value="pai">Pai</option>
           <option value="irma">Irmã</option>
@@ -185,7 +185,7 @@
     };
 
     // Inicialize o Firebase
-    const app = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
     // Função para abrir o modal
@@ -237,20 +237,36 @@
       let numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
 
-      for (let i = 1; i <= numPagamentos; i++) {
+      // Se houver mais de 1 pagamento, cria um campo para cada pagamento
+      if(numPagamentos > 1) {
+        for (let i = 1; i <= numPagamentos; i++) {
+          let div = document.createElement("div");
+          div.className = "pagamento-item";
+          div.innerHTML = `
+            <label>Dia do Pagamento ${i}:</label>
+            <input type="number" placeholder="Dia" min="1" max="31" required>
+            <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()" required>
+          `;
+          container.appendChild(div);
+        }
+      } else if(numPagamentos === 1) {
+        // Se houver apenas 1 pagamento, preenche automaticamente com o salário líquido
         let div = document.createElement("div");
         div.className = "pagamento-item";
         div.innerHTML = `
-          <label>Dia do Pagamento ${i}:</label>
+          <label>Dia do Pagamento:</label>
           <input type="number" placeholder="Dia" min="1" max="31" required>
-          ${numPagamentos > 1 ? `<input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()">` : ''}
         `;
         container.appendChild(div);
-      }
 
-      // Se houver apenas 1 pagamento, preencher automaticamente o valor
-      if (numPagamentos === 1) {
-        document.querySelector(".valoresPagamento").value = salarioLiquido.toFixed(2);
+        let inputValor = document.createElement("input");
+        inputValor.type = "number";
+        inputValor.className = "valoresPagamento";
+        inputValor.placeholder = "Valor R$";
+        inputValor.step = "0.01";
+        inputValor.value = salarioLiquido.toFixed(2);
+        inputValor.readOnly = true;
+        container.appendChild(inputValor);
       }
     }
 
@@ -259,16 +275,11 @@
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let valores = document.querySelectorAll(".valoresPagamento");
       let soma = 0;
-
       valores.forEach(input => {
         soma += parseFloat(input.value) || 0;
       });
-
-      // Arredonda a soma e o salário líquido para 2 casas decimais
       soma = Math.round(soma * 100) / 100;
       salarioLiquido = Math.round(salarioLiquido * 100) / 100;
-
-      // Verifica se os valores arredondados são iguais
       document.getElementById("avisoErro").style.display = soma !== salarioLiquido ? "block" : "none";
     }
 
@@ -283,7 +294,7 @@
       const salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       const numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
 
-      // Cria um objeto com os dados
+      // Cria um objeto com os dados a serem salvos
       const dados = {
         nome: nome,
         parentesco: parentesco,
@@ -298,6 +309,7 @@
         .then(() => {
           alert("Dados salvos com sucesso!");
           fecharModal();
+          document.getElementById("cadastroForm").reset();
         })
         .catch((error) => {
           console.error("Erro ao salvar os dados: ", error);
