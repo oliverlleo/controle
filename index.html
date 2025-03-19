@@ -163,41 +163,43 @@
   </div>
 
   <!-- Seção de Cadastro de Despesa -->
-  <!-- Opcional: encapsular os inputs num form com id "despesaForm". Se não desejar, remova a chamada do reset -->
+  <!-- Agora encapsulamos os inputs num form com id "despesaForm" para que o reset funcione -->
   <div class="container">
     <h2>Cadastrar Despesa</h2>
-    <label>Descrição:</label>
-    <input type="text" id="despesaDescricao" placeholder="Descrição da despesa" required>
-    
-    <label>Valor (R$):</label>
-    <input type="number" id="despesaValor" placeholder="Valor" step="0.01" required>
-    
-    <label>Data da Compra:</label>
-    <input type="date" id="dataCompra" required>
-    
-    <label>Categoria:</label>
-    <select id="categoriaDespesa">
-      <option value="">Selecione a Categoria</option>
-      <!-- Será preenchido via Firebase -->
-    </select>
-    
-    <label>Forma de Pagamento:</label>
-    <select id="formaPagamento" onchange="toggleParcelamento()">
-      <option value="avista">À Vista</option>
-      <option value="cartao">Cartão</option>
-    </select>
-    
-    <div id="parcelamentoDiv" class="hidden">
-      <label>Cartão:</label>
-      <select id="cartaoDespesa" required>
-        <option value="">Selecione o Cartão</option>
+    <form id="despesaForm">
+      <label>Descrição:</label>
+      <input type="text" id="despesaDescricao" placeholder="Descrição da despesa" required>
+      
+      <label>Valor (R$):</label>
+      <input type="number" id="despesaValor" placeholder="Valor" step="0.01" required>
+      
+      <label>Data da Compra:</label>
+      <input type="date" id="dataCompra" required>
+      
+      <label>Categoria:</label>
+      <select id="categoriaDespesa">
+        <option value="">Selecione a Categoria</option>
         <!-- Será preenchido via Firebase -->
       </select>
-      <label>Número de Parcelas:</label>
-      <input type="number" id="numParcelasDespesa" min="1" max="12" required>
-    </div>
-    
-    <button onclick="salvarDespesa()">Salvar Despesa</button>
+      
+      <label>Forma de Pagamento:</label>
+      <select id="formaPagamento" onchange="toggleParcelamento()">
+        <option value="avista">À Vista</option>
+        <option value="cartao">Cartão</option>
+      </select>
+      
+      <div id="parcelamentoDiv" class="hidden">
+        <label>Cartão:</label>
+        <select id="cartaoDespesa" required>
+          <option value="">Selecione o Cartão</option>
+          <!-- Será preenchido via Firebase -->
+        </select>
+        <label>Número de Parcelas:</label>
+        <input type="number" id="numParcelasDespesa" min="1" max="12" required>
+      </div>
+      
+      <button type="button" onclick="salvarDespesa()">Salvar Despesa</button>
+    </form>
   </div>
 
   <!-- Seção de Pagar Despesa -->
@@ -322,8 +324,8 @@
       updateCategoriaSelect();
       updateCartaoSelect();
       loadDespesasNaoPagasSelect();
-      loadCategorias(); // Caso utilize para lista no modal
-      loadCartoes();    // Caso utilize para lista no modal
+      loadCategorias(); // Para modal de categorias
+      loadCartoes();    // Para modal de cartões
     };
 
     /* ----- Funções de Modal ----- */
@@ -372,7 +374,6 @@
       const forma = document.getElementById("formaPagamento").value;
       document.getElementById("parcelamentoDiv").classList.toggle("hidden", forma !== "cartao");
     }
-
     function salvarDespesa() {
       const descricao = document.getElementById("despesaDescricao").value;
       const valor = parseFloat(document.getElementById("despesaValor").value);
@@ -429,18 +430,13 @@
         despesasRef.push(despesaData)
           .then(() => {
             alert("Despesa com cartão cadastrada com sucesso!");
-            // Limpar os campos manualmente:
-            document.getElementById("despesaDescricao").value = "";
-            document.getElementById("despesaValor").value = "";
-            document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
-            toggleParcelamento();
+            document.getElementById("despesaForm").reset();
             loadDespesasNaoPagasSelect();
             renderCalendar();
             updateCartaoSelect();
           })
           .catch(err => alert("Erro: " + err));
       } else {
-        // Despesa à vista
         const despesaData = {
           descricao,
           valor,
@@ -453,10 +449,7 @@
         despesasRef.push(despesaData)
           .then(() => {
             alert("Despesa à vista cadastrada com sucesso!");
-            // Limpar os campos manualmente:
-            document.getElementById("despesaDescricao").value = "";
-            document.getElementById("despesaValor").value = "";
-            document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
+            document.getElementById("despesaForm").reset();
             loadDespesasNaoPagasSelect();
             renderCalendar();
           })
@@ -527,7 +520,41 @@
       }
     }
 
-    /* ----- Módulo Relatório Mensal ----- */
+    /* ----- Módulo Relatório Mensal (Primeira Definição) ----- */
+    function loadRelatorioMensal() {
+      let totals = {};
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const desp = child.val();
+          let d = new Date(desp.dataCompra ? desp.dataCompra : desp.timestamp);
+          let key = (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+          if (!totals[key]) totals[key] = 0;
+          if (desp.formaPagamento === "cartao" && desp.parcelas) {
+            desp.parcelas.forEach(p => { if (p.pago) totals[key] += parseFloat(p.valor); });
+          } else {
+            totals[key] += parseFloat(desp.valor);
+          }
+        });
+        const container = document.getElementById("relatorioMensalContainer");
+        container.innerHTML = "";
+        let table = document.createElement("table");
+        let header = document.createElement("tr");
+        header.innerHTML = "<th>Mês/Ano</th><th>Total Pago (R$)</th>";
+        table.appendChild(header);
+        Object.keys(totals).sort((a, b) => {
+          let [mA, yA] = a.split("/").map(Number);
+          let [mB, yB] = b.split("/").map(Number);
+          return (yA===yB) ? mA - mB : yA - yB;
+        }).forEach(key => {
+          let row = document.createElement("tr");
+          row.innerHTML = `<td>${key}</td><td>${totals[key].toFixed(2)}</td>`;
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
+    /* ----- Módulo Relatório Mensal (Segunda Definição duplicada) ----- */
     function loadRelatorioMensal() {
       let totals = {};
       db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
