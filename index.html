@@ -204,6 +204,13 @@
       <label for="despesaValor">Valor da Despesa (R$):</label>
       <input type="number" id="despesaValor" placeholder="Valor" step="0.01" required>
       
+      <!-- Campo Categoria sempre visível -->
+      <label for="categoriaDespesa">Categoria:</label>
+      <select id="categoriaDespesa">
+        <option value="">Selecione a Categoria</option>
+        <!-- Opções serão carregadas via Firebase -->
+      </select>
+      
       <label>Forma de Pagamento:</label>
       <label><input type="radio" name="formaPagamento" value="avista" checked onclick="toggleDespesaPagamento()"> À vista</label>
       <label><input type="radio" name="formaPagamento" value="cartao" onclick="toggleDespesaPagamento()"> Cartão</label>
@@ -262,7 +269,7 @@
           <input type="number" id="salarioBruto" placeholder="Digite o salário bruto" step="0.01" oninput="atualizarSalarioLiquido()">
           
           <label for="salarioLiquido">Salário Líquido (R$):</label>
-          <!-- Campo editável: o valor calculado é apenas sugestão -->
+          <!-- Campo editável: valor calculado é apenas sugestão -->
           <input type="number" id="salarioLiquido" placeholder="Salário líquido calculado" step="0.01">
           
           <label for="numPagamentos">Número de Pagamentos no Mês:</label>
@@ -317,7 +324,7 @@
     const database = firebase.database();
 
     // Variáveis globais para o calendário
-    let currentCalendarMonth = new Date().getMonth(); // 0-indexado
+    let currentCalendarMonth = new Date().getMonth();
     let currentCalendarYear = new Date().getFullYear();
 
     // Funções para abrir/fechar modais
@@ -444,6 +451,7 @@
       const descricao = document.getElementById("despesaDescricao").value;
       const valorDespesa = parseFloat(document.getElementById("despesaValor").value) || 0;
       const formaPagamento = document.querySelector('input[name="formaPagamento"]:checked').value;
+      const categoria = document.getElementById("categoriaDespesa").value;
       let dia = "";
       let numParcelas = "";
       let pago = false;
@@ -453,7 +461,7 @@
       } else {
         pago = true;
       }
-      const despesa = { descricao, valorDespesa, formaPagamento, dia, numParcelas, pago, timestamp: new Date().toISOString() };
+      const despesa = { descricao, valorDespesa, formaPagamento, categoria, dia, numParcelas, pago, timestamp: new Date().toISOString() };
       database.ref("despesas").push(despesa)
         .then(() => {
           const msg = document.getElementById("mensagemSucessoDespesa");
@@ -473,7 +481,7 @@
       document.getElementById("calendarMonthYear").innerText = getMonthName(currentCalendarMonth) + " " + currentCalendarYear;
       loadCalendarExpenses(currentCalendarMonth, currentCalendarYear, function(totals) {
         // Cria a tabela do calendário
-        let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay(); // 0 (Dom) a 6 (Sáb)
+        let firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
         let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
         let table = document.createElement("table");
         // Cabeçalho com dias da semana
@@ -487,13 +495,11 @@
         table.appendChild(headerRow);
         // Linhas do calendário
         let row = document.createElement("tr");
-        // Células vazias antes do primeiro dia
         for (let i = 0; i < firstDay; i++) {
           let cell = document.createElement("td");
           cell.innerText = "";
           row.appendChild(cell);
         }
-        // Preenche os dias
         for (let d = 1; d <= daysInMonth; d++) {
           let cell = document.createElement("td");
           cell.innerHTML = "<strong>" + d + "</strong><br>";
@@ -506,7 +512,6 @@
             row = document.createElement("tr");
           }
         }
-        // Células vazias no final, se necessário
         if(row.children.length > 0) {
           while(row.children.length < 7) {
             let cell = document.createElement("td");
@@ -515,7 +520,6 @@
           }
           table.appendChild(row);
         }
-        // Exibe o calendário
         let calendarGrid = document.getElementById("calendarGrid");
         calendarGrid.innerHTML = "";
         calendarGrid.appendChild(table);
@@ -567,7 +571,6 @@
         callback(totals);
       });
     }
-    // Renderiza o calendário ao carregar a página
     renderCalendar();
 
     // --- MÓDULO CATEGORIAS ---
