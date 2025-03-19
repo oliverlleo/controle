@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro de Renda</title>
+  <title>Gerenciamento de Contas</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -27,11 +27,11 @@
       background: #007bff;
       color: white;
       border: none;
-      padding: 15px 30px;
+      padding: 15px 20px;
       border-radius: 5px;
       font-size: 1rem;
       cursor: pointer;
-      margin: 0 5px;
+      margin: 5px;
       transition: background 0.3s ease;
     }
     .container button:hover {
@@ -54,7 +54,7 @@
       border-radius: 10px;
       width: 90%;
       max-width: 500px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       position: relative;
       max-height: 90vh;
       overflow-y: auto;
@@ -66,12 +66,12 @@
     }
     .modal-content label {
       display: block;
-      margin: 10px 0 5px 0;
+      margin: 10px 0 5px;
       font-size: 0.9rem;
       color: #555;
     }
-    .modal-content input, 
-    .modal-content select, 
+    .modal-content input,
+    .modal-content select,
     .modal-content button {
       width: 100%;
       padding: 10px;
@@ -122,13 +122,15 @@
       font-size: 0.9rem;
       margin-top: 10px;
     }
-    #mensagemSucesso {
+    #mensagemSucessoRenda,
+    #mensagemSucessoDespesa,
+    #mensagemSucessoCategoria {
       display: none;
       color: green;
       text-align: center;
       margin-bottom: 10px;
     }
-    /* Estilos para a lista de usuários em 2 colunas */
+    /* Estilo para listagem em duas colunas */
     .user-container {
       display: flex;
       justify-content: space-between;
@@ -137,46 +139,50 @@
       padding: 10px;
       margin-bottom: 10px;
     }
-    .user-info, .user-pagamentos {
+    .user-info, .user-extra {
       width: 48%;
     }
-    .user-pagamentos {
-      /* Ajuste a formatação conforme necessário */
-    }
-    #usuariosLista div button {
+    .user-extra { text-align: left; }
+    .user-container button {
       background: #dc3545;
+      color: white;
+      border: none;
+      padding: 5px;
       margin-top: 5px;
-      width: 100%;
+      cursor: pointer;
+      border-radius: 5px;
     }
-    #usuariosLista div button:hover {
+    .user-container button:hover {
       background: #c82333;
     }
   </style>
-  <!-- Utilize as versões de compatibilidade do Firebase -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1>Cadastro de Renda</h1>
-    <button onclick="abrirModal()">Cadastra Nova Renda</button>
-    <button onclick="abrirPerfil()">Fonte de Renda</button>
+    <h1>Gerenciamento de Contas</h1>
+    <button onclick="abrirModal('cadastroModal')">Cadastra Nova Renda</button>
+    <button onclick="abrirModal('fonteModal')">Fonte de Renda</button>
+    <button onclick="abrirModal('despesaModal')">Cadastrar Despesa</button>
+    <button onclick="abrirModal('listaDespesasModal')">Ver Despesas</button>
+    <button onclick="abrirModal('categoriasModal')">Gerenciar Categorias</button>
   </div>
 
-  <!-- Modal de Cadastro -->
+  <!-- Modal de Cadastro de Renda -->
   <div id="cadastroModal" class="modal">
     <div class="modal-content">
-      <span class="close" onclick="fecharModal()">&times;</span>
+      <span class="close" onclick="fecharModal('cadastroModal')">&times;</span>
       <h2>Nova Renda</h2>
-      <!-- Mensagem de sucesso -->
-      <div id="mensagemSucesso"></div>
+      <div id="mensagemSucessoRenda"></div>
       <form id="cadastroForm">
         <label for="nome">Nome:</label>
         <input type="text" id="nome" placeholder="Nome" required>
-
+        
         <label for="parentesco">Parentesco:</label>
         <select id="parentesco" required>
-          <option value="">Selecione o parentesco</option>
+          <option value="eu">Eu</option>
           <option value="pai">Pai</option>
           <option value="irma">Irmã</option>
           <option value="esposa">Esposa</option>
@@ -184,38 +190,99 @@
           <option value="filha">Filha</option>
           <option value="outros">Outros</option>
         </select>
-
+        
         <div class="checkbox-group">
           <label><input type="checkbox" id="cltCheckbox" onclick="toggleClt()"> CLT</label>
           <label><input type="checkbox" id="pjCheckbox"> PJ</label>
         </div>
-
+        
         <div id="cltFields" style="display: none;">
           <label for="salarioBruto">Salário Bruto (R$):</label>
           <input type="number" id="salarioBruto" placeholder="Digite o salário bruto" step="0.01" oninput="atualizarSalarioLiquido()">
-
+          
           <label for="salarioLiquido">Salário Líquido (R$):</label>
-          <!-- Campo editável: o valor calculado é apenas sugestão -->
+          <!-- Campo editável (valor calculado como sugestão) -->
           <input type="number" id="salarioLiquido" placeholder="Salário líquido calculado" step="0.01">
-
+          
           <label for="numPagamentos">Número de Pagamentos no Mês:</label>
           <input type="number" id="numPagamentos" placeholder="Digite o número de pagamentos" min="1" max="5" oninput="gerarCamposPagamentos()">
-
+          
           <div id="pagamentosContainer"></div>
           <p id="avisoErro">Os valores não somam o salário líquido!</p>
         </div>
-
+        
         <button type="submit">Salvar</button>
       </form>
     </div>
   </div>
 
-  <!-- Modal de Fonte de Renda -->
-  <div id="perfilModal" class="modal">
+  <!-- Modal Fonte de Renda (listagem de rendas) -->
+  <div id="fonteModal" class="modal">
     <div class="modal-content">
-      <span class="close" onclick="fecharPerfil()">&times;</span>
+      <span class="close" onclick="fecharModal('fonteModal')">&times;</span>
       <h2>Fonte de Renda</h2>
       <div id="usuariosLista"></div>
+    </div>
+  </div>
+
+  <!-- Modal de Cadastro de Despesa -->
+  <div id="despesaModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('despesaModal')">&times;</span>
+      <h2>Nova Despesa</h2>
+      <div id="mensagemSucessoDespesa"></div>
+      <form id="despesaForm">
+        <label for="despesaDescricao">Descrição:</label>
+        <input type="text" id="despesaDescricao" placeholder="Descrição da despesa" required>
+        
+        <label for="despesaValor">Valor da Despesa (R$):</label>
+        <input type="number" id="despesaValor" placeholder="Valor" step="0.01" required>
+        
+        <label>Forma de Pagamento:</label>
+        <label><input type="radio" name="formaPagamento" value="avista" checked onclick="toggleDespesaPagamento()"> À vista</label>
+        <label><input type="radio" name="formaPagamento" value="cartao" onclick="toggleDespesaPagamento()"> Cartão</label>
+        
+        <!-- Campos extras para pagamento no cartão -->
+        <div id="despesaCartaoFields" style="display: none;">
+          <label for="dataFatura">Data da Fatura:</label>
+          <input type="date" id="dataFatura">
+          
+          <label for="numParcelasDespesa">Número de Parcelas:</label>
+          <input type="number" id="numParcelasDespesa" min="1" max="12">
+          
+          <label for="categoriaDespesa">Categoria:</label>
+          <select id="categoriaDespesa">
+            <option value="">Selecione a Categoria</option>
+            <!-- As opções serão carregadas via Firebase -->
+          </select>
+        </div>
+        
+        <button type="submit">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para Listar Despesas -->
+  <div id="listaDespesasModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('listaDespesasModal')">&times;</span>
+      <h2>Despesas</h2>
+      <div id="despesasLista"></div>
+    </div>
+  </div>
+
+  <!-- Modal para Gerenciar Categorias -->
+  <div id="categoriasModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('categoriasModal')">&times;</span>
+      <h2>Gerenciar Categorias</h2>
+      <div id="mensagemSucessoCategoria"></div>
+      <form id="categoriaForm">
+        <label for="categoriaNome">Nome da Categoria:</label>
+        <input type="text" id="categoriaNome" placeholder="Nome da categoria" required>
+        <button type="submit">Salvar</button>
+      </form>
+      <div id="categoriasLista"></div>
     </div>
   </div>
 
@@ -231,63 +298,54 @@
       appId: "1:1034936676414:web:61c67ce39c3ab71a07a16f",
       measurementId: "G-PTN43GZHGR"
     };
-
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Funções para abrir/fechar modais
-    function abrirModal() {
-      document.getElementById("cadastroModal").style.display = "flex";
+    // Funções para abrir e fechar modais
+    function abrirModal(id) {
+      document.getElementById(id).style.display = "flex";
+      if(id === "fonteModal") loadUsuarios();
+      if(id === "listaDespesasModal") loadDespesas();
+      if(id === "categoriasModal") loadCategorias();
+      if(id === "despesaModal") updateCategoriaSelect();
     }
-    function fecharModal() {
-      document.getElementById("cadastroModal").style.display = "none";
-    }
-    function abrirPerfil() {
-      document.getElementById("perfilModal").style.display = "flex";
-      loadUsuarios();
-    }
-    function fecharPerfil() {
-      document.getElementById("perfilModal").style.display = "none";
+    function fecharModal(id) {
+      document.getElementById(id).style.display = "none";
     }
 
-    // Exibe ou esconde os campos CLT
+    // --- MÓDULO RENDA ---
     function toggleClt() {
       document.getElementById("cltFields").style.display =
         document.getElementById("cltCheckbox").checked ? "block" : "none";
-    }
-
-    // Cálculo de INSS, IRRF e atualização do salário líquido
-    function calcularINSS(salario) {
-      if (salario <= 1320.00) return salario * 0.075;
-      else if (salario <= 2571.29) return (1320 * 0.075) + ((salario - 1320) * 0.09);
-      else if (salario <= 3856.94) return (1320 * 0.075) + (1251.29 * 0.09) + ((salario - 2571.29) * 0.12);
-      else if (salario <= 7507.49) return (1320 * 0.075) + (1251.29 * 0.09) + (1285.65 * 0.12) + ((salario - 3856.94) * 0.14);
-      return 876.97;
-    }
-    function calcularIRRF(base) {
-      if (base <= 2112.00) return 0;
-      else if (base <= 2826.65) return (base * 0.075) - 158.40;
-      else if (base <= 3751.05) return (base * 0.15) - 370.40;
-      else if (base <= 4664.68) return (base * 0.225) - 651.73;
-      return (base * 0.275) - 884.96;
     }
     function atualizarSalarioLiquido() {
       let salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       let inss = calcularINSS(salarioBruto);
       let irrf = calcularIRRF(salarioBruto - inss);
       let salarioLiquido = salarioBruto - inss - irrf;
-      // Atualiza o campo com o valor sugerido, permitindo edição
       document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
     }
-
-    // Gera os campos de dia e valor para cada pagamento
+    function calcularINSS(salario) {
+      if(salario <= 1320) return salario * 0.075;
+      else if(salario <= 2571.29) return (1320 * 0.075) + ((salario - 1320) * 0.09);
+      else if(salario <= 3856.94) return (1320 * 0.075) + (1251.29 * 0.09) + ((salario - 2571.29) * 0.12);
+      else if(salario <= 7507.49) return (1320 * 0.075) + (1251.29 * 0.09) + (1285.65 * 0.12) + ((salario - 3856.94) * 0.14);
+      return 876.97;
+    }
+    function calcularIRRF(base) {
+      if(base <= 2112) return 0;
+      else if(base <= 2826.65) return (base * 0.075) - 158.40;
+      else if(base <= 3751.05) return (base * 0.15) - 370.40;
+      else if(base <= 4664.68) return (base * 0.225) - 651.73;
+      return (base * 0.275) - 884.96;
+    }
     function gerarCamposPagamentos() {
       let container = document.getElementById("pagamentosContainer");
       container.innerHTML = "";
       let numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
-      if (numPagamentos >= 1) {
-        for (let i = 1; i <= numPagamentos; i++) {
+      if(numPagamentos >= 1) {
+        for(let i = 1; i <= numPagamentos; i++){
           let div = document.createElement("div");
           div.className = "pagamento-item";
           div.innerHTML = `
@@ -300,141 +358,175 @@
         }
       }
     }
-
-    // Verifica se a soma dos pagamentos confere com o salário líquido
     function verificarSomaPagamentos() {
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let valores = document.querySelectorAll(".valoresPagamento");
       let soma = 0;
-      valores.forEach(input => {
-        soma += parseFloat(input.value) || 0;
-      });
+      valores.forEach(input => { soma += parseFloat(input.value) || 0; });
       soma = Math.round(soma * 100) / 100;
       salarioLiquido = Math.round(salarioLiquido * 100) / 100;
       document.getElementById("avisoErro").style.display = soma !== salarioLiquido ? "block" : "none";
     }
-
-    // Atualiza a soma quando houver alteração em algum campo de pagamento
     document.addEventListener("input", function(event) {
-      if (event.target.classList.contains("valoresPagamento")) {
-        verificarSomaPagamentos();
-      }
+      if(event.target.classList.contains("valoresPagamento")) verificarSomaPagamentos();
     });
-
-    // Função para salvar os dados no Realtime Database sem fechar o modal
-    document.getElementById("cadastroForm").addEventListener("submit", function (e) {
+    document.getElementById("cadastroForm").addEventListener("submit", function(e) {
       e.preventDefault();
       const nome = document.getElementById("nome").value;
       const parentesco = document.getElementById("parentesco").value;
       const salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       const salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
-      
       let pagamentos = [];
-      if (document.getElementById("cltCheckbox").checked) {
+      if(document.getElementById("cltCheckbox").checked) {
         const container = document.getElementById("pagamentosContainer");
         const itens = container.getElementsByClassName("pagamento-item");
-        for (let item of itens) {
+        for(let item of itens) {
           const dia = item.querySelector("input[type=number]").value;
           const valor = item.querySelector(".valoresPagamento").value;
-          pagamentos.push({ dia, valor });
+          pagamentos.push({dia, valor});
         }
       }
-      
-      console.log("Pagamentos capturados:", pagamentos);
-
-      const dados = {
-        nome: nome,
-        parentesco: parentesco,
-        salarioBruto: salarioBruto,
-        salarioLiquido: salarioLiquido,
-        pagamentos: pagamentos,
-        timestamp: new Date().toISOString()
-      };
-
+      const dados = { nome, parentesco, salarioBruto, salarioLiquido, pagamentos, timestamp: new Date().toISOString() };
       database.ref("pessoas").push(dados)
         .then(() => {
-          const msg = document.getElementById("mensagemSucesso");
+          const msg = document.getElementById("mensagemSucessoRenda");
           msg.innerText = "Dados salvos com sucesso!";
           msg.style.display = "block";
-          // Exibe a mensagem por 3 segundos e depois a oculta
-          setTimeout(() => {
-            msg.style.display = "none";
-          }, 3000);
-          // Limpa o formulário e reseta os campos CLT
+          setTimeout(() => { msg.style.display = "none"; }, 3000);
           document.getElementById("cadastroForm").reset();
           document.getElementById("cltFields").style.display = "none";
           document.getElementById("pagamentosContainer").innerHTML = "";
         })
-        .catch((error) => {
-          console.error("Erro ao salvar os dados: ", error);
-          alert("Erro ao salvar os dados. Tente novamente.");
-        });
+        .catch((error) => { alert("Erro ao salvar os dados de renda."); });
     });
 
-    // Função para carregar os dados e exibi-los em duas colunas
-    function loadUsuarios() {
-      const usuariosLista = document.getElementById("usuariosLista");
-      usuariosLista.innerHTML = "";
-      database.ref("pessoas").once("value", snapshot => {
-        snapshot.forEach(childSnapshot => {
-          const usuario = childSnapshot.val();
-          const key = childSnapshot.key;
-          let userContainer = document.createElement("div");
-          userContainer.className = "user-container";
-          
-          // Coluna com informações gerais
+    // --- MÓDULO DESPESA ---
+    function toggleDespesaPagamento() {
+      const forma = document.querySelector('input[name="formaPagamento"]:checked').value;
+      document.getElementById("despesaCartaoFields").style.display = forma === "cartao" ? "block" : "none";
+    }
+    document.getElementById("despesaForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const descricao = document.getElementById("despesaDescricao").value;
+      const valorDespesa = parseFloat(document.getElementById("despesaValor").value) || 0;
+      const formaPagamento = document.querySelector('input[name="formaPagamento"]:checked').value;
+      let dataFatura = "";
+      let numParcelas = "";
+      let categoria = "";
+      let pago = false;
+      if(formaPagamento === "cartao"){
+        dataFatura = document.getElementById("dataFatura").value;
+        numParcelas = document.getElementById("numParcelasDespesa").value;
+        categoria = document.getElementById("categoriaDespesa").value;
+      } else {
+        pago = true;
+      }
+      const despesa = { descricao, valorDespesa, formaPagamento, dataFatura, numParcelas, categoria, pago, timestamp: new Date().toISOString() };
+      database.ref("despesas").push(despesa)
+        .then(() => {
+          const msg = document.getElementById("mensagemSucessoDespesa");
+          msg.innerText = "Despesa salva com sucesso!";
+          msg.style.display = "block";
+          setTimeout(() => { msg.style.display = "none"; }, 3000);
+          document.getElementById("despesaForm").reset();
+          document.getElementById("despesaCartaoFields").style.display = "none";
+        })
+        .catch((error) => { alert("Erro ao salvar a despesa."); });
+    });
+
+    function loadDespesas() {
+      const despesasLista = document.getElementById("despesasLista");
+      despesasLista.innerHTML = "";
+      database.ref("despesas").once("value", snapshot => {
+        snapshot.forEach(child => {
+          const despesa = child.val();
+          const key = child.key;
+          let despesaContainer = document.createElement("div");
+          despesaContainer.className = "user-container";
           let infoDiv = document.createElement("div");
           infoDiv.className = "user-info";
           infoDiv.innerHTML = `
-            <strong>Nome:</strong> ${usuario.nome} <br>
-            <strong>Parentesco:</strong> ${usuario.parentesco} <br>
-            <strong>Salário Bruto:</strong> ${usuario.salarioBruto} <br>
-            <strong>Salário Líquido:</strong> ${usuario.salarioLiquido} <br>
+            <strong>Descrição:</strong> ${despesa.descricao} <br>
+            <strong>Valor:</strong> ${despesa.valorDespesa} <br>
+            <strong>Forma de Pagamento:</strong> ${despesa.formaPagamento === "avista" ? "À vista" : "Cartão"} <br>
+            ${despesa.formaPagamento === "avista" ? "<strong>Pago:</strong> Sim<br>" : ""}
           `;
-          
-          // Coluna com os detalhes dos pagamentos
-          let pagamentosDiv = document.createElement("div");
-          pagamentosDiv.className = "user-pagamentos";
-          if (usuario.pagamentos && usuario.pagamentos.length > 0) {
-            pagamentosDiv.innerHTML = `<strong>Pagamentos:</strong><br>`;
-            usuario.pagamentos.forEach(pag => {
-              pagamentosDiv.innerHTML += `Dia ${pag.dia}: R$ ${pag.valor} <br>`;
-            });
-          } else {
-            pagamentosDiv.innerHTML = `<strong>Pagamentos:</strong><br> Nenhum`;
+          let extraDiv = document.createElement("div");
+          extraDiv.className = "user-extra";
+          if(despesa.formaPagamento === "cartao"){
+            extraDiv.innerHTML = `
+              <strong>Data da Fatura:</strong> ${despesa.dataFatura} <br>
+              <strong>Nº Parcelas:</strong> ${despesa.numParcelas} <br>
+              <strong>Categoria:</strong> ${despesa.categoria} <br>
+            `;
           }
-          
-          userContainer.appendChild(infoDiv);
-          userContainer.appendChild(pagamentosDiv);
-          
+          despesaContainer.appendChild(infoDiv);
+          despesaContainer.appendChild(extraDiv);
           let deleteButton = document.createElement("button");
           deleteButton.textContent = "Excluir";
-          deleteButton.onclick = function() {
-            excluirUsuario(key);
-          };
-          
-          let containerWrapper = document.createElement("div");
-          containerWrapper.appendChild(userContainer);
-          containerWrapper.appendChild(deleteButton);
-          
-          usuariosLista.appendChild(containerWrapper);
+          deleteButton.onclick = function(){ excluirDespesa(key); };
+          let wrapper = document.createElement("div");
+          wrapper.appendChild(despesaContainer);
+          wrapper.appendChild(deleteButton);
+          despesasLista.appendChild(wrapper);
         });
       });
     }
-
-    // Função para excluir um registro
-    function excluirUsuario(key) {
-      if (confirm("Deseja realmente excluir este registro?")) {
-        database.ref("pessoas/" + key).remove()
-          .then(() => {
-            alert("Registro excluído com sucesso!");
-            loadUsuarios();
-          })
-          .catch(error => {
-            console.error("Erro ao excluir o registro:", error);
-            alert("Erro ao excluir o registro.");
-          });
+    function excluirDespesa(key) {
+      if(confirm("Deseja realmente excluir esta despesa?")){
+        database.ref("despesas/" + key).remove()
+          .then(() => { alert("Despesa excluída com sucesso!"); loadDespesas(); })
+          .catch((error) => { alert("Erro ao excluir a despesa."); });
       }
+    }
+
+    // --- MÓDULO CATEGORIAS ---
+    document.getElementById("categoriaForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const nomeCategoria = document.getElementById("categoriaNome").value;
+      if(!nomeCategoria) return;
+      database.ref("categorias").push({ nome: nomeCategoria })
+        .then(() => {
+          const msg = document.getElementById("mensagemSucessoCategoria");
+          msg.innerText = "Categoria salva com sucesso!";
+          msg.style.display = "block";
+          setTimeout(() => { msg.style.display = "none"; }, 3000);
+          document.getElementById("categoriaForm").reset();
+          loadCategorias();
+          updateCategoriaSelect();
+        })
+        .catch((error) => { alert("Erro ao salvar a categoria."); });
+    });
+    function loadCategorias() {
+      const categoriasLista = document.getElementById("categoriasLista");
+      categoriasLista.innerHTML = "";
+      database.ref("categorias").once("value", snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const key = child.key;
+          let catDiv = document.createElement("div");
+          catDiv.innerHTML = `<strong>${categoria.nome}</strong> <button onclick="excluirCategoria('${key}')">Excluir</button>`;
+          categoriasLista.appendChild(catDiv);
+        });
+      });
+    }
+    function excluirCategoria(key) {
+      if(confirm("Deseja realmente excluir esta categoria?")){
+        database.ref("categorias/" + key).remove()
+          .then(() => { alert("Categoria excluída com sucesso!"); loadCategorias(); updateCategoriaSelect(); })
+          .catch((error) => { alert("Erro ao excluir a categoria."); });
+      }
+    }
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      if(!select) return;
+      select.innerHTML = `<option value="">Selecione a Categoria</option>`;
+      database.ref("categorias").once("value", snapshot => {
+        snapshot.forEach(child => {
+          const cat = child.val();
+          select.innerHTML += `<option value="${cat.nome}">${cat.nome}</option>`;
+        });
+      });
     }
   </script>
 </body>
