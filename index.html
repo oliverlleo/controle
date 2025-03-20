@@ -645,6 +645,104 @@
       }
     }
 
+    /* Módulo Gerenciar Categorias */
+    function loadCategorias() {
+      const categoriasLista = document.getElementById("categoriasLista");
+      categoriasLista.innerHTML = "";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const key = child.key;
+          let div = document.createElement("div");
+          div.innerHTML = `
+            <strong>Nome:</strong> ${categoria.nome} <br>
+            <button onclick="excluirCategoria('${key}')">Excluir</button>
+          `;
+          categoriasLista.appendChild(div);
+        });
+      });
+    }
+    function salvarCategoria() {
+      const nome = document.getElementById("categoriaNome").value;
+      if (!nome) {
+        alert("Preencha o nome da categoria!");
+        return;
+      }
+      db.ref("categorias").push({ nome: nome })
+        .then(() => {
+          alert("Categoria salva com sucesso!");
+          document.getElementById("categoriaNome").value = "";
+          loadCategorias();
+        })
+        .catch(err => alert("Erro ao salvar a categoria: " + err));
+    }
+    function excluirCategoria(key) {
+      if (confirm("Deseja realmente excluir esta categoria?")) {
+        db.ref("categorias").child(key).remove()
+          .then(() => {
+            alert("Categoria excluída com sucesso!");
+            loadCategorias();
+          })
+          .catch(err => alert("Erro ao excluir a categoria: " + err));
+      }
+    }
+
+    /* Módulo Gerenciar Cartões */
+    function loadCartoes() {
+      const cartoesLista = document.getElementById("cartoesLista");
+      cartoesLista.innerHTML = "";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const key = child.key;
+          let div = document.createElement("div");
+          div.innerHTML = `
+            <strong>Nome:</strong> ${cartao.nome} <br>
+            <strong>Dia da Fatura:</strong> ${cartao.diaFatura} <br>
+            <strong>Dia do Fechamento:</strong> ${cartao.diaFechamento} <br>
+            <strong>Limite:</strong> R$ ${cartao.limite} <br>
+            <button onclick="excluirCartao('${key}')">Excluir</button>
+          `;
+          cartoesLista.appendChild(div);
+        });
+      });
+    }
+    function salvarCartao() {
+      const nome = document.getElementById("nomeCartao").value;
+      const diaFatura = document.getElementById("diaFatura").value;
+      const diaFechamento = document.getElementById("diaFechamento").value;
+      const limite = document.getElementById("limiteCartao").value;
+      if (!nome || !diaFatura || !diaFechamento || !limite) {
+        alert("Preencha todos os campos!");
+        return;
+      }
+      db.ref("cartoes").push({
+        nome: nome,
+        diaFatura: diaFatura,
+        diaFechamento: diaFechamento,
+        limite: limite
+      })
+        .then(() => {
+          alert("Cartão salvo com sucesso!");
+          document.getElementById("nomeCartao").value = "";
+          document.getElementById("diaFatura").value = "";
+          document.getElementById("diaFechamento").value = "";
+          document.getElementById("limiteCartao").value = "";
+          loadCartoes();
+        })
+        .catch(err => alert("Erro ao salvar o cartão: " + err));
+    }
+    function excluirCartao(key) {
+      if (confirm("Deseja realmente excluir este cartão?")) {
+        db.ref("cartoes").child(key).remove()
+          .then(() => {
+            alert("Cartão excluído com sucesso!");
+            loadCartoes();
+          })
+          .catch(err => alert("Erro ao excluir o cartão: " + err));
+      }
+    }
+
     /* Inicialização única */
     window.onload = function() {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
