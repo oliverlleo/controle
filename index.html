@@ -121,9 +121,9 @@
     }
     #calendarGrid th, #calendarGrid td {
       border: 1px solid #ddd;
-      padding: 4px;
+      padding: 2px;
       text-align: center;
-      min-height: 60px;
+      min-height: 70px;
       vertical-align: top;
     }
     #calendarGrid th { background: #007bff; color: #fff; }
@@ -132,9 +132,10 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: space-between;
+      height: 70px;
       padding: 4px;
-      position: relative;
+      box-sizing: border-box;
     }
     .day-number {
       font-size: 1rem;
@@ -143,7 +144,6 @@
     .expense-info {
       font-size: 0.75rem;
       color: #555;
-      margin-top: 4px;
     }
     
     /* Saldo Disponível */
@@ -488,7 +488,7 @@
       }
     }
 
-    // Atualiza o select de despesas com informações detalhadas
+    // Carrega as despesas não pagas com informações detalhadas para o select
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
@@ -497,10 +497,13 @@
           const despesa = child.val();
           const option = document.createElement("option");
           option.value = child.key;
-          const dataExibicao = despesa.formaPagamento === "cartao" && despesa.parcelas 
+          // Para despesas à vista, exibe dataCompra; para cartão, a data da primeira parcela
+          const dataExibicao = despesa.formaPagamento === "cartao" && despesa.parcelas && despesa.parcelas.length > 0 
                                 ? despesa.parcelas[0].vencimento 
                                 : despesa.dataCompra;
-          option.text = `${despesa.descricao} - R$ ${despesa.valor ? parseFloat(despesa.valor).toFixed(2) : ''} - ${dataExibicao}`;
+          // Se não houver valor definido (por exemplo, em cartão), mostra apenas a descrição e a data
+          const valorExibido = despesa.valor ? `R$ ${parseFloat(despesa.valor).toFixed(2)}` : "";
+          option.text = `${despesa.descricao} ${valorExibido} - ${dataExibicao}`;
           despesaSelect.appendChild(option);
         });
       });
@@ -825,12 +828,12 @@
       table.appendChild(headerRow);
       
       let row = document.createElement("tr");
-      // Células vazias para alinhar o primeiro dia
+      // Preenche células vazias para alinhar o primeiro dia
       for (let i = 0; i < date.getDay(); i++) {
         const cell = document.createElement("td");
         row.appendChild(cell);
       }
-      // Preenche os dias com a estrutura da célula
+      // Preenche os dias
       for (let day = 1; day <= daysInMonth; day++) {
         if (row.children.length === 7) {
           table.appendChild(row);
@@ -846,9 +849,8 @@
       table.appendChild(row);
       calendarGrid.appendChild(table);
       
-      // Atualiza os totais de despesas por dia
       updateCalendarExpenses();
-      // Exibe o saldo do dia atual ou do primeiro dia se não for o mês atual
+      // Exibe o saldo do dia atual se estivermos no mês corrente; caso contrário, do primeiro dia
       const today = new Date();
       if (today.getMonth() === currentCalendarMonth && today.getFullYear() === currentCalendarYear) {
         showBalanceForDate(today.getDate());
@@ -857,9 +859,8 @@
       }
     }
 
-    // Atualiza cada célula do calendário com o total de despesas daquele dia
+    // Atualiza cada célula com o total de despesas daquele dia
     function updateCalendarExpenses() {
-      // Objeto que mapeia dia -> total de despesas
       const dayTotals = {};
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
@@ -877,24 +878,18 @@
             });
           }
         });
-        // Atualiza cada célula com as despesas
         const cells = document.querySelectorAll(".calendar-cell");
         cells.forEach(cell => {
           const day = parseInt(cell.querySelector(".day-number").innerText);
           const expenseElem = cell.querySelector(".expense-info");
-          if (dayTotals[day]) {
-            expenseElem.innerText = `R$ ${dayTotals[day].toFixed(2)}`;
-          } else {
-            expenseElem.innerText = "";
-          }
+          expenseElem.innerText = dayTotals[day] ? `R$ ${dayTotals[day].toFixed(2)}` : "";
         });
       });
     }
 
-    // Calcula e exibe o saldo disponível para o dia selecionado sem alert
+    // Calcula e exibe o saldo disponível para o dia selecionado
     function showBalanceForDate(day) {
       const selectedDate = new Date(currentCalendarYear, currentCalendarMonth, day);
-      // Soma os pagamentos cadastrados que ocorrem até o dia selecionado
       db.ref("pessoas").once("value").then(snapshot => {
         let totalIncome = 0;
         snapshot.forEach(child => {
@@ -908,7 +903,6 @@
             });
           }
         });
-        // Soma as despesas até o dia (à vista e parcelas)
         db.ref("despesas").once("value").then(snapshot2 => {
           let totalExpenses = 0;
           snapshot2.forEach(child => {
