@@ -367,6 +367,11 @@
       const formaPagamento = document.getElementById("formaPagamento").value;
       const despesasRef = db.ref("despesas");
 
+      if (isNaN(valor)) {
+        alert("O valor da despesa deve ser um número válido.");
+        return;
+      }
+
       if (formaPagamento === "cartao") {
         const selectCartao = document.getElementById("cartaoDespesa");
         if (!selectCartao.value) {
