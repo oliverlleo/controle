@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerenciamento de Contas - Completo</title>
+  <title>Gerenciamento de Contas - Teste de Responsividade</title>
   <style>
     /* Reset básico e estilos gerais */
     * {
@@ -12,7 +12,7 @@
       padding: 0;
     }
     body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-family: Arial, sans-serif;
       background: #f4f4f9;
       padding: 20px;
     }
@@ -66,14 +66,12 @@
     }
     .modal-content {
       background: #fff;
-      padding: 25px;
+      padding: 20px;
       border-radius: 10px;
       width: 90%;
       max-width: 500px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       position: relative;
-      max-height: 90vh;
-      overflow-y: auto;
     }
     .close {
       position: absolute;
@@ -84,7 +82,7 @@
       color: #333;
     }
     
-    /* Calendário */
+    /* Calendário (usando CSS Grid) */
     #calendarHeader {
       display: flex;
       justify-content: center;
@@ -104,32 +102,11 @@
       font-weight: bold;
       cursor: pointer;
     }
-    #monthYearSelect {
-      display: none;
-      margin-bottom: 10px;
-    }
-    #monthYearSelect select {
-      width: 48%;
-      padding: 8px;
-      margin-right: 4%;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-    }
-    #monthYearSelect button {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      background: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
     #calendarGrid {
-      margin-top: 10px;
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 2px;
+      margin-top: 10px;
     }
     #calendarGrid > div {
       border: 1px solid #ddd;
@@ -185,7 +162,7 @@
     <button onclick="abrirModal('calendarModal')">Calendário</button>
     <button onclick="abrirModal('pagarDespesaModal')">Pagar Despesa</button>
   </div>
-
+  
   <!-- Cadastro de Despesa -->
   <div class="container">
     <h2>Cadastrar Despesa</h2>
@@ -214,7 +191,7 @@
     </div>
     <button onclick="salvarDespesa()">Salvar Despesa</button>
   </div>
-
+  
   <!-- Modal Pagar Despesa -->
   <div id="pagarDespesaModal" class="modal">
     <div class="modal-content">
@@ -226,7 +203,7 @@
       <button onclick="pagarDespesaSelecionada()">Pagar Despesa Selecionada</button>
     </div>
   </div>
-
+  
   <!-- Modal Calendário -->
   <div id="calendarModal" class="modal">
     <div class="modal-content">
@@ -261,7 +238,7 @@
       <div id="saldoDisponivelContainer">Saldo Atual: R$ 0,00</div>
     </div>
   </div>
-
+  
   <!-- Modal Cadastro de Renda -->
   <div id="cadastroModal" class="modal">
     <div class="modal-content">
@@ -299,7 +276,7 @@
       </form>
     </div>
   </div>
-
+  
   <!-- Modal Fonte de Renda -->
   <div id="fonteModal" class="modal">
     <div class="modal-content">
@@ -308,7 +285,7 @@
       <div id="usuariosLista"></div>
     </div>
   </div>
-
+  
   <!-- Modal Gerenciar Categorias -->
   <div id="categoriasModal" class="modal">
     <div class="modal-content">
@@ -320,7 +297,7 @@
       <div id="categoriasLista"></div>
     </div>
   </div>
-
+  
   <!-- Modal Gerenciar Cartões -->
   <div id="cartaoModal" class="modal">
     <div class="modal-content">
@@ -338,13 +315,13 @@
       <div id="cartoesLista"></div>
     </div>
   </div>
-
+  
   <script>
     'use strict';
     let currentCalendarMonth = new Date().getMonth();
     let currentCalendarYear = new Date().getFullYear();
     
-    // Firebase configuration – substitua com suas credenciais
+    // Firebase Config (substitua com suas credenciais)
     const firebaseConfig = {
       apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
       authDomain: "controlegasto-df3f1.firebaseapp.com",
@@ -424,7 +401,7 @@
           firstDueDate.setDate(diaFatura);
         }
         const valorParcela = parseFloat((valor / numParcelas).toFixed(2));
-        for(let i=0; i<numParcelas; i++){
+        for(let i = 0; i < numParcelas; i++){
           let parcelaDate = new Date(firstDueDate);
           parcelaDate.setMonth(parcelaDate.getMonth() + i);
           parcelas.push({
@@ -476,13 +453,14 @@
       }
     }
     
-    // Módulo Pagar Despesa
+    // Módulo Pagar Despesa: Lista todas as despesas não pagas
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
       db.ref("despesas").orderByChild("pago").equalTo(false).once("value").then(snapshot => {
         snapshot.forEach(child => {
           const despesa = child.val();
+          console.log("Despesa encontrada no módulo pagar:", despesa);
           const option = document.createElement("option");
           option.value = child.key;
           const dataExibicao = (despesa.formaPagamento === "cartao" && despesa.parcelas && despesa.parcelas.length > 0)
@@ -509,11 +487,6 @@
           renderCalendar();
         })
         .catch(err => alert("Erro ao pagar a despesa: " + err));
-    }
-    
-    function loadRelatorioMensal() {
-      // Função não incluída nesta versão para focar no calendário e pagar despesa.
-      console.log("loadRelatorioMensal() chamado");
     }
     
     // Cadastro de Renda
@@ -768,14 +741,15 @@
       const daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
       monthYearElem.innerText = `${date.toLocaleString('pt-BR', { month: 'long' })} ${currentCalendarYear}`;
       
-      // Células vazias para alinhar o primeiro dia
+      // Células vazias para alinhar o primeiro dia da semana
       const firstDayWeek = date.getDay();
       for(let i = 0; i < firstDayWeek; i++){
         const emptyCell = document.createElement("div");
         emptyCell.classList.add("calendar-cell");
         calendarGrid.appendChild(emptyCell);
       }
-      // Cria as células para cada dia
+      
+      // Células para os dias do mês
       for(let day = 1; day <= daysInMonth; day++){
         const cell = document.createElement("div");
         cell.classList.add("calendar-cell");
@@ -784,6 +758,7 @@
         cell.addEventListener("click", () => showBalanceForDate(day));
         calendarGrid.appendChild(cell);
       }
+      
       updateCalendarExpenses();
       
       const today = new Date();
@@ -862,7 +837,7 @@
           const availableBalance = totalIncome - totalExpenses;
           document.getElementById("saldoDisponivelContainer").innerText =
             `Saldo em ${selectedDate.toLocaleDateString()}: R$ ${availableBalance.toFixed(2)}`;
-          console.log("Income:", totalIncome, "Expenses:", totalExpenses, "Balance:", availableBalance);
+          console.log("Total Income:", totalIncome, "Total Expenses:", totalExpenses, "Available:", availableBalance);
         });
       });
     }
@@ -913,7 +888,7 @@
     }
     
     window.onload = () => {
-      // Se desejar, ajuste a data padrão dos formulários
+      // Ajusta a data padrão do formulário de despesa, se necessário
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
       updateCategoriaSelect();
       updateCartaoSelect();
