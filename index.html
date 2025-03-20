@@ -7,7 +7,7 @@
   <style>
     /* Estilos Gerais */
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
       background: #f4f4f9;
       margin: 0;
       padding: 20px;
@@ -121,28 +121,38 @@
     }
     #calendarGrid th, #calendarGrid td {
       border: 1px solid #ddd;
-      padding: 8px;
+      padding: 4px;
       text-align: center;
       min-height: 60px;
       vertical-align: top;
-      position: relative;
     }
     #calendarGrid th { background: #007bff; color: #fff; }
-    /* Exibição dos totais de despesa na célula */
+    /* Estilo para cada célula do calendário */
+    .calendar-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 4px;
+      position: relative;
+    }
+    .day-number {
+      font-size: 1rem;
+      font-weight: bold;
+    }
     .expense-info {
-      font-size: 0.8rem;
-      color: red;
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 4px;
     }
     
     /* Saldo Disponível */
     #saldoDisponivelContainer {
-      text-align: right;
+      text-align: left;
       margin-top: 10px;
       font-weight: bold;
-      color: green;
+      color: #28a745;
+      font-size: 1rem;
     }
     
     /* Relatório */
@@ -258,8 +268,8 @@
         <button onclick="toggleMonthYearSelect()">Ok</button>
       </div>
       <div id="calendarGrid"></div>
-      <!-- Área de Saldo Disponível -->
-      <div id="saldoDisponivelContainer"></div>
+      <!-- Área fixa para exibição do saldo disponível -->
+      <div id="saldoDisponivelContainer">Saldo Atual: R$ 0,00</div>
     </div>
   </div>
 
@@ -478,7 +488,7 @@
       }
     }
 
-    // Agora, cada opção do select de despesas exibe mais detalhes (valor e data)
+    // Atualiza o select de despesas com informações detalhadas
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
@@ -487,7 +497,6 @@
           const despesa = child.val();
           const option = document.createElement("option");
           option.value = child.key;
-          // Para despesas à vista, exibe dataCompra; para cartão, a data da primeira parcela
           const dataExibicao = despesa.formaPagamento === "cartao" && despesa.parcelas 
                                 ? despesa.parcelas[0].vencimento 
                                 : despesa.dataCompra;
@@ -816,21 +825,21 @@
       table.appendChild(headerRow);
       
       let row = document.createElement("tr");
-      // Preenche células vazias até o primeiro dia da semana
+      // Células vazias para alinhar o primeiro dia
       for (let i = 0; i < date.getDay(); i++) {
         const cell = document.createElement("td");
-        cell.innerText = "";
         row.appendChild(cell);
       }
-      // Preenche os dias
+      // Preenche os dias com a estrutura da célula
       for (let day = 1; day <= daysInMonth; day++) {
         if (row.children.length === 7) {
           table.appendChild(row);
           row = document.createElement("tr");
         }
         const cell = document.createElement("td");
-        cell.innerText = day;
-        // Adiciona evento para exibir saldo disponível ao clicar na célula
+        cell.classList.add("calendar-cell");
+        cell.innerHTML = `<div class="day-number">${day}</div>
+                          <div class="expense-info"></div>`;
         cell.addEventListener("click", () => showBalanceForDate(day));
         row.appendChild(cell);
       }
@@ -838,23 +847,29 @@
       calendarGrid.appendChild(table);
       
       // Atualiza os totais de despesas por dia
-      updateCalendarExpenses(table);
+      updateCalendarExpenses();
+      // Exibe o saldo do dia atual ou do primeiro dia se não for o mês atual
+      const today = new Date();
+      if (today.getMonth() === currentCalendarMonth && today.getFullYear() === currentCalendarYear) {
+        showBalanceForDate(today.getDate());
+      } else {
+        showBalanceForDate(1);
+      }
     }
 
-    // Atualiza cada célula do calendário para exibir, se houver, o total de despesas para aquele dia
-    function updateCalendarExpenses(table) {
-      // Busca despesas do mês corrente
+    // Atualiza cada célula do calendário com o total de despesas daquele dia
+    function updateCalendarExpenses() {
+      // Objeto que mapeia dia -> total de despesas
+      const dayTotals = {};
       db.ref("despesas").once("value").then(snapshot => {
-        // Mapeia dia -> total de despesas (soma de avista e parcelas)
-        const dayTotals = {};
         snapshot.forEach(child => {
           const despesa = child.val();
-          // Para despesas à vista
+          // Despesas à vista
           if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
             const d = new Date(despesa.dataCompra).getDate();
             dayTotals[d] = (dayTotals[d] || 0) + (parseFloat(despesa.valor) || 0);
           }
-          // Para despesas com cartão, soma o valor de cada parcela (assumindo que a parcela tem o campo vencimento)
+          // Despesas de cartão (parcelas)
           if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach(parcela => {
               const d = new Date(parcela.vencimento).getDate();
@@ -862,24 +877,24 @@
             });
           }
         });
-        // Para cada célula (dia) do calendário, se houver despesa, exibe o total
-        const cells = table.getElementsByTagName("td");
-        for (let cell of cells) {
-          const day = parseInt(cell.innerText);
-          if (!isNaN(day) && dayTotals[day]) {
-            const span = document.createElement("span");
-            span.className = "expense-info";
-            span.innerText = `R$ ${dayTotals[day].toFixed(2)}`;
-            cell.appendChild(span);
+        // Atualiza cada célula com as despesas
+        const cells = document.querySelectorAll(".calendar-cell");
+        cells.forEach(cell => {
+          const day = parseInt(cell.querySelector(".day-number").innerText);
+          const expenseElem = cell.querySelector(".expense-info");
+          if (dayTotals[day]) {
+            expenseElem.innerText = `R$ ${dayTotals[day].toFixed(2)}`;
+          } else {
+            expenseElem.innerText = "";
           }
-        }
+        });
       });
     }
 
-    // Ao clicar em um dia, calcula e exibe o saldo disponível até aquele dia
+    // Calcula e exibe o saldo disponível para o dia selecionado sem alert
     function showBalanceForDate(day) {
       const selectedDate = new Date(currentCalendarYear, currentCalendarMonth, day);
-      // Calcula total de rendas recebidas até o dia (usando os pagamentos cadastrados em "pessoas")
+      // Soma os pagamentos cadastrados que ocorrem até o dia selecionado
       db.ref("pessoas").once("value").then(snapshot => {
         let totalIncome = 0;
         snapshot.forEach(child => {
@@ -893,19 +908,19 @@
             });
           }
         });
-        // Calcula despesas até o dia (para despesas à vista e parcelas de cartão)
+        // Soma as despesas até o dia (à vista e parcelas)
         db.ref("despesas").once("value").then(snapshot2 => {
           let totalExpenses = 0;
           snapshot2.forEach(child => {
             const despesa = child.val();
-            // Despesas à vista
+            // Despesa à vista
             if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
               const d = new Date(despesa.dataCompra);
               if (d.getDate() <= day && d.getMonth() === currentCalendarMonth && d.getFullYear() === currentCalendarYear) {
                 totalExpenses += parseFloat(despesa.valor) || 0;
               }
             }
-            // Despesas de cartão (parcelas)
+            // Parcelas de cartão
             if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
               despesa.parcelas.forEach(parcela => {
                 const d = new Date(parcela.vencimento);
@@ -916,11 +931,8 @@
             }
           });
           const availableBalance = totalIncome - totalExpenses;
-          // Atualiza a área de saldo disponível
           document.getElementById("saldoDisponivelContainer").innerText = 
-            `Saldo Disponível em ${selectedDate.toLocaleDateString()}: R$ ${availableBalance.toFixed(2)}`;
-          // (Opcional) Exibe também em um alert
-          alert(`Em ${selectedDate.toLocaleDateString()}:\nRendas recebidas: R$ ${totalIncome.toFixed(2)}\nDespesas: R$ ${totalExpenses.toFixed(2)}\nSaldo Disponível: R$ ${availableBalance.toFixed(2)}`);
+            `Saldo em ${selectedDate.toLocaleDateString()}: R$ ${availableBalance.toFixed(2)}`;
         });
       });
     }
