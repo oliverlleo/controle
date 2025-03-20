@@ -121,7 +121,7 @@
       justify-content: center;
     }
     
-    /* Responsividade extra */
+    /* Responsividade: rolagem horizontal para o calendário em telas pequenas */
     @media (max-width: 600px) {
       #calendarGrid {
         overflow-x: auto;
@@ -129,7 +129,6 @@
       }
     }
   </style>
-  
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
@@ -407,7 +406,7 @@
             diaFatura,
             diaFechamento
           },
-          pago: false,  // Adicionado para que apareça em "Pagar Despesa"
+          pago: false,
           timestamp: new Date().toISOString()
         };
         despesasRef.push(despesaData)
@@ -507,7 +506,6 @@
           row = document.createElement("tr");
         }
         let cell = document.createElement("td");
-        // Utiliza innerHTML para inserir quebra de linha
         cell.innerHTML = day + "<br>R$ " + (0).toFixed(2);
         cell.classList.add("calendar-cell");
         cell.addEventListener("click", function() {
