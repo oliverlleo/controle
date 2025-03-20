@@ -612,7 +612,7 @@
           }, 3000);
         })
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
-    });
+    }
     function loadUsuarios() {
       const usuariosLista = document.getElementById("usuariosLista");
       usuariosLista.innerHTML = "";
@@ -741,6 +741,22 @@
           })
           .catch(err => alert("Erro ao excluir o cartão: " + err));
       }
+    }
+
+    /* Função para atualizar o select de categorias */
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      select.innerHTML = '<option value="">Selecione a Categoria</option>';
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const key = child.key;
+          let opt = document.createElement("option");
+          opt.value = key;
+          opt.text = categoria.nome;
+          select.appendChild(opt);
+        });
+      });
     }
 
     /* Inicialização única */
