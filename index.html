@@ -414,7 +414,6 @@
         despesasRef.push(despesaData)
           .then(() => {
             alert("Despesa com cartão cadastrada com sucesso!");
-            // Corrigido: Removido o reset do formulário inexistente
             toggleParcelamento();
             loadDespesasNaoPagasSelect();
             renderCalendar();
@@ -434,7 +433,6 @@
         despesasRef.push(despesaData)
           .then(() => {
             alert("Despesa à vista cadastrada com sucesso!");
-            // Corrigido: Removido o reset do formulário inexistente
             loadDespesasNaoPagasSelect();
             renderCalendar();
           })
@@ -442,7 +440,225 @@
       }
     }
 
-    /* Restante do código... */
+    /* Módulo Cadastro de Renda */
+    function toggleClt() {
+      document.getElementById("cltFields").style.display =
+        document.getElementById("cltCheckbox").checked ? "block" : "none";
+    }
+    function atualizarSalarioLiquido() {
+      let salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
+      let inss = calcularINSS(salarioBruto);
+      let irrf = calcularIRRF(salarioBruto - inss);
+      let salarioLiquido = salarioBruto - inss - irrf;
+      document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
+    }
+    function calcularINSS(salario) {
+      if (salario <= 1320.00) return salario * 0.075;
+      else if (salario <= 2571.29) return (1320 * 0.075) + ((salario - 1320) * 0.09);
+      else if (salario <= 3856.94) return (1320 * 0.075) + (1251.29 * 0.09) + ((salario - 2571.29) * 0.12);
+      else if (salario <= 7507.49) return (1320 * 0.075) + (1251.29 * 0.09) + (1285.65 * 0.12) + ((salario - 3856.94) * 0.14);
+      return 876.97;
+    }
+    function calcularIRRF(base) {
+      if (base <= 2112.00) return 0;
+      else if (base <= 2826.65) return (base * 0.075) - 158.40;
+      else if (base <= 3751.05) return (base * 0.15) - 370.40;
+      else if (base <= 4664.68) return (base * 0.225) - 651.73;
+      return (base * 0.275) - 884.96;
+    }
+    function gerarCamposPagamentos() {
+      let container = document.getElementById("pagamentosContainer");
+      container.innerHTML = "";
+      let numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
+      let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
+      if (numPagamentos > 1) {
+        for (let i = 1; i <= numPagamentos; i++) {
+          let div = document.createElement("div");
+          div.className = "pagamento-item";
+          div.innerHTML = `
+            <label>Dia do Pagamento ${i}:</label>
+            <input type="number" placeholder="Dia" min="1" max="31" required>
+            <label>Valor (R$):</label>
+            <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()" required>
+          `;
+          container.appendChild(div);
+        }
+      } else if (numPagamentos === 1) {
+        let div = document.createElement("div");
+        div.className = "pagamento-item";
+        div.innerHTML = `<label>Dia do Pagamento:</label>
+                         <input type="number" placeholder="Dia" min="1" max="31" required>`;
+        container.appendChild(div);
+        let inputValor = document.createElement("input");
+        inputValor.type = "number";
+        inputValor.className = "valoresPagamento";
+        inputValor.placeholder = "Valor (R$)";
+        inputValor.step = "0.01";
+        inputValor.value = salarioLiquido.toFixed(2);
+        inputValor.readOnly = true;
+        container.appendChild(inputValor);
+      }
+    }
+    function verificarSomaPagamentos() {
+      let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
+      let valores = document.querySelectorAll(".valoresPagamento");
+      let soma = 0;
+      valores.forEach(input => {
+        soma += parseFloat(input.value) || 0;
+      });
+      soma = Math.round(soma * 100) / 100;
+      salarioLiquido = Math.round(salarioLiquido * 100) / 100;
+      document.getElementById("avisoErro").style.display = soma !== salarioLiquido ? "block" : "none";
+    }
+    document.getElementById("cadastroForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const nome = document.getElementById("nome").value;
+      const parentesco = document.getElementById("parentesco").value;
+      const salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
+      const salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
+      const numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
+      let pagamentos = [];
+      if (document.getElementById("cltCheckbox").checked) {
+        const container = document.getElementById("pagamentosContainer");
+        const itens = container.getElementsByClassName("pagamento-item");
+        for (let item of itens) {
+          const dia = item.querySelector("input[type=number]").value;
+          const valor = item.querySelector(".valoresPagamento") ? item.querySelector(".valoresPagamento").value : "";
+          pagamentos.push({ dia, valor });
+        }
+      }
+      const dados = {
+        nome: nome,
+        parentesco: parentesco,
+        salarioBruto: salarioBruto,
+        salarioLiquido: salarioLiquido,
+        numPagamentos: numPagamentos,
+        pagamentos: pagamentos,
+        timestamp: new Date().toISOString()
+      };
+      db.ref("pessoas").push(dados)
+        .then(() => {
+          const msg = document.getElementById("mensagemSucessoRenda");
+          msg.innerText = "Dados salvos com sucesso!";
+          msg.style.display = "block";
+          setTimeout(() => {
+            msg.style.display = "none";
+            document.getElementById("cadastroForm").reset();
+            document.getElementById("cltFields").style.display = "none";
+            document.getElementById("pagamentosContainer").innerHTML = "";
+          }, 3000);
+        })
+        .catch(err => alert("Erro ao salvar os dados de renda: " + err));
+    });
+
+    /* Módulo Gerenciar Categorias */
+    function loadCategorias() {
+      const categoriasLista = document.getElementById("categoriasLista");
+      categoriasLista.innerHTML = "";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const key = child.key;
+          let div = document.createElement("div");
+          div.innerHTML = `
+            <strong>Nome:</strong> ${categoria.nome} <br>
+            <button onclick="excluirCategoria('${key}')">Excluir</button>
+          `;
+          categoriasLista.appendChild(div);
+        });
+      });
+    }
+    function salvarCategoria() {
+      const nome = document.getElementById("categoriaNome").value;
+      if (!nome) {
+        alert("Preencha o nome da categoria!");
+        return;
+      }
+      db.ref("categorias").push({ nome: nome })
+        .then(() => {
+          alert("Categoria salva com sucesso!");
+          document.getElementById("categoriaNome").value = "";
+          loadCategorias();
+        })
+        .catch(err => alert("Erro ao salvar a categoria: " + err));
+    }
+    function excluirCategoria(key) {
+      if (confirm("Deseja realmente excluir esta categoria?")) {
+        db.ref("categorias").child(key).remove()
+          .then(() => {
+            alert("Categoria excluída com sucesso!");
+            loadCategorias();
+          })
+          .catch(err => alert("Erro ao excluir a categoria: " + err));
+      }
+    }
+
+    /* Módulo Gerenciar Cartões */
+    function loadCartoes() {
+      const cartoesLista = document.getElementById("cartoesLista");
+      cartoesLista.innerHTML = "";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const key = child.key;
+          let div = document.createElement("div");
+          div.innerHTML = `
+            <strong>Nome:</strong> ${cartao.nome} <br>
+            <strong>Dia da Fatura:</strong> ${cartao.diaFatura} <br>
+            <strong>Dia do Fechamento:</strong> ${cartao.diaFechamento} <br>
+            <strong>Limite:</strong> R$ ${cartao.limite} <br>
+            <button onclick="excluirCartao('${key}')">Excluir</button>
+          `;
+          cartoesLista.appendChild(div);
+        });
+      });
+    }
+    function salvarCartao() {
+      const nome = document.getElementById("nomeCartao").value;
+      const diaFatura = document.getElementById("diaFatura").value;
+      const diaFechamento = document.getElementById("diaFechamento").value;
+      const limite = document.getElementById("limiteCartao").value;
+      if (!nome || !diaFatura || !diaFechamento || !limite) {
+        alert("Preencha todos os campos!");
+        return;
+      }
+      db.ref("cartoes").push({
+        nome: nome,
+        diaFatura: diaFatura,
+        diaFechamento: diaFechamento,
+        limite: limite
+      })
+        .then(() => {
+          alert("Cartão salvo com sucesso!");
+          document.getElementById("nomeCartao").value = "";
+          document.getElementById("diaFatura").value = "";
+          document.getElementById("diaFechamento").value = "";
+          document.getElementById("limiteCartao").value = "";
+          loadCartoes();
+        })
+        .catch(err => alert("Erro ao salvar o cartão: " + err));
+    }
+    function excluirCartao(key) {
+      if (confirm("Deseja realmente excluir este cartão?")) {
+        db.ref("cartoes").child(key).remove()
+          .then(() => {
+            alert("Cartão excluído com sucesso!");
+            loadCartoes();
+          })
+          .catch(err => alert("Erro ao excluir o cartão: " + err));
+      }
+    }
+
+    /* Inicialização única */
+    window.onload = function() {
+      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
+      updateCategoriaSelect();
+      updateCartaoSelect();
+      loadDespesasNaoPagasSelect();
+      loadCategorias();
+      loadCartoes();
+      renderCalendar();
+    };
   </script>
 </body>
 </html>
