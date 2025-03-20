@@ -161,10 +161,10 @@
   <div class="container">
     <h1>Gerenciamento de Contas</h1>
     <button onclick="abrirModal('cadastroModal')">Cadastrar Nova Renda</button>
-    <button onclick="abrirModal('fonteModal'); loadUsuarios()">Fonte de Renda</button>
+    <button onclick="abrirModal('fonteModal')">Fonte de Renda</button>
     <button onclick="abrirModal('categoriasModal')">Gerenciar Categorias</button>
     <button onclick="abrirModal('cartaoModal')">Gerenciar Cartões</button>
-    <button onclick="abrirModal('calendarModal'); renderCalendar()">Calendário</button>
+    <button onclick="abrirModal('calendarModal')">Calendário</button>
   </div>
 
   <!-- Cadastro de Despesa -->
@@ -354,6 +354,20 @@
       document.getElementById(id).style.display = "none";
     };
 
+    /* Função para carregar usuários (Fonte de Renda) */
+    function loadUsuarios() {
+      const usuariosLista = document.getElementById("usuariosLista");
+      usuariosLista.innerHTML = "";
+      db.ref("pessoas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const pessoa = child.val();
+          let div = document.createElement("div");
+          div.innerHTML = `<strong>Nome:</strong> ${pessoa.nome} - <strong>Salário Líquido:</strong> ${pessoa.salarioLiquido}`;
+          usuariosLista.appendChild(div);
+        });
+      });
+    }
+
     /* Módulo Despesa */
     function toggleParcelamento() {
       const forma = document.getElementById("formaPagamento").value;
@@ -445,6 +459,86 @@
       }
     }
 
+    /* Função para pagar despesa selecionada */
+    function pagarDespesaSelecionada() {
+      const despesaSelect = document.getElementById("despesaSelect");
+      const selectedValue = despesaSelect.value;
+      if (!selectedValue) {
+        alert("Selecione uma despesa!");
+        return;
+      }
+      db.ref("despesas").child(selectedValue).update({ pago: true })
+        .then(() => {
+          alert("Despesa paga com sucesso!");
+          loadDespesasNaoPagasSelect();
+          renderCalendar();
+        })
+        .catch(err => alert("Erro ao pagar a despesa: " + err));
+    }
+
+    /* Carregar despesas não pagas para o select */
+    function loadDespesasNaoPagasSelect() {
+      const despesaSelect = document.getElementById("despesaSelect");
+      despesaSelect.innerHTML = "";
+      db.ref("despesas").orderByChild("pago").equalTo(false).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          let despesa = child.val();
+          let option = document.createElement("option");
+          option.value = child.key;
+          option.text = despesa.descricao;
+          despesaSelect.appendChild(option);
+        });
+      });
+    }
+
+    /* Função para carregar relatório mensal */
+    function loadRelatorioMensal() {
+      const container = document.getElementById("relatorioMensalContainer");
+      container.innerHTML = "";
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      db.ref("despesas").orderByChild("pago").equalTo(true).once("value").then(snapshot => {
+        let despesas = [];
+        snapshot.forEach(child => {
+          let despesa = child.val();
+          let data = new Date(despesa.dataCompra);
+          if (data.getFullYear() === year && data.getMonth() === month) {
+            despesas.push(despesa);
+          }
+        });
+        if (despesas.length === 0) {
+          container.innerHTML = "<p>Nenhuma despesa paga neste mês.</p>";
+          return;
+        }
+        let table = document.createElement("table");
+        let headerRow = document.createElement("tr");
+        ["Descrição", "Valor", "Data", "Categoria"].forEach(headerText => {
+          let th = document.createElement("th");
+          th.innerText = headerText;
+          headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+        despesas.forEach(despesa => {
+          let row = document.createElement("tr");
+          let descricaoCell = document.createElement("td");
+          descricaoCell.innerText = despesa.descricao;
+          let valorCell = document.createElement("td");
+          valorCell.innerText = despesa.valor ? parseFloat(despesa.valor).toFixed(2) : "-";
+          let dataCell = document.createElement("td");
+          dataCell.innerText = despesa.dataCompra;
+          let categoriaCell = document.createElement("td");
+          categoriaCell.innerText = despesa.categoria;
+          row.appendChild(descricaoCell);
+          row.appendChild(valorCell);
+          row.appendChild(dataCell);
+          row.appendChild(categoriaCell);
+          table.appendChild(row);
+        });
+        container.appendChild(table);
+      });
+    }
+
     /* Módulo Cadastro de Renda */
     function toggleClt() {
       document.getElementById("cltFields").style.display =
@@ -480,12 +574,10 @@
         for (let i = 1; i <= numPagamentos; i++) {
           let div = document.createElement("div");
           div.className = "pagamento-item";
-          div.innerHTML = `
-            <label>Dia do Pagamento ${i}:</label>
-            <input type="number" placeholder="Dia" min="1" max="31" required>
-            <label>Valor (R$):</label>
-            <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()" required>
-          `;
+          div.innerHTML = `<label>Dia do Pagamento ${i}:</label>
+                           <input type="number" placeholder="Dia" min="1" max="31" required>
+                           <label>Valor (R$):</label>
+                           <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()" required>`;
           container.appendChild(div);
         }
       } else if (numPagamentos === 1) {
@@ -565,10 +657,8 @@
           const categoria = child.val();
           const key = child.key;
           let div = document.createElement("div");
-          div.innerHTML = `
-            <strong>Nome:</strong> ${categoria.nome} <br>
-            <button onclick="excluirCategoria('${key}')">Excluir</button>
-          `;
+          div.innerHTML = `<strong>Nome:</strong> ${categoria.nome} <br>
+                           <button onclick="excluirCategoria('${key}')">Excluir</button>`;
           categoriasLista.appendChild(div);
         });
       });
@@ -607,13 +697,11 @@
           const cartao = child.val();
           const key = child.key;
           let div = document.createElement("div");
-          div.innerHTML = `
-            <strong>Nome:</strong> ${cartao.nome} <br>
-            <strong>Dia da Fatura:</strong> ${cartao.diaFatura} <br>
-            <strong>Dia do Fechamento:</strong> ${cartao.diaFechamento} <br>
-            <strong>Limite:</strong> R$ ${cartao.limite} <br>
-            <button onclick="excluirCartao('${key}')">Excluir</button>
-          `;
+          div.innerHTML = `<strong>Nome:</strong> ${cartao.nome} <br>
+                           <strong>Dia da Fatura:</strong> ${cartao.diaFatura} <br>
+                           <strong>Dia do Fechamento:</strong> ${cartao.diaFechamento} <br>
+                           <strong>Limite:</strong> R$ ${cartao.limite} <br>
+                           <button onclick="excluirCartao('${key}')">Excluir</button>`;
           cartoesLista.appendChild(div);
         });
       });
@@ -640,6 +728,7 @@
           document.getElementById("diaFechamento").value = "";
           document.getElementById("limiteCartao").value = "";
           loadCartoes();
+          updateCartaoSelect();
         })
         .catch(err => alert("Erro ao salvar o cartão: " + err));
     }
@@ -649,9 +738,119 @@
           .then(() => {
             alert("Cartão excluído com sucesso!");
             loadCartoes();
+            updateCartaoSelect();
           })
           .catch(err => alert("Erro ao excluir o cartão: " + err));
       }
+    }
+
+    /* Funções do Calendário */
+    function renderCalendar() {
+      let monthYearElem = document.getElementById("calendarMonthYear");
+      let calendarGrid = document.getElementById("calendarGrid");
+      calendarGrid.innerHTML = "";
+      let date = new Date(currentCalendarYear, currentCalendarMonth, 1);
+      let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+      monthYearElem.innerText = `${date.toLocaleString('pt-BR', { month: 'long' })} ${currentCalendarYear}`;
+      
+      let table = document.createElement("table");
+      let headerRow = document.createElement("tr");
+      const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      weekDays.forEach(day => {
+        let th = document.createElement("th");
+        th.innerText = day;
+        headerRow.appendChild(th);
+      });
+      table.appendChild(headerRow);
+      
+      let row = document.createElement("tr");
+      for (let i = 0; i < date.getDay(); i++) {
+        let cell = document.createElement("td");
+        cell.innerText = "";
+        row.appendChild(cell);
+      }
+      for (let day = 1; day <= daysInMonth; day++) {
+        if (row.children.length === 7) {
+          table.appendChild(row);
+          row = document.createElement("tr");
+        }
+        let cell = document.createElement("td");
+        cell.innerText = day;
+        row.appendChild(cell);
+      }
+      table.appendChild(row);
+      calendarGrid.appendChild(table);
+    }
+    function prevMonth() {
+      currentCalendarMonth--;
+      if (currentCalendarMonth < 0) {
+        currentCalendarMonth = 11;
+        currentCalendarYear--;
+      }
+      renderCalendar();
+    }
+    function nextMonth() {
+      currentCalendarMonth++;
+      if (currentCalendarMonth > 11) {
+        currentCalendarMonth = 0;
+        currentCalendarYear++;
+      }
+      renderCalendar();
+    }
+    function toggleMonthYearSelect() {
+      const selectDiv = document.getElementById("monthYearSelect");
+      selectDiv.style.display = (selectDiv.style.display === "none" || selectDiv.style.display === "") ? "block" : "none";
+      if(selectDiv.style.display === "block") {
+        const selectYear = document.getElementById("selectYear");
+        if(selectYear.options.length === 0) {
+          for(let y = currentCalendarYear - 5; y <= currentCalendarYear + 5; y++) {
+            let option = document.createElement("option");
+            option.value = y;
+            option.text = y;
+            if(y === currentCalendarYear) option.selected = true;
+            selectYear.appendChild(option);
+          }
+        }
+        document.getElementById("selectMonth").value = currentCalendarMonth;
+      }
+    }
+    function updateCalendarFromSelect() {
+      const selectMonth = document.getElementById("selectMonth").value;
+      const selectYear = document.getElementById("selectYear").value;
+      currentCalendarMonth = parseInt(selectMonth);
+      currentCalendarYear = parseInt(selectYear);
+      toggleMonthYearSelect();
+      renderCalendar();
+    }
+
+    /* Atualizações de Selects */
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      select.innerHTML = `<option value="">Selecione a Categoria</option>`;
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          let categoria = child.val();
+          let option = document.createElement("option");
+          option.value = categoria.nome;
+          option.text = categoria.nome;
+          select.appendChild(option);
+        });
+      });
+    }
+    function updateCartaoSelect() {
+      const select = document.getElementById("cartaoDespesa");
+      select.innerHTML = `<option value="">Selecione o Cartão</option>`;
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          let cartao = child.val();
+          let option = document.createElement("option");
+          option.value = child.key;
+          option.text = cartao.nome;
+          option.setAttribute("data-fatura", cartao.diaFatura);
+          option.setAttribute("data-fechamento", cartao.diaFechamento);
+          select.appendChild(option);
+        });
+      });
     }
 
     /* Inicialização única */
