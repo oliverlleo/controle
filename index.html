@@ -108,15 +108,33 @@
       box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
     }
     
-    /* Botão discreto para período */
-    .btn-discreto {
-      width: 15ch;
-      background: transparent;
-      border: none;
-      color: var(--primary);
-      cursor: pointer;
+    /* Seletor de período discreto (máx. 25% de largura) */
+    .period-selector {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      width: 25%;
+      min-width: 200px;
+    }
+    
+    .period-selector label {
       font-size: 0.9rem;
-      text-decoration: underline;
+    }
+    
+    .period-selector select,
+    .period-selector input[type='month'] {
+      font-size: 0.9rem;
+      padding: 3px 5px;
+      border: none;
+      border-radius: 4px;
+      background: var(--card-color);
+      box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+    }
+    
+    .period-selector button {
+      font-size: 0.9rem;
+      padding: 5px 10px;
+      min-width: 80px;
     }
     
     /* Botões padrão */
@@ -214,7 +232,7 @@
       aside { width: 100%; flex-direction: row; overflow-x: auto; }
       aside a { flex: 1; justify-content: center; }
       main { padding: 10px; }
-    }
+      .period-selector { width: 50%; }\n    }
   </style>
 </head>
 <body>
@@ -239,12 +257,29 @@
     <!-- Dashboard Resumido -->
     <section id="dashboardSection" class="container">
       <h2>Dashboard Resumido</h2>
-      <!-- Container de seleção de período com layout em linha -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <!-- Área de seleção de período (inicialmente oculta) -->
-        <div id="dashboardPeriod" style="display: none; flex: 1; gap: 10px; align-items: center; display: flex;">
-          <label for="dashboardMonth" style="font-size: 0.9rem;">Mês:</label>
-          <select id="dashboardMonth" style="font-size: 0.9rem; padding: 5px;">
+      <!-- Área de seleção de período (sempre visível, ocupando até 25% da largura) alinhada à direita -->
+      <div class="flex justify-between items-center" style="margin-bottom: 20px;">
+        <div class="flex flex-col flex-1">
+          <div id="dashboardResumo" class="flex justify-around flex-wrap gap-20">
+            <div class="dashboard-item" style="text-align: center;">
+              <h3>Saldo Atual</h3>
+              <p id="saldoAtual">R$ 0,00</p>
+            </div>
+            <div class="dashboard-item" style="text-align: center;">
+              <h3>Despesas do Mês</h3>
+              <p id="despesasMes">R$ 0,00</p>
+            </div>
+            <div class="dashboard-item" style="text-align: center;">
+              <h3>Próximos Vencimentos</h3>
+              <p id="proximosVencimentos">0</p>
+            </div>
+          </div>
+          <canvas id="graficoDespesas" style="max-height: 300px; margin-top: 20px;"></canvas>
+        </div>
+        <!-- Seletor de Período discreto (ocupando no máximo 25% da largura) -->
+        <div class="period-selector">
+          <label for="dashboardMonth" style="font-size:0.9rem;">Mês:</label>
+          <select id="dashboardMonth" style="font-size:0.9rem; padding: 3px 5px;">
             <option value="0">Janeiro</option>
             <option value="1">Fevereiro</option>
             <option value="2">Março</option>
@@ -258,28 +293,11 @@
             <option value="10">Novembro</option>
             <option value="11">Dezembro</option>
           </select>
-          <label for="dashboardYear" style="font-size: 0.9rem;">Ano:</label>
-          <select id="dashboardYear" style="font-size: 0.9rem; padding: 5px;"></select>
-          <button style="font-size: 0.9rem; padding: 5px 10px;" onclick="atualizarDashboard()">Atualizar</button>
-        </div>
-        <!-- Botão discreto para alternar a exibição do período, fixo à direita -->
-        <button class="btn-discreto" onclick="toggleDashboardPeriod()">Alterar Pedido</button>
-      </div>
-      <div id="dashboardResumo" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
-        <div class="dashboard-item" style="text-align: center;">
-          <h3>Saldo Atual</h3>
-          <p id="saldoAtual">R$ 0,00</p>
-        </div>
-        <div class="dashboard-item" style="text-align: center;">
-          <h3>Despesas do Mês</h3>
-          <p id="despesasMes">R$ 0,00</p>
-        </div>
-        <div class="dashboard-item" style="text-align: center;">
-          <h3>Próximos Vencimentos</h3>
-          <p id="proximosVencimentos">0</p>
+          <label for="dashboardYear" style="font-size:0.9rem;">Ano:</label>
+          <select id="dashboardYear" style="font-size:0.9rem; padding: 3px 5px;"></select>
+          <button style="font-size:0.9rem; padding: 3px 5px;" onclick="atualizarDashboard()">Atualizar</button>
         </div>
       </div>
-      <canvas id="graficoDespesas" style="max-height: 300px; margin-top: 20px;"></canvas>
       <button onclick="abrirModal('cadastroDespesaModal')">Cadastrar Nova Despesa</button>
     </section>
     
@@ -609,63 +627,6 @@
         if(y === currentYear) option.selected = true;
         selectAno.appendChild(option);
       }
-    }
-    
-    /* Função para alternar a exibição da área de seleção de período no dashboard */
-    function toggleDashboardPeriod() {
-      const periodDiv = document.getElementById("dashboardPeriod");
-      if (periodDiv.style.display === "none" || periodDiv.style.display === "") {
-        periodDiv.style.display = "flex";
-      } else {
-        periodDiv.style.display = "none";
-      }
-    }
-    
-    /* Função para mostrar seções do sistema */
-    function showSection(sectionId) {
-      const sections = document.querySelectorAll('main > section');
-      sections.forEach(sec => sec.style.display = 'none');
-      document.getElementById(sectionId).style.display = 'block';
-    }
-    
-    /* Funções de Modal */
-    window.abrirModal = function(id) {
-      document.getElementById(id).style.display = "flex";
-      if (id === "fonteModal") loadUsuarios();
-      if (id === "categoriasModal") loadCategorias();
-      if (id === "cartaoModal") loadCartoes();
-      if (id === "calendarModal") {
-        document.getElementById("calendarTitulo").innerText = "Calendário de Despesas";
-        renderCalendar();
-      }
-      if (id === "pagarDespesaModal") filtrarDespesas();
-    };
-    
-    window.fecharModal = function(id) {
-      document.getElementById(id).style.display = "none";
-    };
-    
-    /* Função para exportar dados em CSV */
-    function exportData() {
-      db.ref("despesas").once("value").then(snapshot => {
-        let csv = "Descrição,Valor,Data,Forma de Pagamento\n";
-        snapshot.forEach(child => {
-          const despesa = child.val();
-          if(despesa.formaPagamento === "avista") {
-            csv += `${despesa.descricao},${despesa.valor},${despesa.dataCompra},${despesa.formaPagamento}\n`;
-          } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
-            despesa.parcelas.forEach((parcela, index) => {
-              csv += `${despesa.descricao} - Parcela ${index+1},${parcela.valor},${parcela.vencimento},${despesa.formaPagamento}\n`;
-            });
-          }
-        });
-        let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        let url = URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = url;
-        a.download = "despesas.csv";
-        a.click();
-      });
     }
     
     /* Dashboard: Atualiza resumo e gráficos conforme o período selecionado */
