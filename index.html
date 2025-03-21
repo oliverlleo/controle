@@ -15,13 +15,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   
-  <!-- CSS do Daterangepicker (com versionamento para forçar recarregamento) -->
+  <!-- CSS do Daterangepicker com versionamento -->
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css?v=1.0.0" />
   
-  <!-- Chart.js -->
+  <!-- Chart.js com versionamento -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js?v=1.0.0"></script>
   
-  <!-- Ícones (Font Awesome) -->
+  <!-- Ícones (Font Awesome) com versionamento -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1.0.0">
   
   <style>
@@ -42,7 +42,7 @@
     
     body {
       font-family: 'Roboto', sans-serif;
-      background: linear-gradient(145deg, #e6ebf1, #f0f3f5);
+      background: linear-gradient(145deg, var(--bg-color), var(--card-color));
       color: var(--text-color);
       display: flex;
       min-height: 100vh;
@@ -106,6 +106,18 @@
       margin-bottom: 20px;
       border-radius: 8px;
       box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+    }
+    
+    /* Botões discretos */
+    .btn-discreto {
+      background: transparent;
+      border: none;
+      color: var(--primary);
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: underline;
+      padding: 5px;
+      margin-bottom: 10px;
     }
     
     button {
@@ -227,10 +239,12 @@
     <!-- Dashboard Resumido -->
     <section id="dashboardSection" class="container">
       <h2>Dashboard Resumido</h2>
-      <!-- Seletor de Mês/Ano para o Dashboard -->
-      <div id="dashboardMonthSelector" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <label for="dashboardMonth">Mês:</label>
-        <select id="dashboardMonth">
+      <!-- Botão discreto para exibir a seleção de período -->
+      <button class="btn-discreto" onclick="toggleDashboardPeriod()">Alterar Período</button>
+      <!-- Área de seleção de período, inicialmente oculta -->
+      <div id="dashboardPeriod" style="display: none; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <label for="dashboardMonth" style="font-size:0.9rem;">Mês:</label>
+        <select id="dashboardMonth" style="font-size:0.9rem; padding: 5px;">
           <option value="0">Janeiro</option>
           <option value="1">Fevereiro</option>
           <option value="2">Março</option>
@@ -244,9 +258,9 @@
           <option value="10">Novembro</option>
           <option value="11">Dezembro</option>
         </select>
-        <label for="dashboardYear">Ano:</label>
-        <select id="dashboardYear"></select>
-        <button onclick="atualizarDashboard()">Atualizar Dashboard</button>
+        <label for="dashboardYear" style="font-size:0.9rem;">Ano:</label>
+        <select id="dashboardYear" style="font-size:0.9rem; padding: 5px;"></select>
+        <button style="font-size:0.9rem; padding: 5px 10px;" onclick="atualizarDashboard()">Atualizar</button>
       </div>
       <div id="dashboardResumo" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
         <div class="dashboard-item" style="text-align: center;">
@@ -266,7 +280,7 @@
       <button onclick="abrirModal('cadastroDespesaModal')">Cadastrar Nova Despesa</button>
     </section>
     
-    <!-- Seção de Despesas (Cadastro e Pagamento) -->
+    <!-- Seção de Despesas -->
     <section id="despesasSection" class="container" style="display: none;">
       <h2>Despesas</h2>
       <button onclick="abrirModal('cadastroDespesaModal')">Cadastrar Despesa</button>
@@ -308,7 +322,7 @@
   </main>
   
   <!-- ===================== MODAIS ===================== -->
-  <!-- Modal: Cadastro de Despesa (Reutiliza as funções originais) -->
+  <!-- Modal: Cadastro de Despesa -->
   <div id="cadastroDespesaModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal('cadastroDespesaModal')">&times;</span>
@@ -418,7 +432,9 @@
         <button onclick="toggleMonthYearSelect()">Ok</button>
       </div>
       <div id="calendarGrid"></div>
-      <div id="saldoDisponivelContainer" style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--primary);">Saldo Atual: R$ 0,00</div>
+      <div id="saldoDisponivelContainer" style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--primary);">
+        Saldo Atual: R$ 0,00
+      </div>
     </div>
   </div>
   
@@ -592,6 +608,16 @@
       }
     }
     
+    /* Função para alternar a área de seleção de período no dashboard */
+    function toggleDashboardPeriod() {
+      const periodDiv = document.getElementById("dashboardPeriod");
+      if (periodDiv.style.display === "none" || periodDiv.style.display === "") {
+        periodDiv.style.display = "flex";
+      } else {
+        periodDiv.style.display = "none";
+      }
+    }
+    
     /* Função para mostrar seções do sistema */
     function showSection(sectionId) {
       const sections = document.querySelectorAll('main > section');
@@ -639,14 +665,13 @@
       });
     }
     
-    /* Dashboard: Atualiza resumo e gráficos conforme o mês/ano selecionado */
+    /* Dashboard: Atualiza resumo e gráficos conforme o período selecionado */
     function atualizarDashboard() {
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
       
       let saldo = 0, despesasMes = 0, proximos = 0;
       
-      // Para rendimentos (pagamentos), vamos assumir que são mensais e somá-los sem filtro de data.
       db.ref("pessoas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let pessoa = child.val();
@@ -657,7 +682,6 @@
           }
         });
         
-        // Para despesas, filtramos as datas conforme o mês/ano selecionado.
         db.ref("despesas").once("value").then(snapshot2 => {
           snapshot2.forEach(child => {
             let despesa = child.val();
@@ -677,11 +701,10 @@
           });
           document.getElementById("saldoAtual").innerText = "R$ " + saldo.toFixed(2);
           document.getElementById("despesasMes").innerText = "R$ " + despesasMes.toFixed(2);
-          // Atualiza calendário para o mês/ano selecionado
+          // Atualiza o calendário para o período selecionado
           currentCalendarMonth = dashboardMonth;
           currentCalendarYear = dashboardYear;
           renderCalendar();
-          // Atualiza gráfico também (nesse exemplo, sem filtro por período)
           atualizarGrafico();
         });
       });
@@ -1283,7 +1306,6 @@
     /* Função para carregar/alternar rendas cadastradas na página de Renda */
     function loadRendas() {
       const rendaList = document.getElementById("usuariosListaPrincipal");
-      // Se já estiver visível, oculta a lista
       if (rendaVisivel) {
         rendaList.innerHTML = "";
         rendaVisivel = false;
@@ -1305,7 +1327,7 @@
       });
     }
     
-    /* Função para carregar despesas não pagas (usada em outros módulos) */
+    /* Função para carregar despesas não pagas */
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
