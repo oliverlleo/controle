@@ -246,7 +246,8 @@
       aside { width: 100%; flex-direction: row; overflow-x: auto; }
       aside a { flex: 1; justify-content: center; }
       main { padding: 10px; }
-      .period-selector { width: 50%; }\n    }
+      .period-selector { width: 50%; }
+    }
   </style>
 </head>
 <body>
@@ -285,7 +286,7 @@
           <h3>Próximos Vencimentos</h3>
           <p id="proximosVencimentos">0</p>
         </div>
-        <!-- Seletor de período (25% de largura no máximo) -->
+        <!-- Seletor de período (ocupando até 25% da largura) -->
         <div class="period-selector">
           <label for="dashboardMonth">Mês:</label>
           <select id="dashboardMonth">
@@ -625,7 +626,7 @@
       });
     });
     
-    /* Preenche o seletor de ano do dashboard */
+    /* Preenche o seletor de ano do dashboard com o período atual pré-selecionado */
     function preencherDashboardAno() {
       const selectAno = document.getElementById("dashboardYear");
       selectAno.innerHTML = "";
@@ -1328,7 +1329,7 @@
       });
     }
     
-    /* Carrega dados iniciais */
+    /* Carrega dados iniciais e predefine o relatório atual */
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
       updateCategoriaSelect();
@@ -1339,6 +1340,9 @@
       renderCalendar();
       loadCategoriasFiltro();
       preencherDashboardAno();
+      // Preseleciona o mês e ano atuais no Dashboard
+      document.getElementById("dashboardMonth").value = new Date().getMonth();
+      // O seletor de ano já foi preenchido com preencherDashboardAno() e o ano atual está selecionado
       atualizarDashboard();
     };
   </script>
