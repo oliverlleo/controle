@@ -178,14 +178,8 @@
       margin-bottom: 10px;
     }
     
+    /* Usamos inputs com datalist para permitir digitar ou selecionar */
     #pagarDespesaFilters input[type="text"] {
-      flex: 1;
-      max-width: 150px;
-    }
-    
-    /* Para o filtro de mês, vamos permitir digitação ou seleção com abreviação */
-    #mesFiltro {
-      flex: 0 0 100px;
       padding: 10px;
       border: none;
       border-radius: 6px;
@@ -196,22 +190,9 @@
       outline: none;
     }
     
-    /* O filtro de ano, com 4 dígitos */
-    #anoFiltro {
-      flex: 0 0 100px;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-      background: var(--card-color);
-      box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
-      font-size: 1rem;
-      color: var(--text-color);
-      outline: none;
-    }
+    /* Datalist não precisa de estilos adicionais */
     
     #pagarDespesaFilters select {
-      flex: 1;
-      max-width: 150px;
       padding: 10px;
       border: none;
       border-radius: 6px;
@@ -267,13 +248,13 @@
   </style>
 </head>
 <body>
-  <!-- Bibliotecas -->
+  <!-- Inclusão das bibliotecas -->
   <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
   
-  <!-- Firebase -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
   
@@ -325,8 +306,33 @@
     <h2>Pagar Despesa</h2>
     <div id="pagarDespesaFilters">
       <input type="text" id="despesaSearch" placeholder="Descrição" maxlength="25">
-      <input type="text" id="mesFiltro" placeholder="Mês (ex: JAN)">
-      <input type="text" id="anoFiltro" placeholder="Ano (ex: 2025)">
+      <!-- Usamos inputs com datalist para permitir digitar ou selecionar -->
+      <input type="text" id="mesFiltro" placeholder="Mês (ex: JAN)" list="meses">
+      <datalist id="meses">
+        <option value="JAN">
+        <option value="FEV">
+        <option value="MAR">
+        <option value="ABR">
+        <option value="MAI">
+        <option value="JUN">
+        <option value="JUL">
+        <option value="AGO">
+        <option value="SET">
+        <option value="OUT">
+        <option value="NOV">
+        <option value="DEZ">
+      </datalist>
+      <input type="text" id="anoFiltro" placeholder="Ano (ex: 2025)" list="anos">
+      <datalist id="anos">
+        <option value="2020">
+        <option value="2021">
+        <option value="2022">
+        <option value="2023">
+        <option value="2024">
+        <option value="2025">
+        <option value="2026">
+        <option value="2027">
+      </datalist>
       <select id="categoriaFiltro">
         <option value="">Todas as Categorias</option>
       </select>
@@ -545,23 +551,19 @@
           if (!despesa.pago) {
             if (searchText && !despesa.descricao.toLowerCase().includes(searchText)) return;
             
-            // Determinar a data do vencimento: 
-            // Se à vista, usa dataCompra; se cartão, usa a data de vencimento da primeira parcela.
+            // Determinar a data do vencimento: se à vista, dataCompra; se cartão, data da 1ª parcela.
             let data = despesa.dataCompra ? new Date(despesa.dataCompra) : null;
             if (despesa.formaPagamento === "cartao" && despesa.parcelas && despesa.parcelas.length > 0) {
               data = new Date(despesa.parcelas[0].vencimento);
             }
-            
             if (mesFiltro && data) {
               const mesAbrev = mesesAbreviados[data.getMonth()];
               if (mesAbrev !== mesFiltro) return;
             }
-            
             if (anoFiltro && data) {
               const ano = data.getFullYear().toString();
               if (ano !== anoFiltro) return;
             }
-            
             if (categoriaFiltro && despesa.categoria !== categoriaFiltro) return;
             if (contaMes && !despesa.contaMes) return;
             
@@ -771,12 +773,8 @@
           .then(() => {
             db.ref("despesas/" + expenseKey + "/parcelas").once("value").then(snapshot => {
               let allPaid = true;
-              snapshot.forEach(child => {
-                if (!child.val().pago) { allPaid = false; }
-              });
-              if (allPaid) {
-                db.ref("despesas").child(expenseKey).update({ pago: true });
-              }
+              snapshot.forEach(child => { if (!child.val().pago) { allPaid = false; } });
+              if (allPaid) { db.ref("despesas").child(expenseKey).update({ pago: true }); }
             });
             alert("Parcela paga com sucesso!");
             filtrarDespesas();
