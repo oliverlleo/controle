@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -204,6 +203,27 @@
       aside a { flex: 1; justify-content: center; }
       main { padding: 10px; }
     }
+    
+    /* Estilização para o seletor do Dashboard */
+    #dashboardHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    #dashboardMonthSelector {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    /* Ajuste para o título ficar na mesma linha que os controles */
+    #dashboardSection h2 {
+      display: inline-block;
+      margin-right: 20px;
+    }
   </style>
 </head>
 <body>
@@ -227,10 +247,9 @@
     
     <!-- Dashboard Resumido -->
     <section id="dashboardSection" class="container">
-      <h2>Dashboard Resumido</h2>
-      <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-        <!-- Seletor com 10% da largura e altura reduzida pela metade -->
-        <div id="dashboardMonthSelector" style="width: 10%; transform: scaleY(0.5); transform-origin: top;">
+      <div id="dashboardHeader">
+        <h2>Dashboard Resumido</h2>
+        <div id="dashboardMonthSelector">
           <label for="dashboardMonth">Mês:</label>
           <select id="dashboardMonth">
             <option value="0">Janeiro</option>
@@ -262,7 +281,9 @@
           </select>
           <button onclick="atualizarDashboard()">Atualizar Dashboard</button>
         </div>
-        
+      </div>
+      
+      <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
         <!-- Resumo dos dados ocupando o restante do espaço -->
         <div id="dashboardResumo" style="flex: 1; display: flex; justify-content: space-around; align-items: center;">
           <div class="dashboard-item" style="text-align: center;">
@@ -416,7 +437,7 @@
         <button onclick="nextMonth()">&#9654;</button>
       </div>
       <div id="monthYearSelect" style="display: none; margin-bottom: 10px;">
-        <select id="selectMonth" onchange="updateCalendarFromSelect()">
+        <select id="selectMonth">
           <option value="0">Janeiro</option>
           <option value="1">Fevereiro</option>
           <option value="2">Março</option>
@@ -430,7 +451,7 @@
           <option value="10">Novembro</option>
           <option value="11">Dezembro</option>
         </select>
-        <select id="selectYear" onchange="updateCalendarFromSelect()">
+        <select id="selectYear">
           <!-- Preenchido dinamicamente -->
         </select>
         <button onclick="toggleMonthYearSelect()">Ok</button>
