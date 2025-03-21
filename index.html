@@ -227,41 +227,58 @@
     <!-- Dashboard Resumido -->
     <section id="dashboardSection" class="container">
       <h2>Dashboard Resumido</h2>
-      <!-- Seletor de Mês/Ano para o Dashboard -->
-      <div id="dashboardMonthSelector" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <label for="dashboardMonth">Mês:</label>
-        <select id="dashboardMonth">
-          <option value="0">Janeiro</option>
-          <option value="1">Fevereiro</option>
-          <option value="2">Março</option>
-          <option value="3">Abril</option>
-          <option value="4">Maio</option>
-          <option value="5">Junho</option>
-          <option value="6">Julho</option>
-          <option value="7">Agosto</option>
-          <option value="8">Setembro</option>
-          <option value="9">Outubro</option>
-          <option value="10">Novembro</option>
-          <option value="11">Dezembro</option>
-        </select>
-        <label for="dashboardYear">Ano:</label>
-        <select id="dashboardYear"></select>
-        <button onclick="atualizarDashboard()">Atualizar Dashboard</button>
+      <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+        <!-- Seletor com 25% da largura -->
+        <div id="dashboardMonthSelector" style="width: 25%;">
+          <label for="dashboardMonth">Mês:</label>
+          <select id="dashboardMonth">
+            <option value="0">Janeiro</option>
+            <option value="1">Fevereiro</option>
+            <option value="2">Março</option>
+            <option value="3">Abril</option>
+            <option value="4">Maio</option>
+            <option value="5">Junho</option>
+            <option value="6">Julho</option>
+            <option value="7">Agosto</option>
+            <option value="8">Setembro</option>
+            <option value="9">Outubro</option>
+            <option value="10">Novembro</option>
+            <option value="11">Dezembro</option>
+          </select>
+          <label for="dashboardYear">Ano:</label>
+          <select id="dashboardYear">
+            <option value="2020">2020</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+            <option value="2029">2029</option>
+            <option value="2030">2030</option>
+          </select>
+          <button onclick="atualizarDashboard()">Atualizar Dashboard</button>
+        </div>
+        
+        <!-- Resumo dos dados ocupando o restante do espaço -->
+        <div id="dashboardResumo" style="flex: 1; display: flex; justify-content: space-around; align-items: center;">
+          <div class="dashboard-item" style="text-align: center;">
+            <h3>Saldo Atual</h3>
+            <p id="saldoAtual">R$ 9374.20</p>
+          </div>
+          <div class="dashboard-item" style="text-align: center;">
+            <h3>Despesas do Mês</h3>
+            <p id="despesasMes">R$ 0.00</p>
+          </div>
+          <div class="dashboard-item" style="text-align: center;">
+            <h3>Próximos Vencimentos</h3>
+            <p id="proximosVencimentos">0</p>
+          </div>
+        </div>
       </div>
-      <div id="dashboardResumo" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
-        <div class="dashboard-item" style="text-align: center;">
-          <h3>Saldo Atual</h3>
-          <p id="saldoAtual">R$ 0,00</p>
-        </div>
-        <div class="dashboard-item" style="text-align: center;">
-          <h3>Despesas do Mês</h3>
-          <p id="despesasMes">R$ 0,00</p>
-        </div>
-        <div class="dashboard-item" style="text-align: center;">
-          <h3>Próximos Vencimentos</h3>
-          <p id="proximosVencimentos">0</p>
-        </div>
-      </div>
+      
       <canvas id="graficoDespesas" style="max-height: 300px; margin-top: 20px;"></canvas>
       <button onclick="abrirModal('cadastroDespesaModal')">Cadastrar Nova Despesa</button>
     </section>
