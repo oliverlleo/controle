@@ -203,6 +203,14 @@
       aside a { flex: 1; justify-content: center; }
       main { padding: 10px; }
     }
+
+    /* Estilo para reduzir o tamanho do seletor de mês/ano mantendo a proporção e centralizado */
+    #dashboardMonthSelector {
+      display: inline-block;
+      transform: scale(0.8);
+      transform-origin: top center;
+      margin: 0 auto;
+    }
   </style>
 </head>
 <body>
@@ -228,8 +236,8 @@
     <section id="dashboardSection" class="container">
       <h2>Dashboard Resumido</h2>
       <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-        <!-- Seletor com 10% da largura e altura reduzida pela metade -->
-        <div id="dashboardMonthSelector" style="width: 10%; transform: scaleY(0.5); transform-origin: top;">
+        <!-- Seletor de mês/ano com tamanho reduzido e centralizado -->
+        <div id="dashboardMonthSelector">
           <label for="dashboardMonth">Mês:</label>
           <select id="dashboardMonth">
             <option value="0">Janeiro</option>
