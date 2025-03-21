@@ -683,7 +683,10 @@
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
       
-      let saldo = 0, despesasMes = 0, proximos = 0;
+      let saldo = 0, despesasMes = 0;
+      // Variável para armazenar o menor número de dias até o vencimento de uma despesa não paga
+      let proximosVencimentos = Infinity;
+      let hoje = new Date();
       
       // Para rendimentos (pagamentos), vamos assumir que são mensais e somá-los sem filtro de data.
       db.ref("pessoas").once("value").then(snapshot => {
@@ -696,10 +699,12 @@
           }
         });
         
-        // Para despesas, filtramos as datas conforme o mês/ano selecionado.
+        // Para despesas, filtramos as datas conforme o mês/ano selecionado
         db.ref("despesas").once("value").then(snapshot2 => {
           snapshot2.forEach(child => {
             let despesa = child.val();
+            
+            // Cálculo para despesas já pagas (para o total do mês)
             if(despesa.formaPagamento === "avista" && despesa.pago) {
               let dt = new Date(despesa.dataCompra);
               if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
@@ -713,9 +718,36 @@
                 }
               });
             }
+            
+            // Cálculo dos próximos vencimentos: verifica despesas não pagas
+            if(despesa.formaPagamento === "avista" && !despesa.pago) {
+              let dt = new Date(despesa.dataCompra);
+              // Se a data de compra for futura, calcula os dias até o vencimento
+              if(dt >= hoje) {
+                let diff = Math.ceil((dt - hoje) / (1000 * 60 * 60 * 24));
+                if(diff < proximosVencimentos) {
+                  proximosVencimentos = diff;
+                }
+              }
+            } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+              despesa.parcelas.forEach(parcela => {
+                if(!parcela.pago) {
+                  let dt = new Date(parcela.vencimento);
+                  if(dt >= hoje) {
+                    let diff = Math.ceil((dt - hoje) / (1000 * 60 * 60 * 24));
+                    if(diff < proximosVencimentos) {
+                      proximosVencimentos = diff;
+                    }
+                  }
+                }
+              });
+            }
           });
           document.getElementById("saldoAtual").innerText = "R$ " + saldo.toFixed(2);
           document.getElementById("despesasMes").innerText = "R$ " + despesasMes.toFixed(2);
+          // Se nenhum vencimento for encontrado, exibe 0
+          document.getElementById("proximosVencimentos").innerText = proximosVencimentos === Infinity ? 0 : proximosVencimentos;
+          
           // Atualiza calendário para o mês/ano selecionado
           currentCalendarMonth = dashboardMonth;
           currentCalendarYear = dashboardYear;
