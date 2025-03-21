@@ -203,6 +203,17 @@
       aside a { flex: 1; justify-content: center; }
       main { padding: 10px; }
     }
+
+    /* Estilo para o container do seletor de mês/ano */
+    #dashboardMonthSelector {
+      width: 50%;
+      transform: scale(0.8);
+      transform-origin: center;
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -228,8 +239,8 @@
     <section id="dashboardSection" class="container">
       <h2>Dashboard Resumido</h2>
       <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-        <!-- Div do seletor de Mês/Ano posicionada à direita -->
-        <div id="dashboardMonthSelector" style="margin-left: auto;">
+        <!-- Seção com o seletor de mês/ano reduzido e centralizado -->
+        <div id="dashboardMonthSelector">
           <label for="dashboardMonth">Mês:</label>
           <select id="dashboardMonth">
             <option value="0">Janeiro</option>
@@ -524,6 +535,7 @@
   <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
   
@@ -641,10 +653,10 @@
         snapshot.forEach(child => {
           const despesa = child.val();
           if(despesa.formaPagamento === "avista") {
-            csv += `${despesa.descricao},${despesa.valor},${despesa.dataCompra},${despesa.formaPagamento}\n`;
+            csv += ${despesa.descricao},${despesa.valor},${despesa.dataCompra},${despesa.formaPagamento}\n;
           } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach((parcela, index) => {
-              csv += `${despesa.descricao} - Parcela ${index+1},${parcela.valor},${parcela.vencimento},${despesa.formaPagamento}\n`;
+              csv += ${despesa.descricao} - Parcela ${index+1},${parcela.valor},${parcela.vencimento},${despesa.formaPagamento}\n;
             });
           }
         });
@@ -722,7 +734,6 @@
             });
           }
         });
-        
         const labels = Object.keys(categorias);
         const data = Object.values(categorias);
         const ctx = document.getElementById("graficoDespesas").getContext("2d");
@@ -782,7 +793,7 @@
         snapshot.forEach(child => {
           const categoria = child.val();
           const div = document.createElement("div");
-          div.innerHTML = `<strong>${categoria.nome}</strong>`;
+          div.innerHTML = <strong>${categoria.nome}</strong>;
           categoriasLista.appendChild(div);
         });
       });
@@ -825,7 +836,7 @@
         snapshot.forEach(child => {
           const cartao = child.val();
           const div = document.createElement("div");
-          div.innerHTML = `<strong>${cartao.nome}</strong> - Limite: R$ ${parseFloat(cartao.limite).toFixed(2)}`;
+          div.innerHTML = <strong>${cartao.nome}</strong> - Limite: R$ ${parseFloat(cartao.limite).toFixed(2)};
           cartoesLista.appendChild(div);
         });
       });
@@ -966,7 +977,7 @@
                 if (!parcela.pago) {
                   const option = document.createElement("option");
                   option.value = child.key + "|" + index;
-                  option.text = `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
+                  option.text = ${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)};
                   despesaSelect.appendChild(option);
                 }
               });
@@ -1033,7 +1044,7 @@
                 let dt = parcela.vencimento;
                 if ((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
                     (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
-                  rows.push({ descricao: `${despesa.descricao} - Parcela ${index+1}`, data: dt, valor: parcela.valor, forma: "Cartão" });
+                  rows.push({ descricao: ${despesa.descricao} - Parcela ${index+1}, data: dt, valor: parcela.valor, forma: "Cartão" });
                 }
               }
             });
@@ -1077,7 +1088,7 @@
       calendarGrid.innerHTML = "";
       let date = new Date(currentCalendarYear, currentCalendarMonth, 1);
       let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
-      monthYearElem.innerText = `${date.toLocaleString('pt-BR', { month: 'long' })} ${currentCalendarYear}`;
+      monthYearElem.innerText = ${date.toLocaleString('pt-BR', { month: 'long' })} ${currentCalendarYear};
       
       let table = document.createElement("table");
       let headerRow = document.createElement("tr");
@@ -1144,7 +1155,7 @@
           });
           let availableBalance = totalIncome - totalExpenses;
           document.getElementById("saldoDisponivelContainer").innerText =
-            `Saldo em ${selectedDate.toLocaleDateString()}: R$ ${availableBalance.toFixed(2)}`;
+            Saldo em ${selectedDate.toLocaleDateString()}: R$ ${availableBalance.toFixed(2)};
         });
       });
     }
@@ -1226,17 +1237,17 @@
         for (let i = 1; i <= numPagamentos; i++) {
           let div = document.createElement("div");
           div.className = "pagamento-item";
-          div.innerHTML = `<label>Dia do Pagamento ${i}:</label>
+          div.innerHTML = <label>Dia do Pagamento ${i}:</label>
                            <input type="number" placeholder="Dia" min="1" max="31" required>
                            <label>Valor (R$):</label>
-                           <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()" required>`;
+                           <input type="number" class="valoresPagamento" placeholder="Valor R$" step="0.01" oninput="verificarSomaPagamentos()" required>;
           container.appendChild(div);
         }
       } else if (numPagamentos === 1) {
         let div = document.createElement("div");
         div.className = "pagamento-item";
-        div.innerHTML = `<label>Dia do Pagamento:</label>
-                         <input type="number" placeholder="Dia" min="1" max="31" required>`;
+        div.innerHTML = <label>Dia do Pagamento:</label>
+                         <input type="number" placeholder="Dia" min="1" max="31" required>;
         container.appendChild(div);
         let inputValor = document.createElement("input");
         inputValor.type = "number";
@@ -1317,7 +1328,7 @@
           div.style.marginBottom = "10px";
           div.style.borderRadius = "8px";
           div.style.boxShadow = "3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)";
-          div.innerHTML = `<strong>Nome:</strong> ${pessoa.nome} - <strong>Salário Líquido:</strong> R$ ${parseFloat(pessoa.salarioLiquido).toFixed(2)}`;
+          div.innerHTML = <strong>Nome:</strong> ${pessoa.nome} - <strong>Salário Líquido:</strong> R$ ${parseFloat(pessoa.salarioLiquido).toFixed(2)};
           rendaList.appendChild(div);
         });
         rendaVisivel = true;
@@ -1343,7 +1354,7 @@
               if (!parcela.pago) {
                 const option = document.createElement("option");
                 option.value = child.key + "|" + index;
-                option.text = `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
+                option.text = ${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)};
                 despesaSelect.appendChild(option);
               }
             });
