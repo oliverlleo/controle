@@ -227,6 +227,27 @@
     <!-- Dashboard Resumido -->
     <section id="dashboardSection" class="container">
       <h2>Dashboard Resumido</h2>
+      <!-- Seletor de Mês/Ano para o Dashboard -->
+      <div id="dashboardMonthSelector" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <label for="dashboardMonth">Mês:</label>
+        <select id="dashboardMonth">
+          <option value="0">Janeiro</option>
+          <option value="1">Fevereiro</option>
+          <option value="2">Março</option>
+          <option value="3">Abril</option>
+          <option value="4">Maio</option>
+          <option value="5">Junho</option>
+          <option value="6">Julho</option>
+          <option value="7">Agosto</option>
+          <option value="8">Setembro</option>
+          <option value="9">Outubro</option>
+          <option value="10">Novembro</option>
+          <option value="11">Dezembro</option>
+        </select>
+        <label for="dashboardYear">Ano:</label>
+        <select id="dashboardYear"></select>
+        <button onclick="atualizarDashboard()">Atualizar Dashboard</button>
+      </div>
       <div id="dashboardResumo" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
         <div class="dashboard-item" style="text-align: center;">
           <h3>Saldo Atual</h3>
@@ -557,6 +578,20 @@
       });
     });
     
+    /* Preenche o seletor de ano do dashboard */
+    function preencherDashboardAno() {
+      const selectAno = document.getElementById("dashboardYear");
+      selectAno.innerHTML = "";
+      const currentYear = new Date().getFullYear();
+      for(let y = currentYear - 5; y <= currentYear + 5; y++) {
+        let option = document.createElement("option");
+        option.value = y;
+        option.text = y;
+        if(y === currentYear) option.selected = true;
+        selectAno.appendChild(option);
+      }
+    }
+    
     /* Função para mostrar seções do sistema */
     function showSection(sectionId) {
       const sections = document.querySelectorAll('main > section');
@@ -583,7 +618,6 @@
     
     /* Função para exportar dados em CSV */
     function exportData() {
-      // Exemplo simples: exporta despesas para CSV
       db.ref("despesas").once("value").then(snapshot => {
         let csv = "Descrição,Valor,Data,Forma de Pagamento\n";
         snapshot.forEach(child => {
@@ -605,33 +639,49 @@
       });
     }
     
-    /* Dashboard: Atualiza resumo e gráficos */
+    /* Dashboard: Atualiza resumo e gráficos conforme o mês/ano selecionado */
     function atualizarDashboard() {
+      const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
+      const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
+      
       let saldo = 0, despesasMes = 0, proximos = 0;
-      // Calcula o saldo e despesas a partir de "pessoas" e "despesas"
+      
+      // Para rendimentos (pagamentos), vamos assumir que são mensais e somá-los sem filtro de data.
       db.ref("pessoas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let pessoa = child.val();
           if(pessoa.pagamentos) {
-            pessoa.pagamentos.forEach(pag => { saldo += parseFloat(pag.valor) || 0; });
+            pessoa.pagamentos.forEach(pag => { 
+              saldo += parseFloat(pag.valor) || 0; 
+            });
           }
         });
+        
+        // Para despesas, filtramos as datas conforme o mês/ano selecionado.
         db.ref("despesas").once("value").then(snapshot2 => {
           snapshot2.forEach(child => {
             let despesa = child.val();
             if(despesa.formaPagamento === "avista" && despesa.pago) {
-              despesasMes += parseFloat(despesa.valor) || 0;
+              let dt = new Date(despesa.dataCompra);
+              if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
+                despesasMes += parseFloat(despesa.valor) || 0;
+              }
             } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
               despesa.parcelas.forEach(parcela => {
-                if(parcela.pago) despesasMes += parseFloat(parcela.valor) || 0;
+                let dt = new Date(parcela.vencimento);
+                if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear && parcela.pago) {
+                  despesasMes += parseFloat(parcela.valor) || 0;
+                }
               });
             }
           });
           document.getElementById("saldoAtual").innerText = "R$ " + saldo.toFixed(2);
           document.getElementById("despesasMes").innerText = "R$ " + despesasMes.toFixed(2);
-          // Exemplo: contar próximos vencimentos a partir do calendário
-          proximos = document.querySelectorAll("#calendarGrid td").length; // ajuste conforme lógica
-          document.getElementById("proximosVencimentos").innerText = proximos;
+          // Atualiza calendário para o mês/ano selecionado
+          currentCalendarMonth = dashboardMonth;
+          currentCalendarYear = dashboardYear;
+          renderCalendar();
+          // Atualiza gráfico também (nesse exemplo, sem filtro por período)
           atualizarGrafico();
         });
       });
@@ -640,7 +690,6 @@
     /* Gráfico de Despesas por Categoria (usando Chart.js) */
     let grafico;
     function atualizarGrafico() {
-      // Consulta as despesas e agrupa por categoria
       let categorias = {};
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
@@ -1234,7 +1283,7 @@
     /* Função para carregar/alternar rendas cadastradas na página de Renda */
     function loadRendas() {
       const rendaList = document.getElementById("usuariosListaPrincipal");
-      // Se já estiver visível (ou com conteúdo), o botão alterna para esconder
+      // Se já estiver visível, oculta a lista
       if (rendaVisivel) {
         rendaList.innerHTML = "";
         rendaVisivel = false;
@@ -1294,6 +1343,7 @@
       loadCartoes();
       renderCalendar();
       loadCategoriasFiltro();
+      preencherDashboardAno();
       atualizarDashboard();
     };
   </script>
