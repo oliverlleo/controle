@@ -78,6 +78,42 @@
       font-weight: bold;
       color: var(--primary);
     }
+    /* Cadastro de Despesa (novo posicionamento acima do gráfico) */
+    .cadastro-despesa {
+      max-width: 600px;
+      margin: 20px auto;
+      background: var(--card-color);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+    }
+    .cadastro-despesa h2 {
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .cadastro-despesa label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+    .cadastro-despesa input, .cadastro-despesa select, .cadastro-despesa button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: none;
+      border-radius: 8px;
+      background: var(--card-color);
+      box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+      font-size: 1rem;
+      color: var(--text-color);
+      outline: none;
+    }
+    .cadastro-despesa button:hover {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+    }
+    .hidden { display: none; }
     /* Seção de Gráfico */
     .chart-container {
       margin: 20px;
@@ -103,7 +139,7 @@
       margin-bottom: 10px;
       box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
     }
-    /* Botão Flutuante (FAB) */
+    /* Botão Flutuante (FAB) - agora abre o menu de cadastros */
     .fab {
       position: fixed;
       right: 20px;
@@ -145,7 +181,7 @@
       font-size: 24px;
       margin-bottom: 2px;
     }
-    /* Estilos dos inputs, botões e containers (mantendo os estilos Neumorphism) */
+    /* Estilos dos inputs, botões e containers dos modais (mantendo Neumorphism) */
     .container {
       max-width: 600px;
       margin: 20px auto;
@@ -172,7 +208,6 @@
       color: #fff;
       box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
     }
-    .hidden { display: none; }
     /* Modal */
     .modal {
       display: none;
@@ -241,6 +276,79 @@
     </div>
   </div>
   
+  <!-- Seção de Cadastro de Despesa (com filtros e pesquisa) -->
+  <div class="cadastro-despesa">
+    <h2>Cadastrar Despesa</h2>
+    <label>Descrição:</label>
+    <input type="text" id="despesaDescricao" placeholder="Descrição da despesa" required>
+    <label>Valor (R$):</label>
+    <input type="number" id="despesaValor" placeholder="Valor" step="0.01" required>
+    <label>Data da Compra:</label>
+    <input type="date" id="dataCompra" required>
+    <label>Categoria:</label>
+    <select id="categoriaDespesa">
+      <option value="">Selecione a Categoria</option>
+    </select>
+    <label>Forma de Pagamento:</label>
+    <select id="formaPagamento" onchange="toggleParcelamento()">
+      <option value="avista">À Vista</option>
+      <option value="cartao">Cartão</option>
+    </select>
+    <div id="parcelamentoDiv" class="hidden">
+      <label>Cartão:</label>
+      <select id="cartaoDespesa" required>
+        <option value="">Selecione o Cartão</option>
+      </select>
+      <label>Número de Parcelas:</label>
+      <input type="number" id="numParcelasDespesa" min="1" max="12" required>
+    </div>
+    <button onclick="salvarDespesa()">Salvar Despesa</button>
+  </div>
+  
+  <!-- Seção de Filtros do Módulo Pagar Despesa -->
+  <div class="container">
+    <h2>Pagar Despesa</h2>
+    <div id="pagarDespesaFilters">
+      <input type="text" id="despesaSearch" placeholder="Descrição" maxlength="25">
+      <input type="text" id="mesFiltro" placeholder="Mês (ex: JAN)" list="meses">
+      <datalist id="meses">
+        <option value="JAN">
+        <option value="FEV">
+        <option value="MAR">
+        <option value="ABR">
+        <option value="MAI">
+        <option value="JUN">
+        <option value="JUL">
+        <option value="AGO">
+        <option value="SET">
+        <option value="OUT">
+        <option value="NOV">
+        <option value="DEZ">
+      </datalist>
+      <input type="text" id="anoFiltro" placeholder="Ano (ex: 2025)" list="anos">
+      <datalist id="anos">
+        <option value="2020">
+        <option value="2021">
+        <option value="2022">
+        <option value="2023">
+        <option value="2024">
+        <option value="2025">
+        <option value="2026">
+        <option value="2027">
+      </datalist>
+      <select id="categoriaFiltro">
+        <option value="">Todas as Categorias</option>
+      </select>
+      <label style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+        <input type="checkbox" id="contaMesFiltro">
+        Conta do Mês
+      </label>
+      <button onclick="filtrarDespesas()">Filtrar</button>
+    </div>
+    <select id="despesaSelect" size="5" style="margin-top: 10px;"></select>
+    <button onclick="pagarDespesaSelecionada()">Pagar Parcela Selecionada</button>
+  </div>
+  
   <!-- Seção de Gráfico: Distribuição de Gastos por Categoria -->
   <div class="chart-container">
     <h2>Distribuição de Gastos por Categoria</h2>
@@ -255,10 +363,10 @@
     </div>
   </div>
   
-  <!-- Botão Flutuante para Ação Principal: Adicionar Despesa -->
-  <button class="fab" onclick="abrirModal('cadastroModal')">+</button>
+  <!-- Botão Flutuante para abrir o menu de cadastros -->
+  <button class="fab" onclick="abrirModal('menuModal')">+</button>
   
-  <!-- Navegação Inferior (Bottom Navigation) -->
+  <!-- Bottom Navigation com opção Calendário -->
   <div class="bottom-nav">
     <a href="#">
       <span class="material-icons">home</span>
@@ -268,23 +376,27 @@
       <span class="material-icons">bar_chart</span>
       Gráficos
     </a>
+    <a href="#" onclick="abrirModal('calendarModal')">
+      <span class="material-icons">date_range</span>
+      Calendário
+    </a>
     <a href="#">
       <span class="material-icons">person</span>
       Perfil
     </a>
   </div>
   
-  <!-- Inclusão das Bibliotecas -->
-  <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
-  
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
-  
-  <!-- Códigos de Funcionalidades e Modais (mantidos conforme o código original) -->
+  <!-- Modal de Menu de Cadastros -->
+  <div id="menuModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('menuModal')">&times;</span>
+      <h2>Cadastros</h2>
+      <button onclick="abrirModal('cadastroModal'); fecharModal('menuModal')">Cadastro de Renda</button>
+      <button onclick="abrirModal('cartaoModal'); fecharModal('menuModal')">Cadastro de Cartão</button>
+      <button onclick="abrirModal('categoriasModal'); fecharModal('menuModal')">Cadastro de Categoria</button>
+      <button onclick="abrirModal('fonteModal'); fecharModal('menuModal')">Fonte de Renda</button>
+    </div>
+  </div>
   
   <!-- Modal de Calendário -->
   <div id="calendarModal" class="modal">
@@ -398,6 +510,17 @@
     </div>
   </div>
   
+  <!-- Inclusão das Bibliotecas -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
+  
+  <!-- Códigos de Funcionalidades e Modais (mantidos conforme o código original) -->
   <script>
     'use strict';
     var currentCalendarMonth = new Date().getMonth();
@@ -1090,7 +1213,7 @@
     
     /* Funções para atualizar Dashboard e Transações Recentes */
     function atualizarDashboard() {
-      // Exemplo: atualiza saldo (receitas), despesas do mês e metas de economia
+      // Atualiza saldo (receitas), despesas do mês e metas de economia
       db.ref("pessoas").once("value").then(snapshot => {
         let totalIncome = 0;
         snapshot.forEach(child => {
@@ -1117,7 +1240,7 @@
         });
         document.getElementById("despesasMes").innerText = "R$ " + totalExpenses.toFixed(2);
       });
-      // Meta de economia definida de forma exemplar
+      // Meta de economia exemplar
       document.getElementById("metasEconomia").innerText = "R$ 500,00";
     }
     
@@ -1138,7 +1261,7 @@
     /* Função para renderizar gráfico de gastos com Chart.js */
     function renderChart() {
       let ctx = document.getElementById('gastosChart').getContext('2d');
-      // Dados fictícios para exemplo – substituir por dados reais conforme necessário
+      // Dados fictícios – substituir conforme necessário
       let chartData = {
         labels: ['Alimentação', 'Transporte', 'Lazer', 'Outros'],
         datasets: [{
@@ -1157,23 +1280,23 @@
       });
     }
     
-   window.onload = () => {
-  const dataCompraEl = document.getElementById("dataCompra");
-  if(dataCompraEl){
-    dataCompraEl.value = new Date().toISOString().split("T")[0];
-  }
-  updateCategoriaSelect();
-  updateCartaoSelect();
-  loadDespesasNaoPagasSelect();
-  loadCategorias();
-  loadCartoes();
-  renderCalendar();
-  loadCategoriasFiltro();
-  atualizarDashboard();
-  atualizarTransacoes();
-  renderChart();
-};
-
+    window.onload = () => {
+      // Verifica se o input dataCompra existe antes de definir seu valor
+      const dataCompraEl = document.getElementById("dataCompra");
+      if(dataCompraEl) {
+        dataCompraEl.value = new Date().toISOString().split("T")[0];
+      }
+      updateCategoriaSelect();
+      updateCartaoSelect();
+      loadDespesasNaoPagasSelect();
+      loadCategorias();
+      loadCartoes();
+      renderCalendar();
+      loadCategoriasFiltro();
+      atualizarDashboard();
+      atualizarTransacoes();
+      renderChart();
+    };
   </script>
 </body>
 </html>
