@@ -362,8 +362,12 @@
 
     /* Inicialização do Daterangepicker com máscara e configurações em português */
     $(function() {
-      // Aplica a máscara ao input de intervalo
-      $('#dataRange').mask('00/00/0000 - 00/00/0000', {placeholder: "DD/MM/AAAA - DD/MM/AAAA"});
+      // Aplica a máscara com as opções para manter os separadores visíveis
+      $('#dataRange').mask('00/00/0000 - 00/00/0000', {
+        placeholder: "00/00/0000 - 00/00/0000",
+        clearIfNotMatch: false,
+        selectOnFocus: true
+      });
       
       $('#dataRange').daterangepicker({
         autoUpdateInput: false,
