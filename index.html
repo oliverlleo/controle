@@ -272,6 +272,7 @@
     <section id="rendaSection" class="container" style="display: none;">
       <h2>Cadastro de Renda</h2>
       <button onclick="abrirModal('cadastroModal')">Cadastrar Nova Renda</button>
+      <button onclick="loadRendas()">Ver Rendas Cadastradas</button>
       <div id="usuariosListaPrincipal"></div>
     </section>
   </main>
@@ -1218,19 +1219,25 @@
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
     
-    /* Função para carregar dados iniciais */
-    window.onload = () => {
-      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
-      updateCategoriaSelect();
-      updateCartaoSelect();
-      loadDespesasNaoPagasSelect();
-      loadCategorias();
-      loadCartoes();
-      renderCalendar();
-      loadCategoriasFiltro();
-      atualizarDashboard();
-    };
+    /* Função para carregar rendas cadastradas na página de Renda */
+    function loadRendas() {
+      const rendaList = document.getElementById("usuariosListaPrincipal");
+      rendaList.innerHTML = "";
+      db.ref("pessoas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const pessoa = child.val();
+          const div = document.createElement("div");
+          div.style.padding = "10px";
+          div.style.marginBottom = "10px";
+          div.style.borderRadius = "8px";
+          div.style.boxShadow = "3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)";
+          div.innerHTML = `<strong>Nome:</strong> ${pessoa.nome} - <strong>Salário Líquido:</strong> R$ ${parseFloat(pessoa.salarioLiquido).toFixed(2)}`;
+          rendaList.appendChild(div);
+        });
+      });
+    }
     
+    /* Função para carregar despesas não pagas (usada em outros módulos) */
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
@@ -1258,19 +1265,18 @@
       });
     }
     
-    /* Fonte de Renda */
-    function loadUsuarios() {
-      const usuariosLista = document.getElementById("usuariosLista");
-      usuariosLista.innerHTML = "";
-      db.ref("pessoas").once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          const pessoa = child.val();
-          const div = document.createElement("div");
-          div.innerHTML = `<strong>Nome:</strong> ${pessoa.nome} - <strong>Salário Líquido:</strong> ${pessoa.salarioLiquido}`;
-          usuariosLista.appendChild(div);
-        });
-      });
-    }
+    /* Carrega dados iniciais */
+    window.onload = () => {
+      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
+      updateCategoriaSelect();
+      updateCartaoSelect();
+      loadDespesasNaoPagasSelect();
+      loadCategorias();
+      loadCartoes();
+      renderCalendar();
+      loadCategoriasFiltro();
+      atualizarDashboard();
+    };
   </script>
 </body>
 </html>
