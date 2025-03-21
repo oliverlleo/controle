@@ -108,18 +108,18 @@
       box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
     }
     
-    /* Botões discretos */
+    /* Botão discreto para período */
     .btn-discreto {
+      width: 15ch;
       background: transparent;
       border: none;
       color: var(--primary);
       cursor: pointer;
       font-size: 0.9rem;
       text-decoration: underline;
-      padding: 5px;
-      margin-bottom: 10px;
     }
     
+    /* Botões padrão */
     button {
       width: 100%;
       padding: 10px;
@@ -239,28 +239,31 @@
     <!-- Dashboard Resumido -->
     <section id="dashboardSection" class="container">
       <h2>Dashboard Resumido</h2>
-      <!-- Botão discreto para exibir a seleção de período -->
-      <button class="btn-discreto" onclick="toggleDashboardPeriod()">Alterar Período</button>
-      <!-- Área de seleção de período, inicialmente oculta -->
-      <div id="dashboardPeriod" style="display: none; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <label for="dashboardMonth" style="font-size:0.9rem;">Mês:</label>
-        <select id="dashboardMonth" style="font-size:0.9rem; padding: 5px;">
-          <option value="0">Janeiro</option>
-          <option value="1">Fevereiro</option>
-          <option value="2">Março</option>
-          <option value="3">Abril</option>
-          <option value="4">Maio</option>
-          <option value="5">Junho</option>
-          <option value="6">Julho</option>
-          <option value="7">Agosto</option>
-          <option value="8">Setembro</option>
-          <option value="9">Outubro</option>
-          <option value="10">Novembro</option>
-          <option value="11">Dezembro</option>
-        </select>
-        <label for="dashboardYear" style="font-size:0.9rem;">Ano:</label>
-        <select id="dashboardYear" style="font-size:0.9rem; padding: 5px;"></select>
-        <button style="font-size:0.9rem; padding: 5px 10px;" onclick="atualizarDashboard()">Atualizar</button>
+      <!-- Container de seleção de período com layout em linha -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <!-- Área de seleção de período (inicialmente oculta) -->
+        <div id="dashboardPeriod" style="display: none; flex: 1; gap: 10px; align-items: center; display: flex;">
+          <label for="dashboardMonth" style="font-size: 0.9rem;">Mês:</label>
+          <select id="dashboardMonth" style="font-size: 0.9rem; padding: 5px;">
+            <option value="0">Janeiro</option>
+            <option value="1">Fevereiro</option>
+            <option value="2">Março</option>
+            <option value="3">Abril</option>
+            <option value="4">Maio</option>
+            <option value="5">Junho</option>
+            <option value="6">Julho</option>
+            <option value="7">Agosto</option>
+            <option value="8">Setembro</option>
+            <option value="9">Outubro</option>
+            <option value="10">Novembro</option>
+            <option value="11">Dezembro</option>
+          </select>
+          <label for="dashboardYear" style="font-size: 0.9rem;">Ano:</label>
+          <select id="dashboardYear" style="font-size: 0.9rem; padding: 5px;"></select>
+          <button style="font-size: 0.9rem; padding: 5px 10px;" onclick="atualizarDashboard()">Atualizar</button>
+        </div>
+        <!-- Botão discreto para alternar a exibição do período, fixo à direita -->
+        <button class="btn-discreto" onclick="toggleDashboardPeriod()">Alterar Pedido</button>
       </div>
       <div id="dashboardResumo" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
         <div class="dashboard-item" style="text-align: center;">
@@ -608,7 +611,7 @@
       }
     }
     
-    /* Função para alternar a área de seleção de período no dashboard */
+    /* Função para alternar a exibição da área de seleção de período no dashboard */
     function toggleDashboardPeriod() {
       const periodDiv = document.getElementById("dashboardPeriod");
       if (periodDiv.style.display === "none" || periodDiv.style.display === "") {
@@ -701,7 +704,6 @@
           });
           document.getElementById("saldoAtual").innerText = "R$ " + saldo.toFixed(2);
           document.getElementById("despesasMes").innerText = "R$ " + despesasMes.toFixed(2);
-          // Atualiza o calendário para o período selecionado
           currentCalendarMonth = dashboardMonth;
           currentCalendarYear = dashboardYear;
           renderCalendar();
