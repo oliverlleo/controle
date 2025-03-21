@@ -198,27 +198,10 @@
   <div class="container" id="relatorioMensalSection">
     <h2>Relatório Mensal de Despesas Pagas</h2>
     <div id="filtrosRelatorio">
-      <label for="filtroMes">Mês:</label>
-      <select id="filtroMes">
-        <option value="">Todos</option>
-        <option value="0">Janeiro</option>
-        <option value="1">Fevereiro</option>
-        <option value="2">Março</option>
-        <option value="3">Abril</option>
-        <option value="4">Maio</option>
-        <option value="5">Junho</option>
-        <option value="6">Julho</option>
-        <option value="7">Agosto</option>
-        <option value="8">Setembro</option>
-        <option value="9">Outubro</option>
-        <option value="10">Novembro</option>
-        <option value="11">Dezembro</option>
-      </select>
-      <label for="filtroAno">Ano:</label>
-      <select id="filtroAno">
-        <option value="">Todos</option>
-        <!-- Os anos serão preenchidos dinamicamente -->
-      </select>
+      <label for="dataInicial">Data Inicial:</label>
+      <input type="date" id="dataInicial">
+      <label for="dataFinal">Data Final:</label>
+      <input type="date" id="dataFinal">
       <button onclick="loadRelatorioMensal()">Filtrar</button>
     </div>
     <div id="relatorioMensalContainer"></div>
@@ -473,14 +456,13 @@
     }
 
     /* Módulo Pagar Despesa */
-    // Lista as despesas pagas: se for à vista, a despesa inteira; se for cartão, cada parcela individualmente.
+    // Lista despesas não pagas: para despesas com cartão, cada parcela individualmente.
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
       db.ref("despesas").orderByChild("pago").equalTo(false).once("value").then(snapshot => {
         snapshot.forEach(child => {
           const despesa = child.val();
-          // Despesa à vista
           if(despesa.formaPagamento === "avista") {
             const option = document.createElement("option");
             option.value = child.key;
@@ -489,7 +471,6 @@
             option.text = despesa.descricao + " " + valorExibido + " - " + dataExibicao;
             despesaSelect.appendChild(option);
           }
-          // Despesa com cartão - cada parcela não paga
           else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach((parcela, index) => {
               if(!parcela.pago) {
@@ -504,7 +485,6 @@
       });
     }
 
-    // Ao pagar, se o valor tiver "|" é parcela de cartão; senão, despesa à vista.
     function pagarDespesaSelecionada() {
       const despesaSelect = document.getElementById("despesaSelect");
       const selectedValue = despesaSelect.value;
@@ -543,39 +523,43 @@
     }
 
     /* Relatório Mensal de Despesas Pagas */
-    // Exibe todas as despesas pagas e parcelas pagas com filtro por mês/ano.
+    // Filtra despesas pagas dentro de um intervalo de datas.
     function loadRelatorioMensal() {
-      const filtroMes = document.getElementById("filtroMes").value;
-      const filtroAno = document.getElementById("filtroAno").value;
+      const dataInicial = document.getElementById("dataInicial").value;
+      const dataFinal = document.getElementById("dataFinal").value;
       const container = document.getElementById("relatorioMensalContainer");
-      container.innerHTML = "";      
+      container.innerHTML = "";
       db.ref("despesas").once("value").then(snapshot => {
         let rows = [];
         snapshot.forEach(child => {
           const despesa = child.val();
-          // Despesa à vista paga
+          // Função para converter data para milissegundos
+          function getTime(dateStr) {
+            return new Date(dateStr).getTime();
+          }
+          // Verifica se a despesa à vista foi paga e se sua data está no intervalo
           if(despesa.formaPagamento === "avista" && despesa.pago) {
-            const data = new Date(despesa.dataCompra);
-            if ((filtroMes === "" || data.getMonth().toString() === filtroMes) &&
-                (filtroAno === "" || data.getFullYear().toString() === filtroAno)) {
+            let dt = despesa.dataCompra;
+            if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
+               (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
               rows.push({
                 descricao: despesa.descricao,
-                data: despesa.dataCompra,
+                data: dt,
                 valor: despesa.valor,
                 forma: "À Vista"
               });
             }
           }
-          // Despesa com cartão: cada parcela paga
+          // Para despesas com cartão, cada parcela paga
           else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach((parcela, index) => {
               if(parcela.pago) {
-                const data = new Date(parcela.vencimento);
-                if ((filtroMes === "" || data.getMonth().toString() === filtroMes) &&
-                    (filtroAno === "" || data.getFullYear().toString() === filtroAno)) {
+                let dt = parcela.vencimento;
+                if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
+                   (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
                   rows.push({
                     descricao: `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length}`,
-                    data: parcela.vencimento,
+                    data: dt,
                     valor: parcela.valor,
                     forma: "Cartão"
                   });
@@ -584,7 +568,6 @@
             });
           }
         });
-        // Cria tabela se houver dados
         if(rows.length > 0) {
           let table = document.createElement("table");
           let header = document.createElement("tr");
@@ -612,7 +595,7 @@
           });
           container.appendChild(table);
         } else {
-          container.innerHTML = "<p>Nenhum registro encontrado para os filtros selecionados.</p>";
+          container.innerHTML = "<p>Nenhum registro encontrado para o período selecionado.</p>";
         }
       });
     }
@@ -950,93 +933,6 @@
         })
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
-
-    // Preenche o select de anos para o relatório (ex.: últimos 10 anos)
-    function preencherFiltroAno() {
-      const filtroAno = document.getElementById("filtroAno");
-      filtroAno.innerHTML = '<option value="">Todos</option>';
-      const anoAtual = new Date().getFullYear();
-      for(let y = anoAtual - 10; y <= anoAtual; y++) {
-        let option = document.createElement("option");
-        option.value = y;
-        option.text = y;
-        filtroAno.appendChild(option);
-      }
-    }
-
-    // Função para carregar o relatório mensal com filtros
-    function loadRelatorioMensal() {
-      const filtroMes = document.getElementById("filtroMes").value;
-      const filtroAno = document.getElementById("filtroAno").value;
-      const container = document.getElementById("relatorioMensalContainer");
-      container.innerHTML = "";
-      db.ref("despesas").once("value").then(snapshot => {
-        let rows = [];
-        snapshot.forEach(child => {
-          const despesa = child.val();
-          // Para despesas à vista pagas
-          if(despesa.formaPagamento === "avista" && despesa.pago) {
-            let data = new Date(despesa.dataCompra);
-            if((filtroMes === "" || data.getMonth().toString() === filtroMes) &&
-               (filtroAno === "" || data.getFullYear().toString() === filtroAno)) {
-              rows.push({
-                descricao: despesa.descricao,
-                data: despesa.dataCompra,
-                valor: despesa.valor,
-                forma: "À Vista"
-              });
-            }
-          }
-          // Para despesas com cartão: cada parcela paga
-          else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
-            despesa.parcelas.forEach((parcela, index) => {
-              if(parcela.pago) {
-                let data = new Date(parcela.vencimento);
-                if((filtroMes === "" || data.getMonth().toString() === filtroMes) &&
-                   (filtroAno === "" || data.getFullYear().toString() === filtroAno)) {
-                  rows.push({
-                    descricao: `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length}`,
-                    data: parcela.vencimento,
-                    valor: parcela.valor,
-                    forma: "Cartão"
-                  });
-                }
-              }
-            });
-          }
-        });
-        if(rows.length > 0) {
-          let table = document.createElement("table");
-          let header = document.createElement("tr");
-          ["Descrição", "Data", "Valor", "Forma"].forEach(col => {
-            let th = document.createElement("th");
-            th.innerText = col;
-            header.appendChild(th);
-          });
-          table.appendChild(header);
-          rows.forEach(r => {
-            let tr = document.createElement("tr");
-            let tdDesc = document.createElement("td");
-            tdDesc.innerText = r.descricao;
-            let tdData = document.createElement("td");
-            tdData.innerText = new Date(r.data).toLocaleDateString();
-            let tdValor = document.createElement("td");
-            tdValor.innerText = "R$ " + parseFloat(r.valor).toFixed(2);
-            let tdForma = document.createElement("td");
-            tdForma.innerText = r.forma;
-            tr.appendChild(tdDesc);
-            tr.appendChild(tdData);
-            tr.appendChild(tdValor);
-            tr.appendChild(tdForma);
-            table.appendChild(tr);
-          });
-          container.appendChild(table);
-        } else {
-          container.innerHTML = "<p>Nenhum registro encontrado para os filtros selecionados.</p>";
-        }
-      });
-    }
-
     // Window onload
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
@@ -1048,6 +944,19 @@
       loadCartoes();
       renderCalendar();
     };
+
+    // Preenche o select de anos para o relatório (últimos 10 anos)
+    function preencherFiltroAno() {
+      const filtroAno = document.getElementById("filtroAno");
+      filtroAno.innerHTML = '<option value="">Todos</option>';
+      const anoAtual = new Date().getFullYear();
+      for(let y = anoAtual - 10; y <= anoAtual; y++) {
+        let option = document.createElement("option");
+        option.value = y;
+        option.text = y;
+        filtroAno.appendChild(option);
+      }
+    }
   </script>
 </body>
 </html>
