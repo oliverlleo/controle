@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciamento de Contas</title>
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Roboto -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -20,9 +20,7 @@
       --shadow-dark: rgba(0, 0, 0, 0.1);
     }
     
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     
     body {
       margin: 0;
@@ -32,10 +30,8 @@
       color: var(--text-color);
     }
     
-    h1, h2 {
-      margin: 0 0 10px 0;
-      font-weight: 700;
-    }
+    header { text-align: center; margin-bottom: 30px; }
+    header h1 { font-size: 2rem; color: var(--primary); }
     
     .container {
       max-width: 600px;
@@ -44,20 +40,13 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow:  5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+      margin-bottom: 20px;
     }
     
-    /* Cabeçalho do site */
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
+    h1, h2 { margin: 0 0 10px 0; font-weight: 700; }
     
-    header h1 {
-      font-size: 2rem;
-      color: var(--primary);
-    }
+    label { display: block; margin-top: 10px; font-weight: 500; }
     
-    /* Inputs e botões */
     input, select {
       width: 100%;
       padding: 10px;
@@ -94,6 +83,8 @@
       color: #fff;
       box-shadow:  1px 1px 3px var(--shadow-dark), -1px -1px 3px var(--shadow-light);
     }
+    
+    .hidden { display: none; }
     
     /* Modal */
     .modal {
@@ -151,7 +142,6 @@
       color: #fff;
     }
     
-    /* Saldo */
     #saldoDisponivelContainer {
       text-align: right;
       margin-top: 10px;
@@ -178,7 +168,36 @@
       color: #fff;
     }
     
-    /* Filtro do relatório */
+    /* Filtros do módulo Pagar Despesa (novo layout em linha) */
+    #pagarDespesaFilters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    
+    #pagarDespesaFilters input[type="text"] {
+      flex: 1;
+      max-width: 150px;
+    }
+    
+    #pagarDespesaFilters input[type="text"].small {
+      width: 80px;
+    }
+    
+    #pagarDespesaFilters select {
+      flex: 1;
+      max-width: 150px;
+    }
+    
+    #pagarDespesaFilters label {
+      white-space: nowrap;
+      font-size: 0.9rem;
+    }
+    
+    /* Filtros de relatório também em linha */
     #filtrosRelatorio {
       margin: 10px 0;
       display: flex;
@@ -205,17 +224,20 @@
       color: var(--text-color);
     }
     
-    /* Checkbox Group */
     .checkbox-group {
       display: flex;
       gap: 20px;
       margin: 15px 0;
       justify-content: center;
     }
+    
+    @media (max-width: 600px) {
+      #calendarGrid { overflow-x: auto; display: block; }
+    }
   </style>
 </head>
 <body>
-  <!-- Inclusão das bibliotecas jQuery, Moment.js, Daterangepicker e jQuery Mask -->
+  <!-- Bibliotecas: jQuery, Moment.js, Daterangepicker, jQuery Mask -->
   <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
@@ -238,7 +260,7 @@
     <button onclick="abrirModal('cartaoModal')">Gerenciar Cartões</button>
     <button onclick="abrirModal('calendarModal'); renderCalendar()">Calendário</button>
   </div>
-
+  
   <!-- Cadastro de Despesa -->
   <div class="container">
     <h2>Cadastrar Despesa</h2>
@@ -267,16 +289,27 @@
     </div>
     <button onclick="salvarDespesa()">Salvar Despesa</button>
   </div>
-
-  <!-- Módulo Pagar Despesa -->
+  
+  <!-- Módulo Pagar Despesa com Filtros -->
   <div class="container">
     <h2>Pagar Despesa</h2>
-    <label>Pesquisar Despesa:</label>
-    <input type="text" id="despesaSearch" placeholder="Digite parte da descrição...">
-    <select id="despesaSelect" size="5"></select>
+    <div id="pagarDespesaFilters">
+      <input type="text" id="despesaSearch" placeholder="Descrição" maxlength="25">
+      <input type="text" id="mesFiltro" placeholder="Mês (ex: 01)" class="small">
+      <input type="text" id="anoFiltro" placeholder="Ano (ex: 2025)" class="small">
+      <select id="categoriaFiltro">
+        <option value="">Todas as Categorias</option>
+      </select>
+      <label style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+        <input type="checkbox" id="contaMesFiltro">
+        Conta do Mês
+      </label>
+      <button onclick="filtrarDespesas()">Filtrar</button>
+    </div>
+    <select id="despesaSelect" size="5" style="margin-top: 10px;"></select>
     <button onclick="pagarDespesaSelecionada()">Pagar Parcela Selecionada</button>
   </div>
-
+  
   <!-- Relatório Mensal -->
   <div class="container" id="relatorioMensalSection">
     <h2>Relatório Mensal de Despesas Pagas</h2>
@@ -286,7 +319,7 @@
     </div>
     <div id="relatorioMensalContainer"></div>
   </div>
-
+  
   <!-- Modal de Calendário -->
   <div id="calendarModal" class="modal">
     <div class="modal-content">
@@ -321,7 +354,7 @@
       <div id="saldoDisponivelContainer">Saldo Atual: R$ 0,00</div>
     </div>
   </div>
-
+  
   <!-- Modal Cadastro de Renda -->
   <div id="cadastroModal" class="modal">
     <div class="modal-content">
@@ -359,7 +392,7 @@
       </form>
     </div>
   </div>
-
+  
   <!-- Modal Fonte de Renda -->
   <div id="fonteModal" class="modal">
     <div class="modal-content">
@@ -368,7 +401,7 @@
       <div id="usuariosLista"></div>
     </div>
   </div>
-
+  
   <!-- Modal Gerenciar Categorias -->
   <div id="categoriasModal" class="modal">
     <div class="modal-content">
@@ -380,7 +413,7 @@
       <div id="categoriasLista"></div>
     </div>
   </div>
-
+  
   <!-- Modal Gerenciar Cartões -->
   <div id="cartaoModal" class="modal">
     <div class="modal-content">
@@ -398,7 +431,7 @@
       <div id="cartoesLista"></div>
     </div>
   </div>
-
+  
   <script>
     'use strict';
     var currentCalendarMonth = new Date().getMonth();
@@ -419,7 +452,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
+    
     /* Inicialização do Daterangepicker com máscara e configurações em português */
     $(function() {
       $('#dataRange').mask('00/00/0000 - 00/00/0000', {
@@ -462,23 +495,98 @@
         this.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     });
-
+    
+    /* Sistema de Filtro para Pagar Despesa */
+    function filtrarDespesas() {
+      const searchText = document.getElementById("despesaSearch").value.toLowerCase();
+      const mesFiltro = document.getElementById("mesFiltro").value; // espera "01", "02", etc.
+      const anoFiltro = document.getElementById("anoFiltro").value; // espera "2025", etc.
+      const categoriaFiltro = document.getElementById("categoriaFiltro").value;
+      const contaMes = document.getElementById("contaMesFiltro").checked;
+      const despesaSelect = document.getElementById("despesaSelect");
+      despesaSelect.innerHTML = "";
+      
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const despesa = child.val();
+          if (!despesa.pago) {
+            // Filtro de descrição
+            if (searchText && !despesa.descricao.toLowerCase().includes(searchText)) return;
+            
+            // Filtrar por data (usando dataCompra ou vencimento do cartão)
+            let data = despesa.dataCompra ? new Date(despesa.dataCompra) : null;
+            if (despesa.formaPagamento === "cartao" && despesa.parcelas && despesa.parcelas.length > 0) {
+              // Utiliza a data da primeira parcela
+              data = new Date(despesa.parcelas[0].vencimento);
+            }
+            if (mesFiltro && data) {
+              const mes = ("0" + (data.getMonth() + 1)).slice(-2);
+              if (mes !== mesFiltro) return;
+            }
+            if (anoFiltro && data) {
+              const ano = data.getFullYear().toString();
+              if (ano !== anoFiltro) return;
+            }
+            
+            // Filtro por categoria
+            if (categoriaFiltro && despesa.categoria !== categoriaFiltro) return;
+            
+            // Se "Conta do Mês" estiver marcada, pode filtrar por alguma propriedade (ex.: despesa.contaMes == true)
+            if (contaMes && !despesa.contaMes) return;
+            
+            // Adiciona as opções
+            if (despesa.formaPagamento === "avista") {
+              const option = document.createElement("option");
+              option.value = child.key;
+              const dataExibicao = despesa.dataCompra;
+              const valorExibido = despesa.valor ? "R$ " + parseFloat(despesa.valor).toFixed(2) : "";
+              option.text = despesa.descricao + " " + valorExibido + " - " + dataExibicao;
+              despesaSelect.appendChild(option);
+            } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+              despesa.parcelas.forEach((parcela, index) => {
+                if (!parcela.pago) {
+                  const option = document.createElement("option");
+                  option.value = child.key + "|" + index;
+                  option.text = `${despesa.descricao} - Parcela ${index + 1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
+                  despesaSelect.appendChild(option);
+                }
+              });
+            }
+          }
+        });
+      });
+    }
+    
+    function loadCategoriasFiltro() {
+      const select = document.getElementById("categoriaFiltro");
+      select.innerHTML = '<option value="">Todas as Categorias</option>';
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const option = document.createElement("option");
+          option.value = child.key;
+          option.text = categoria.nome;
+          select.appendChild(option);
+        });
+      });
+    }
+    
     /* Funções de Modal */
     window.abrirModal = function(id) {
       document.getElementById(id).style.display = "flex";
-      if(id === "fonteModal") loadUsuarios();
-      if(id === "categoriasModal") loadCategorias();
-      if(id === "cartaoModal") loadCartoes();
-      if(id === "calendarModal") {
+      if (id === "fonteModal") loadUsuarios();
+      if (id === "categoriasModal") loadCategorias();
+      if (id === "cartaoModal") loadCartoes();
+      if (id === "calendarModal") {
         document.getElementById("calendarTitulo").innerText = "Calendário de Despesas";
         renderCalendar();
       }
-      if(id === "pagarDespesaModal") loadDespesasNaoPagasSelect();
+      if (id === "pagarDespesaModal") filtrarDespesas();
     };
     window.fecharModal = function(id) {
       document.getElementById(id).style.display = "none";
     };
-
+    
     /* Fonte de Renda */
     function loadUsuarios() {
       const usuariosLista = document.getElementById("usuariosLista");
@@ -492,12 +600,13 @@
         });
       });
     }
-
+    
     /* Módulo Despesa */
     function toggleParcelamento() {
       const forma = document.getElementById("formaPagamento").value;
       document.getElementById("parcelamentoDiv").classList.toggle("hidden", forma !== "cartao");
     }
+    
     function salvarDespesa() {
       const descricao = document.getElementById("despesaDescricao").value;
       const valor = parseFloat(document.getElementById("despesaValor").value);
@@ -505,14 +614,14 @@
       const categoria = document.getElementById("categoriaDespesa").value;
       const formaPagamento = document.getElementById("formaPagamento").value;
       const despesasRef = db.ref("despesas");
-
-      if(isNaN(valor)) {
+    
+      if (isNaN(valor)) {
         alert("O valor da despesa deve ser um número válido.");
         return;
       }
-      if(formaPagamento === "cartao") {
+      if (formaPagamento === "cartao") {
         const selectCartao = document.getElementById("cartaoDespesa");
-        if(!selectCartao.value) {
+        if (!selectCartao.value) {
           alert("Selecione um cartão para despesas no cartão.");
           return;
         }
@@ -523,14 +632,14 @@
         let parcelas = [];
         const purchaseDate = new Date(dataCompra);
         let firstDueDate = new Date(purchaseDate);
-        if(purchaseDate.getDate() > diaFechamento) {
+        if (purchaseDate.getDate() > diaFechamento) {
           firstDueDate.setMonth(firstDueDate.getMonth() + 1);
           firstDueDate.setDate(diaFatura);
         } else {
           firstDueDate.setDate(diaFatura);
         }
         const valorParcela = parseFloat((valor / numParcelas).toFixed(2));
-        for(let i = 0; i < numParcelas; i++){
+        for (let i = 0; i < numParcelas; i++) {
           let parcelaDate = new Date(firstDueDate);
           parcelaDate.setMonth(parcelaDate.getMonth() + i);
           parcelas.push({
@@ -558,7 +667,7 @@
           .then(() => {
             alert("Despesa com cartão cadastrada com sucesso!");
             toggleParcelamento();
-            loadDespesasNaoPagasSelect();
+            filtrarDespesas();
             renderCalendar();
             updateCartaoSelect();
           })
@@ -576,54 +685,27 @@
         despesasRef.push(despesaData)
           .then(() => {
             alert("Despesa à vista cadastrada com sucesso!");
-            loadDespesasNaoPagasSelect();
+            filtrarDespesas();
             renderCalendar();
           })
           .catch(err => alert("Erro: " + err));
       }
     }
-
-    /* Módulo Pagar Despesa */
-    function loadDespesasNaoPagasSelect() {
-      const despesaSelect = document.getElementById("despesaSelect");
-      despesaSelect.innerHTML = "";
-      db.ref("despesas").orderByChild("pago").equalTo(false).once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          const despesa = child.val();
-          if(despesa.formaPagamento === "avista") {
-            const option = document.createElement("option");
-            option.value = child.key;
-            const dataExibicao = despesa.dataCompra;
-            const valorExibido = despesa.valor ? "R$ " + parseFloat(despesa.valor).toFixed(2) : "";
-            option.text = despesa.descricao + " " + valorExibido + " - " + dataExibicao;
-            despesaSelect.appendChild(option);
-          }
-          else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
-            despesa.parcelas.forEach((parcela, index) => {
-              if(!parcela.pago) {
-                const option = document.createElement("option");
-                option.value = child.key + "|" + index;
-                option.text = `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
-                despesaSelect.appendChild(option);
-              }
-            });
-          }
-        });
-      });
-    }
-
+    
+    /* Módulo Pagar Despesa: a função filtrarDespesas() já popula o select */
+    
     function pagarDespesaSelecionada() {
       const despesaSelect = document.getElementById("despesaSelect");
       const selectedValue = despesaSelect.value;
-      if(!selectedValue) {
+      if (!selectedValue) {
         alert("Selecione uma despesa/parcela!");
         return;
       }
-      if(selectedValue.indexOf("|") === -1) {
+      if (selectedValue.indexOf("|") === -1) {
         db.ref("despesas").child(selectedValue).update({ pago: true })
           .then(() => {
             alert("Despesa paga com sucesso!");
-            loadDespesasNaoPagasSelect();
+            filtrarDespesas();
             renderCalendar();
           })
           .catch(err => alert("Erro ao pagar a despesa: " + err));
@@ -635,20 +717,20 @@
             db.ref("despesas/" + expenseKey + "/parcelas").once("value").then(snapshot => {
               let allPaid = true;
               snapshot.forEach(child => {
-                if(!child.val().pago) { allPaid = false; }
+                if (!child.val().pago) { allPaid = false; }
               });
-              if(allPaid) {
+              if (allPaid) {
                 db.ref("despesas").child(expenseKey).update({ pago: true });
               }
             });
             alert("Parcela paga com sucesso!");
-            loadDespesasNaoPagasSelect();
+            filtrarDespesas();
             renderCalendar();
           })
           .catch(err => alert("Erro ao pagar a parcela: " + err));
       }
     }
-
+    
     /* Relatório Mensal de Despesas Pagas */
     function loadRelatorioMensal() {
       let dataInicial = rangeStart ? rangeStart.toISOString().split("T")[0] : "";
@@ -662,10 +744,10 @@
           function getTime(dateStr) {
             return new Date(dateStr).getTime();
           }
-          if(despesa.formaPagamento === "avista" && despesa.pago) {
+          if (despesa.formaPagamento === "avista" && despesa.pago) {
             let dt = despesa.dataCompra;
-            if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
-               (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
+            if ((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
+                (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
               rows.push({
                 descricao: despesa.descricao,
                 data: dt,
@@ -673,14 +755,14 @@
                 forma: "À Vista"
               });
             }
-          } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+          } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach((parcela, index) => {
-              if(parcela.pago) {
+              if (parcela.pago) {
                 let dt = parcela.vencimento;
-                if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
-                   (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
+                if ((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
+                    (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
                   rows.push({
-                    descricao: `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length}`,
+                    descricao: `${despesa.descricao} - Parcela ${index + 1} de ${despesa.parcelas.length}`,
                     data: dt,
                     valor: parcela.valor,
                     forma: "Cartão"
@@ -690,7 +772,7 @@
             });
           }
         });
-        if(rows.length > 0) {
+        if (rows.length > 0) {
           let table = document.createElement("table");
           let header = document.createElement("tr");
           ["Descrição", "Data", "Valor", "Forma"].forEach(col => {
@@ -721,7 +803,7 @@
         }
       });
     }
-
+    
     /* Calendário – estrutura em tabela */
     function renderCalendar() {
       let monthYearElem = document.getElementById("calendarMonthYear");
@@ -879,6 +961,7 @@
           document.getElementById("categoriaNome").value = "";
           loadCategorias();
           updateCategoriaSelect();
+          loadCategoriasFiltro();
         })
         .catch(err => alert("Erro ao salvar categoria: " + err));
     }
@@ -921,6 +1004,20 @@
           const div = document.createElement("div");
           div.innerHTML = `<strong>${cartao.nome}</strong> - Limite: R$ ${parseFloat(cartao.limite).toFixed(2)}`;
           cartoesLista.appendChild(div);
+        });
+      });
+    }
+    
+    function loadCategoriasFiltro() {
+      const select = document.getElementById("categoriaFiltro");
+      select.innerHTML = '<option value="">Todas as Categorias</option>';
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const option = document.createElement("option");
+          option.value = child.key;
+          option.text = categoria.nome;
+          select.appendChild(option);
         });
       });
     }
@@ -1046,6 +1143,7 @@
       loadCategorias();
       loadCartoes();
       renderCalendar();
+      loadCategoriasFiltro();
     };
   </script>
 </body>
