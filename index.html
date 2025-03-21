@@ -91,7 +91,7 @@
       cursor: pointer;
     }
     #calendarGrid th { background: #007bff; color: #fff; }
-    /* Estilo para células selecionadas em intervalo */
+    /* Destaque para células do intervalo selecionado */
     .selected-range {
       background-color: #cce5ff !important;
     }
@@ -203,12 +203,9 @@
   <div class="container" id="relatorioMensalSection">
     <h2>Relatório Mensal de Despesas Pagas</h2>
     <div id="filtrosRelatorio">
-      <!-- Os campos de data são preenchidos via seleção no calendário ou digitados manualmente -->
-      <label for="dataInicial">Data Inicial:</label>
-      <input type="date" id="dataInicial" onchange="loadRelatorioMensal()">
-      <label for="dataFinal">Data Final:</label>
-      <input type="date" id="dataFinal" onchange="loadRelatorioMensal()">
-      <button onclick="abrirRangeSelector()">Selecionar Datas</button>
+      <label for="dataIntervalo">Intervalo de Datas:</label>
+      <!-- Campo único para seleção de intervalo; ao clicar, abre o calendário -->
+      <input type="text" id="dataIntervalo" placeholder="Selecione o intervalo" readonly onclick="abrirRangeSelector()">
     </div>
     <div id="relatorioMensalContainer"></div>
   </div>
@@ -332,7 +329,7 @@
     // Variáveis para seleção de intervalo
     var rangeStart = null;
     var rangeEnd = null;
-    var isRangeSelectionMode = false; // Define se o calendário está em modo de seleção de intervalo
+    var isRangeSelectionMode = false;
 
     // Firebase Configuração – use seus dados
     const firebaseConfig = {
@@ -355,7 +352,6 @@
       if(id === "categoriasModal") loadCategorias();
       if(id === "cartaoModal") loadCartoes();
       if(id === "calendarModal") {
-        // Se não estiver em modo de seleção de intervalo, mostra o calendário padrão
         if(!isRangeSelectionMode) {
           document.getElementById("calendarTitulo").innerText = "Calendário de Despesas";
           renderCalendar();
@@ -365,7 +361,6 @@
     };
     window.fecharModal = function(id) {
       document.getElementById(id).style.display = "none";
-      // Se fechar o calendário em modo de intervalo, resetamos as variáveis
       if(id === "calendarModal" && isRangeSelectionMode) {
         rangeStart = null;
         rangeEnd = null;
@@ -544,10 +539,10 @@
     }
 
     /* Relatório Mensal de Despesas Pagas */
-    // A função usa os valores dos inputs de data para filtrar os registros
+    // A filtragem usará as datas selecionadas via calendário (armazenadas em rangeStart e rangeEnd)
     function loadRelatorioMensal() {
-      const dataInicial = document.getElementById("dataInicial").value;
-      const dataFinal = document.getElementById("dataFinal").value;
+      let dataInicial = rangeStart ? rangeStart.toISOString().split("T")[0] : "";
+      let dataFinal = rangeEnd ? rangeEnd.toISOString().split("T")[0] : "";
       const container = document.getElementById("relatorioMensalContainer");
       container.innerHTML = "";
       db.ref("despesas").once("value").then(snapshot => {
@@ -628,12 +623,10 @@
       let date = new Date(currentCalendarYear, currentCalendarMonth, 1);
       let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
       
-      // Se estiver em modo de intervalo, ajusta o título do modal
-      if(isRangeSelectionMode) {
-        document.getElementById("calendarTitulo").innerText = "Selecione o Intervalo de Datas";
-      } else {
-        document.getElementById("calendarTitulo").innerText = "Calendário de Despesas";
-      }
+      // Ajusta o título conforme o modo de seleção
+      document.getElementById("calendarTitulo").innerText = isRangeSelectionMode 
+        ? "Selecione o Intervalo de Datas" 
+        : "Calendário de Despesas";
       
       monthYearElem.innerText = `${date.toLocaleString('pt-BR', { month: 'long' })} ${currentCalendarYear}`;
       
@@ -650,22 +643,20 @@
       table.appendChild(headerRow);
       
       let row = document.createElement("tr");
-      // Preencher células vazias até o dia da semana do primeiro dia
+      // Células vazias até o primeiro dia da semana
       for (let i = 0; i < date.getDay(); i++) {
         let cell = document.createElement("td");
         cell.innerText = "";
         row.appendChild(cell);
       }
-      // Preencher os dias do mês
+      // Dias do mês
       for (let day = 1; day <= daysInMonth; day++) {
         if (row.children.length === 7) {
           table.appendChild(row);
           row = document.createElement("tr");
         }
         let cell = document.createElement("td");
-        // Exibe o dia e, se não estiver em modo de intervalo, mostra o valor (saldo) zerado inicialmente
         cell.innerHTML = day + "<br>R$ " + (0).toFixed(2);
-        // Se estiver em modo de seleção de intervalo, a célula usará outra função de clique
         if(isRangeSelectionMode) {
           cell.addEventListener("click", function() {
             selectRangeDate(day);
@@ -675,7 +666,6 @@
             showBalanceForDate(day);
           });
         }
-        // Verifica se a célula deve estar destacada por estar no intervalo selecionado
         let cellDate = new Date(currentCalendarYear, currentCalendarMonth, day);
         if(rangeStart && !rangeEnd && cellDate.getTime() === rangeStart.getTime()){
           cell.classList.add("selected-range");
@@ -774,27 +764,22 @@
     /* Funções de seleção de intervalo no calendário */
     function selectRangeDate(day) {
       let selectedDate = new Date(currentCalendarYear, currentCalendarMonth, day);
-      // Se não houver data inicial definida, define-a
       if (!rangeStart) {
         rangeStart = selectedDate;
       } else if (!rangeEnd) {
-        // Se a data selecionada for anterior à data inicial, inverte a ordem
         if (selectedDate < rangeStart) {
           rangeEnd = rangeStart;
           rangeStart = selectedDate;
         } else {
           rangeEnd = selectedDate;
         }
-        // Após selecionar o intervalo, atualiza os inputs do relatório e chama o filtro
-        document.getElementById("dataInicial").value = rangeStart.toISOString().split("T")[0];
-        document.getElementById("dataFinal").value = rangeEnd.toISOString().split("T")[0];
+        document.getElementById("dataIntervalo").value = rangeStart.toLocaleDateString() + " - " + rangeEnd.toLocaleDateString();
         loadRelatorioMensal();
-        // Fecha o modal e reseta as variáveis de seleção
         fecharModal('calendarModal');
       } else {
-        // Se ambos já estiverem definidos, reinicia a seleção com a nova data
         rangeStart = selectedDate;
         rangeEnd = null;
+        document.getElementById("dataIntervalo").value = "";
       }
       renderCalendar();
     }
@@ -973,10 +958,9 @@
         })
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
-    // Função para abrir o calendário em modo de seleção de intervalo para o relatório
+    // Abre o calendário em modo de seleção de intervalo ao clicar no campo único
     function abrirRangeSelector() {
       isRangeSelectionMode = true;
-      // Reseta as variáveis de seleção
       rangeStart = null;
       rangeEnd = null;
       abrirModal('calendarModal');
@@ -993,81 +977,6 @@
       renderCalendar();
     };
 
-    /* Relatório Mensal de Despesas Pagas */
-    function loadRelatorioMensal() {
-      const dataInicial = document.getElementById("dataInicial").value;
-      const dataFinal = document.getElementById("dataFinal").value;
-      const container = document.getElementById("relatorioMensalContainer");
-      container.innerHTML = "";
-      db.ref("despesas").once("value").then(snapshot => {
-        let rows = [];
-        snapshot.forEach(child => {
-          const despesa = child.val();
-          function getTime(dateStr) {
-            return new Date(dateStr).getTime();
-          }
-          // Despesa à vista paga
-          if(despesa.formaPagamento === "avista" && despesa.pago) {
-            let dt = despesa.dataCompra;
-            if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
-               (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
-              rows.push({
-                descricao: despesa.descricao,
-                data: dt,
-                valor: despesa.valor,
-                forma: "À Vista"
-              });
-            }
-          }
-          // Despesa com cartão: cada parcela paga
-          else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
-            despesa.parcelas.forEach((parcela, index) => {
-              if(parcela.pago) {
-                let dt = parcela.vencimento;
-                if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
-                   (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
-                  rows.push({
-                    descricao: `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length}`,
-                    data: dt,
-                    valor: parcela.valor,
-                    forma: "Cartão"
-                  });
-                }
-              }
-            });
-          }
-        });
-        if(rows.length > 0) {
-          let table = document.createElement("table");
-          let header = document.createElement("tr");
-          ["Descrição", "Data", "Valor", "Forma"].forEach(col => {
-            let th = document.createElement("th");
-            th.innerText = col;
-            header.appendChild(th);
-          });
-          table.appendChild(header);
-          rows.forEach(r => {
-            let tr = document.createElement("tr");
-            let tdDesc = document.createElement("td");
-            tdDesc.innerText = r.descricao;
-            let tdData = document.createElement("td");
-            tdData.innerText = new Date(r.data).toLocaleDateString();
-            let tdValor = document.createElement("td");
-            tdValor.innerText = "R$ " + parseFloat(r.valor).toFixed(2);
-            let tdForma = document.createElement("td");
-            tdForma.innerText = r.forma;
-            tr.appendChild(tdDesc);
-            tr.appendChild(tdData);
-            tr.appendChild(tdValor);
-            tr.appendChild(tdForma);
-            table.appendChild(tr);
-          });
-          container.appendChild(table);
-        } else {
-          container.innerHTML = "<p>Nenhum registro encontrado para o período selecionado.</p>";
-        }
-      });
-    }
   </script>
 </body>
 </html>
