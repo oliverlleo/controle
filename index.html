@@ -88,8 +88,13 @@
       min-height: 60px;
       vertical-align: top;
       word-wrap: break-word;
+      cursor: pointer;
     }
     #calendarGrid th { background: #007bff; color: #fff; }
+    /* Estilo para células selecionadas em intervalo */
+    .selected-range {
+      background-color: #cce5ff !important;
+    }
     
     /* Saldo Disponível */
     #saldoDisponivelContainer {
@@ -198,11 +203,12 @@
   <div class="container" id="relatorioMensalSection">
     <h2>Relatório Mensal de Despesas Pagas</h2>
     <div id="filtrosRelatorio">
+      <!-- Os campos de data são preenchidos via seleção no calendário ou digitados manualmente -->
       <label for="dataInicial">Data Inicial:</label>
-      <input type="date" id="dataInicial">
+      <input type="date" id="dataInicial" onchange="loadRelatorioMensal()">
       <label for="dataFinal">Data Final:</label>
-      <input type="date" id="dataFinal">
-      <button onclick="loadRelatorioMensal()">Filtrar</button>
+      <input type="date" id="dataFinal" onchange="loadRelatorioMensal()">
+      <button onclick="abrirRangeSelector()">Selecionar Datas</button>
     </div>
     <div id="relatorioMensalContainer"></div>
   </div>
@@ -211,7 +217,7 @@
   <div id="calendarModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal('calendarModal')">&times;</span>
-      <h2>Calendário de Despesas</h2>
+      <h2 id="calendarTitulo">Calendário de Despesas</h2>
       <div id="calendarHeader">
         <button onclick="prevMonth()">&#9664;</button>
         <span id="calendarMonthYear" onclick="toggleMonthYearSelect()"></span>
@@ -323,6 +329,10 @@
     'use strict';
     var currentCalendarMonth = new Date().getMonth();
     var currentCalendarYear = new Date().getFullYear();
+    // Variáveis para seleção de intervalo
+    var rangeStart = null;
+    var rangeEnd = null;
+    var isRangeSelectionMode = false; // Define se o calendário está em modo de seleção de intervalo
 
     // Firebase Configuração – use seus dados
     const firebaseConfig = {
@@ -344,11 +354,23 @@
       if(id === "fonteModal") loadUsuarios();
       if(id === "categoriasModal") loadCategorias();
       if(id === "cartaoModal") loadCartoes();
-      if(id === "calendarModal") renderCalendar();
+      if(id === "calendarModal") {
+        // Se não estiver em modo de seleção de intervalo, mostra o calendário padrão
+        if(!isRangeSelectionMode) {
+          document.getElementById("calendarTitulo").innerText = "Calendário de Despesas";
+          renderCalendar();
+        }
+      }
       if(id === "pagarDespesaModal") loadDespesasNaoPagasSelect();
     };
     window.fecharModal = function(id) {
       document.getElementById(id).style.display = "none";
+      // Se fechar o calendário em modo de intervalo, resetamos as variáveis
+      if(id === "calendarModal" && isRangeSelectionMode) {
+        rangeStart = null;
+        rangeEnd = null;
+        isRangeSelectionMode = false;
+      }
     };
 
     /* Fonte de Renda */
@@ -522,6 +544,7 @@
     }
 
     /* Relatório Mensal de Despesas Pagas */
+    // A função usa os valores dos inputs de data para filtrar os registros
     function loadRelatorioMensal() {
       const dataInicial = document.getElementById("dataInicial").value;
       const dataFinal = document.getElementById("dataFinal").value;
@@ -531,7 +554,6 @@
         let rows = [];
         snapshot.forEach(child => {
           const despesa = child.val();
-          // Função auxiliar para converter data para milissegundos
           function getTime(dateStr) {
             return new Date(dateStr).getTime();
           }
@@ -605,6 +627,14 @@
       calendarGrid.innerHTML = "";
       let date = new Date(currentCalendarYear, currentCalendarMonth, 1);
       let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+      
+      // Se estiver em modo de intervalo, ajusta o título do modal
+      if(isRangeSelectionMode) {
+        document.getElementById("calendarTitulo").innerText = "Selecione o Intervalo de Datas";
+      } else {
+        document.getElementById("calendarTitulo").innerText = "Calendário de Despesas";
+      }
+      
       monthYearElem.innerText = `${date.toLocaleString('pt-BR', { month: 'long' })} ${currentCalendarYear}`;
       
       let table = document.createElement("table");
@@ -620,60 +650,44 @@
       table.appendChild(headerRow);
       
       let row = document.createElement("tr");
+      // Preencher células vazias até o dia da semana do primeiro dia
       for (let i = 0; i < date.getDay(); i++) {
         let cell = document.createElement("td");
         cell.innerText = "";
         row.appendChild(cell);
       }
+      // Preencher os dias do mês
       for (let day = 1; day <= daysInMonth; day++) {
         if (row.children.length === 7) {
           table.appendChild(row);
           row = document.createElement("tr");
         }
         let cell = document.createElement("td");
+        // Exibe o dia e, se não estiver em modo de intervalo, mostra o valor (saldo) zerado inicialmente
         cell.innerHTML = day + "<br>R$ " + (0).toFixed(2);
+        // Se estiver em modo de seleção de intervalo, a célula usará outra função de clique
+        if(isRangeSelectionMode) {
+          cell.addEventListener("click", function() {
+            selectRangeDate(day);
+          });
+        } else {
+          cell.addEventListener("click", function() {
+            showBalanceForDate(day);
+          });
+        }
+        // Verifica se a célula deve estar destacada por estar no intervalo selecionado
+        let cellDate = new Date(currentCalendarYear, currentCalendarMonth, day);
+        if(rangeStart && !rangeEnd && cellDate.getTime() === rangeStart.getTime()){
+          cell.classList.add("selected-range");
+        }
+        if(rangeStart && rangeEnd && cellDate >= rangeStart && cellDate <= rangeEnd){
+          cell.classList.add("selected-range");
+        }
         cell.classList.add("calendar-cell");
-        cell.addEventListener("click", function() {
-          showBalanceForDate(day);
-        });
         row.appendChild(cell);
       }
       table.appendChild(row);
       calendarGrid.appendChild(table);
-      
-      updateCalendarExpenses();
-      
-      let today = new Date();
-      if (today.getMonth() === currentCalendarMonth && today.getFullYear() === currentCalendarYear) {
-        showBalanceForDate(today.getDate());
-      } else {
-        showBalanceForDate(1);
-      }
-    }
-    function updateCalendarExpenses() {
-      let dayTotals = {};
-      db.ref("despesas").once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          let despesa = child.val();
-          if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
-            let d = new Date(despesa.dataCompra).getDate();
-            dayTotals[d] = (dayTotals[d] || 0) + (parseFloat(despesa.valor) || 0);
-          }
-          if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-            despesa.parcelas.forEach(parcela => {
-              let d = new Date(parcela.vencimento).getDate();
-              dayTotals[d] = (dayTotals[d] || 0) + parseFloat(parcela.valor);
-            });
-          }
-        });
-        let cells = document.querySelectorAll("#calendarGrid td");
-        cells.forEach(cell => {
-          let day = parseInt(cell.innerText);
-          if (!isNaN(day) && dayTotals[day]) {
-            cell.innerHTML = day + "<br>R$ " + dayTotals[day].toFixed(2);
-          }
-        });
-      });
     }
     function showBalanceForDate(day) {
       let selectedDate = new Date(currentCalendarYear, currentCalendarMonth, day);
@@ -754,6 +768,34 @@
       currentCalendarMonth = parseInt(selectMonth);
       currentCalendarYear = parseInt(selectYear);
       toggleMonthYearSelect();
+      renderCalendar();
+    }
+
+    /* Funções de seleção de intervalo no calendário */
+    function selectRangeDate(day) {
+      let selectedDate = new Date(currentCalendarYear, currentCalendarMonth, day);
+      // Se não houver data inicial definida, define-a
+      if (!rangeStart) {
+        rangeStart = selectedDate;
+      } else if (!rangeEnd) {
+        // Se a data selecionada for anterior à data inicial, inverte a ordem
+        if (selectedDate < rangeStart) {
+          rangeEnd = rangeStart;
+          rangeStart = selectedDate;
+        } else {
+          rangeEnd = selectedDate;
+        }
+        // Após selecionar o intervalo, atualiza os inputs do relatório e chama o filtro
+        document.getElementById("dataInicial").value = rangeStart.toISOString().split("T")[0];
+        document.getElementById("dataFinal").value = rangeEnd.toISOString().split("T")[0];
+        loadRelatorioMensal();
+        // Fecha o modal e reseta as variáveis de seleção
+        fecharModal('calendarModal');
+      } else {
+        // Se ambos já estiverem definidos, reinicia a seleção com a nova data
+        rangeStart = selectedDate;
+        rangeEnd = null;
+      }
       renderCalendar();
     }
 
@@ -931,6 +973,15 @@
         })
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
+    // Função para abrir o calendário em modo de seleção de intervalo para o relatório
+    function abrirRangeSelector() {
+      isRangeSelectionMode = true;
+      // Reseta as variáveis de seleção
+      rangeStart = null;
+      rangeEnd = null;
+      abrirModal('calendarModal');
+      renderCalendar();
+    }
     // Window onload
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
