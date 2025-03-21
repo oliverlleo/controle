@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -445,7 +445,6 @@
       db.ref("despesas").orderByChild("pago").equalTo(false).once("value").then(snapshot => {
         snapshot.forEach(child => {
           const despesa = child.val();
-          console.log("Despesa no Pagar:", despesa);
           const option = document.createElement("option");
           option.value = child.key;
           const dataExibicao = (despesa.formaPagamento === "cartao" && despesa.parcelas && despesa.parcelas.length > 0)
@@ -530,7 +529,6 @@
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let despesa = child.val();
-          console.log("Despesa carregada:", despesa);
           if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
             let d = new Date(despesa.dataCompra).getDate();
             dayTotals[d] = (dayTotals[d] || 0) + (parseFloat(despesa.valor) || 0);
@@ -632,17 +630,74 @@
       toggleMonthYearSelect();
       renderCalendar();
     }
-    window.onload = () => {
-      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
-      updateCategoriaSelect();
-      updateCartaoSelect();
-      loadDespesasNaoPagasSelect();
-      loadCategorias();
-      loadCartoes();
-      renderCalendar();
-    };
 
     /* Funções de Cadastro de Renda, Categorias e Cartões */
+    // Função para atualizar o select de categorias no cadastro de despesa
+    function updateCategoriaSelect() {
+      const select = document.getElementById("categoriaDespesa");
+      select.innerHTML = '<option value="">Selecione a Categoria</option>'; // opção padrão
+
+      // Busca as categorias cadastradas no Firebase na referência "categorias"
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const option = document.createElement("option");
+          option.value = child.key; // ou use categoria.nome se preferir
+          option.text = categoria.nome;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    // Função para salvar uma nova categoria (usada no modal "Gerenciar Categorias")
+    function salvarCategoria() {
+      const nomeCategoria = document.getElementById("categoriaNome").value;
+      if (!nomeCategoria.trim()) {
+        alert("Digite o nome da categoria.");
+        return;
+      }
+      // Salva a categoria na referência "categorias"
+      db.ref("categorias").push({ nome: nomeCategoria.trim(), timestamp: new Date().toISOString() })
+        .then(() => {
+          alert("Categoria salva com sucesso!");
+          document.getElementById("categoriaNome").value = "";
+          loadCategorias(); // Atualiza a lista no modal de gerenciamento
+          updateCategoriaSelect(); // Atualiza o select no cadastro de despesa
+        })
+        .catch(err => alert("Erro ao salvar categoria: " + err));
+    }
+
+    // Exemplo de função para carregar a lista de categorias no modal de gerenciamento
+    function loadCategorias() {
+      const categoriasLista = document.getElementById("categoriasLista");
+      categoriasLista.innerHTML = "";
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${categoria.nome}</strong>`;
+          categoriasLista.appendChild(div);
+        });
+      });
+    }
+
+    // Função placeholder para atualizar o select de cartões no cadastro de despesa
+    function updateCartaoSelect() {
+      const select = document.getElementById("cartaoDespesa");
+      select.innerHTML = '<option value="">Selecione o Cartão</option>';
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const option = document.createElement("option");
+          option.value = child.key;
+          option.text = cartao.nome;
+          option.setAttribute("data-fatura", cartao.diaFatura);
+          option.setAttribute("data-fechamento", cartao.diaFechamento);
+          select.appendChild(option);
+        });
+      });
+    }
+
     function toggleClt() {
       document.getElementById("cltFields").style.display =
         document.getElementById("cltCheckbox").checked ? "block" : "none";
@@ -749,6 +804,61 @@
         })
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
+
+    // Window onload
+    window.onload = () => {
+      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
+      updateCategoriaSelect();
+      updateCartaoSelect();
+      loadDespesasNaoPagasSelect();
+      loadCategorias();
+      loadCartoes();
+      renderCalendar();
+    };
+
+    // Função placeholder para carregar cartões (modifique conforme sua lógica)
+    function loadCartoes() {
+      const cartoesLista = document.getElementById("cartoesLista");
+      cartoesLista.innerHTML = "";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${cartao.nome}</strong> - Limite: R$ ${parseFloat(cartao.limite).toFixed(2)}`;
+          cartoesLista.appendChild(div);
+        });
+      });
+    }
+
+    // Função para salvar cartão
+    function salvarCartao() {
+      const nomeCartao = document.getElementById("nomeCartao").value;
+      const diaFatura = parseInt(document.getElementById("diaFatura").value);
+      const diaFechamento = parseInt(document.getElementById("diaFechamento").value);
+      const limiteCartao = parseFloat(document.getElementById("limiteCartao").value);
+      if (!nomeCartao || isNaN(diaFatura) || isNaN(diaFechamento) || isNaN(limiteCartao)) {
+        alert("Preencha todos os campos corretamente.");
+        return;
+      }
+      const dadosCartao = {
+        nome: nomeCartao,
+        diaFatura,
+        diaFechamento,
+        limite: limiteCartao,
+        timestamp: new Date().toISOString()
+      };
+      db.ref("cartoes").push(dadosCartao)
+        .then(() => {
+          alert("Cartão salvo com sucesso!");
+          document.getElementById("nomeCartao").value = "";
+          document.getElementById("diaFatura").value = "";
+          document.getElementById("diaFechamento").value = "";
+          document.getElementById("limiteCartao").value = "";
+          loadCartoes();
+          updateCartaoSelect();
+        })
+        .catch(err => alert("Erro ao salvar cartão: " + err));
+    }
   </script>
 </body>
 </html>
