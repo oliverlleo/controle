@@ -115,17 +115,26 @@
       text-align: center;
     }
     #relatorioMensalSection th { background: #007bff; color: #fff; }
+    /* Container do filtro com layout em linha */
     #filtrosRelatorio {
       margin: 10px 0;
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       justify-content: center;
       gap: 10px;
-      align-items: center;
     }
     #filtrosRelatorio label {
-      margin: 0;
-      font-weight: normal;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    /* Campo de data com design mais bonito */
+    #dataRange {
+      padding: 8px;
+      max-width: 300px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
     }
     
     /* Cadastro de Renda */
@@ -207,9 +216,9 @@
   <div class="container" id="relatorioMensalSection">
     <h2>Relatório Mensal de Despesas Pagas</h2>
     <div id="filtrosRelatorio">
-      <label for="dataRange">Intervalo de Datas:</label>
-      <!-- Campo único para seleção do intervalo (pode ser digitado ou selecionado) -->
-      <input type="text" id="dataRange" style="background: #fff; cursor: pointer;">
+      <label for="dataRange">Data Inicial - Data Final:</label>
+      <!-- Campo único para seleção do intervalo -->
+      <input type="text" id="dataRange" placeholder="DD/MM/AAAA - DD/MM/AAAA">
     </div>
     <div id="relatorioMensalContainer"></div>
   </div>
@@ -355,8 +364,8 @@
           format: 'DD/MM/YYYY',
           applyLabel: 'Aplicar',
           cancelLabel: 'Cancelar',
-          fromLabel: 'De',
-          toLabel: 'Até',
+          fromLabel: 'Data Inicial',
+          toLabel: 'Data Final',
           customRangeLabel: 'Personalizado',
           weekLabel: 'S',
           daysOfWeek: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
@@ -380,7 +389,7 @@
         loadRelatorioMensal();
       });
       
-      // Quando o seletor for aberto, garante que o campo esteja visível
+      // Quando o seletor for aberto, traz o campo para a visualização
       $('#dataRange').on('show.daterangepicker', function(ev, picker) {
         this.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
