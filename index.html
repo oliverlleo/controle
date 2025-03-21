@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciamento de Contas</title>
+  <!-- CSS do Daterangepicker (biblioteca para seleção de intervalo) -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
   <style>
     /* Estilos Gerais */
     body {
@@ -91,10 +93,6 @@
       cursor: pointer;
     }
     #calendarGrid th { background: #007bff; color: #fff; }
-    /* Destaque para células do intervalo selecionado */
-    .selected-range {
-      background-color: #cce5ff !important;
-    }
     
     /* Saldo Disponível */
     #saldoDisponivelContainer {
@@ -146,11 +144,17 @@
       }
     }
   </style>
+</head>
+<body>
+  <!-- Inclusão das bibliotecas jQuery, Moment.js e Daterangepicker -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
-</head>
-<body>
+  
   <!-- Menu Principal -->
   <div class="container">
     <h1>Gerenciamento de Contas</h1>
@@ -203,14 +207,14 @@
   <div class="container" id="relatorioMensalSection">
     <h2>Relatório Mensal de Despesas Pagas</h2>
     <div id="filtrosRelatorio">
-      <label for="dataIntervalo">Intervalo de Datas:</label>
-      <!-- Campo único para seleção de intervalo; ao clicar, abre o calendário -->
-      <input type="text" id="dataIntervalo" placeholder="Selecione o intervalo" readonly onclick="abrirRangeSelector()">
+      <label for="dataRange">Intervalo de Datas:</label>
+      <!-- Campo único para seleção do intervalo (o usuário pode digitar ou selecionar via calendário bonito) -->
+      <input type="text" id="dataRange" readonly style="background: #fff; cursor: pointer;">
     </div>
     <div id="relatorioMensalContainer"></div>
   </div>
 
-  <!-- Modal de Calendário -->
+  <!-- Modal de Calendário (mantido para outras funções, se necessário) -->
   <div id="calendarModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal('calendarModal')">&times;</span>
@@ -326,11 +330,10 @@
     'use strict';
     var currentCalendarMonth = new Date().getMonth();
     var currentCalendarYear = new Date().getFullYear();
-    // Variáveis para seleção de intervalo
+    // Variáveis globais para uso do relatório
     var rangeStart = null;
     var rangeEnd = null;
-    var isRangeSelectionMode = false;
-
+    
     // Firebase Configuração – use seus dados
     const firebaseConfig = {
       apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
@@ -345,6 +348,32 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    /* Inicialização do Daterangepicker para o campo único de intervalo */
+    $(function() {
+      $('#dataRange').daterangepicker({
+        autoUpdateInput: false,
+        locale: {
+          cancelLabel: 'Limpar',
+          format: 'DD/MM/YYYY',
+          applyLabel: 'Aplicar'
+        }
+      });
+      
+      $('#dataRange').on('apply.daterangepicker', function(ev, picker) {
+        rangeStart = picker.startDate.toDate();
+        rangeEnd = picker.endDate.toDate();
+        $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+        loadRelatorioMensal();
+      });
+      
+      $('#dataRange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+        rangeStart = null;
+        rangeEnd = null;
+        loadRelatorioMensal();
+      });
+    });
+
     /* Funções de Modal */
     window.abrirModal = function(id) {
       document.getElementById(id).style.display = "flex";
@@ -352,20 +381,13 @@
       if(id === "categoriasModal") loadCategorias();
       if(id === "cartaoModal") loadCartoes();
       if(id === "calendarModal") {
-        if(!isRangeSelectionMode) {
-          document.getElementById("calendarTitulo").innerText = "Calendário de Despesas";
-          renderCalendar();
-        }
+        document.getElementById("calendarTitulo").innerText = "Calendário de Despesas";
+        renderCalendar();
       }
       if(id === "pagarDespesaModal") loadDespesasNaoPagasSelect();
     };
     window.fecharModal = function(id) {
       document.getElementById(id).style.display = "none";
-      if(id === "calendarModal" && isRangeSelectionMode) {
-        rangeStart = null;
-        rangeEnd = null;
-        isRangeSelectionMode = false;
-      }
     };
 
     /* Fonte de Renda */
@@ -539,7 +561,6 @@
     }
 
     /* Relatório Mensal de Despesas Pagas */
-    // A filtragem usará as datas selecionadas via calendário (armazenadas em rangeStart e rangeEnd)
     function loadRelatorioMensal() {
       let dataInicial = rangeStart ? rangeStart.toISOString().split("T")[0] : "";
       let dataFinal = rangeEnd ? rangeEnd.toISOString().split("T")[0] : "";
@@ -615,19 +636,13 @@
       });
     }
 
-    /* Calendário – utilizando estrutura em tabela */
+    /* Calendário – utilizando estrutura em tabela (mantido para outras funções) */
     function renderCalendar() {
       let monthYearElem = document.getElementById("calendarMonthYear");
       let calendarGrid = document.getElementById("calendarGrid");
       calendarGrid.innerHTML = "";
       let date = new Date(currentCalendarYear, currentCalendarMonth, 1);
       let daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
-      
-      // Ajusta o título conforme o modo de seleção
-      document.getElementById("calendarTitulo").innerText = isRangeSelectionMode 
-        ? "Selecione o Intervalo de Datas" 
-        : "Calendário de Despesas";
-      
       monthYearElem.innerText = `${date.toLocaleString('pt-BR', { month: 'long' })} ${currentCalendarYear}`;
       
       let table = document.createElement("table");
@@ -643,13 +658,11 @@
       table.appendChild(headerRow);
       
       let row = document.createElement("tr");
-      // Células vazias até o primeiro dia da semana
       for (let i = 0; i < date.getDay(); i++) {
         let cell = document.createElement("td");
         cell.innerText = "";
         row.appendChild(cell);
       }
-      // Dias do mês
       for (let day = 1; day <= daysInMonth; day++) {
         if (row.children.length === 7) {
           table.appendChild(row);
@@ -657,22 +670,9 @@
         }
         let cell = document.createElement("td");
         cell.innerHTML = day + "<br>R$ " + (0).toFixed(2);
-        if(isRangeSelectionMode) {
-          cell.addEventListener("click", function() {
-            selectRangeDate(day);
-          });
-        } else {
-          cell.addEventListener("click", function() {
-            showBalanceForDate(day);
-          });
-        }
-        let cellDate = new Date(currentCalendarYear, currentCalendarMonth, day);
-        if(rangeStart && !rangeEnd && cellDate.getTime() === rangeStart.getTime()){
-          cell.classList.add("selected-range");
-        }
-        if(rangeStart && rangeEnd && cellDate >= rangeStart && cellDate <= rangeEnd){
-          cell.classList.add("selected-range");
-        }
+        cell.addEventListener("click", function() {
+          showBalanceForDate(day);
+        });
         cell.classList.add("calendar-cell");
         row.appendChild(cell);
       }
@@ -758,29 +758,6 @@
       currentCalendarMonth = parseInt(selectMonth);
       currentCalendarYear = parseInt(selectYear);
       toggleMonthYearSelect();
-      renderCalendar();
-    }
-
-    /* Funções de seleção de intervalo no calendário */
-    function selectRangeDate(day) {
-      let selectedDate = new Date(currentCalendarYear, currentCalendarMonth, day);
-      if (!rangeStart) {
-        rangeStart = selectedDate;
-      } else if (!rangeEnd) {
-        if (selectedDate < rangeStart) {
-          rangeEnd = rangeStart;
-          rangeStart = selectedDate;
-        } else {
-          rangeEnd = selectedDate;
-        }
-        document.getElementById("dataIntervalo").value = rangeStart.toLocaleDateString() + " - " + rangeEnd.toLocaleDateString();
-        loadRelatorioMensal();
-        fecharModal('calendarModal');
-      } else {
-        rangeStart = selectedDate;
-        rangeEnd = null;
-        document.getElementById("dataIntervalo").value = "";
-      }
       renderCalendar();
     }
 
@@ -958,14 +935,6 @@
         })
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
-    // Abre o calendário em modo de seleção de intervalo ao clicar no campo único
-    function abrirRangeSelector() {
-      isRangeSelectionMode = true;
-      rangeStart = null;
-      rangeEnd = null;
-      abrirModal('calendarModal');
-      renderCalendar();
-    }
     // Window onload
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
@@ -976,7 +945,6 @@
       loadCartoes();
       renderCalendar();
     };
-
   </script>
 </body>
 </html>
