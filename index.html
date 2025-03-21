@@ -456,7 +456,6 @@
     }
 
     /* Módulo Pagar Despesa */
-    // Lista despesas não pagas: para despesas com cartão, cada parcela individualmente.
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
@@ -523,7 +522,6 @@
     }
 
     /* Relatório Mensal de Despesas Pagas */
-    // Filtra despesas pagas dentro de um intervalo de datas.
     function loadRelatorioMensal() {
       const dataInicial = document.getElementById("dataInicial").value;
       const dataFinal = document.getElementById("dataFinal").value;
@@ -533,11 +531,11 @@
         let rows = [];
         snapshot.forEach(child => {
           const despesa = child.val();
-          // Função para converter data para milissegundos
+          // Função auxiliar para converter data para milissegundos
           function getTime(dateStr) {
             return new Date(dateStr).getTime();
           }
-          // Verifica se a despesa à vista foi paga e se sua data está no intervalo
+          // Despesa à vista paga
           if(despesa.formaPagamento === "avista" && despesa.pago) {
             let dt = despesa.dataCompra;
             if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
@@ -550,7 +548,7 @@
               });
             }
           }
-          // Para despesas com cartão, cada parcela paga
+          // Despesa com cartão: cada parcela paga
           else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach((parcela, index) => {
               if(parcela.pago) {
@@ -936,7 +934,6 @@
     // Window onload
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
-      preencherFiltroAno();
       updateCategoriaSelect();
       updateCartaoSelect();
       loadDespesasNaoPagasSelect();
@@ -945,17 +942,80 @@
       renderCalendar();
     };
 
-    // Preenche o select de anos para o relatório (últimos 10 anos)
-    function preencherFiltroAno() {
-      const filtroAno = document.getElementById("filtroAno");
-      filtroAno.innerHTML = '<option value="">Todos</option>';
-      const anoAtual = new Date().getFullYear();
-      for(let y = anoAtual - 10; y <= anoAtual; y++) {
-        let option = document.createElement("option");
-        option.value = y;
-        option.text = y;
-        filtroAno.appendChild(option);
-      }
+    /* Relatório Mensal de Despesas Pagas */
+    function loadRelatorioMensal() {
+      const dataInicial = document.getElementById("dataInicial").value;
+      const dataFinal = document.getElementById("dataFinal").value;
+      const container = document.getElementById("relatorioMensalContainer");
+      container.innerHTML = "";
+      db.ref("despesas").once("value").then(snapshot => {
+        let rows = [];
+        snapshot.forEach(child => {
+          const despesa = child.val();
+          function getTime(dateStr) {
+            return new Date(dateStr).getTime();
+          }
+          // Despesa à vista paga
+          if(despesa.formaPagamento === "avista" && despesa.pago) {
+            let dt = despesa.dataCompra;
+            if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
+               (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
+              rows.push({
+                descricao: despesa.descricao,
+                data: dt,
+                valor: despesa.valor,
+                forma: "À Vista"
+              });
+            }
+          }
+          // Despesa com cartão: cada parcela paga
+          else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach((parcela, index) => {
+              if(parcela.pago) {
+                let dt = parcela.vencimento;
+                if((!dataInicial || getTime(dt) >= getTime(dataInicial)) &&
+                   (!dataFinal || getTime(dt) <= getTime(dataFinal))) {
+                  rows.push({
+                    descricao: `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length}`,
+                    data: dt,
+                    valor: parcela.valor,
+                    forma: "Cartão"
+                  });
+                }
+              }
+            });
+          }
+        });
+        if(rows.length > 0) {
+          let table = document.createElement("table");
+          let header = document.createElement("tr");
+          ["Descrição", "Data", "Valor", "Forma"].forEach(col => {
+            let th = document.createElement("th");
+            th.innerText = col;
+            header.appendChild(th);
+          });
+          table.appendChild(header);
+          rows.forEach(r => {
+            let tr = document.createElement("tr");
+            let tdDesc = document.createElement("td");
+            tdDesc.innerText = r.descricao;
+            let tdData = document.createElement("td");
+            tdData.innerText = new Date(r.data).toLocaleDateString();
+            let tdValor = document.createElement("td");
+            tdValor.innerText = "R$ " + parseFloat(r.valor).toFixed(2);
+            let tdForma = document.createElement("td");
+            tdForma.innerText = r.forma;
+            tr.appendChild(tdDesc);
+            tr.appendChild(tdData);
+            tr.appendChild(tdValor);
+            tr.appendChild(tdForma);
+            table.appendChild(tr);
+          });
+          container.appendChild(table);
+        } else {
+          container.innerHTML = "<p>Nenhum registro encontrado para o período selecionado.</p>";
+        }
+      });
     }
   </script>
 </body>
