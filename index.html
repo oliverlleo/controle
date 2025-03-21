@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -74,7 +74,7 @@
       color: #333;
     }
     
-    /* Calendário – estrutura em tabela (mantida a versão que funcionava) */
+    /* Calendário – estrutura em tabela */
     #calendarGrid table {
       width: 100%;
       max-width: 100%;
@@ -632,42 +632,39 @@
     }
 
     /* Funções de Cadastro de Renda, Categorias e Cartões */
-    // Função para atualizar o select de categorias no cadastro de despesa
+    // Atualiza o select de categorias no cadastro de despesa
     function updateCategoriaSelect() {
       const select = document.getElementById("categoriaDespesa");
-      select.innerHTML = '<option value="">Selecione a Categoria</option>'; // opção padrão
-
-      // Busca as categorias cadastradas no Firebase na referência "categorias"
+      select.innerHTML = '<option value="">Selecione a Categoria</option>';
       db.ref("categorias").once("value").then(snapshot => {
         snapshot.forEach(child => {
           const categoria = child.val();
           const option = document.createElement("option");
-          option.value = child.key; // ou use categoria.nome se preferir
+          option.value = child.key;
           option.text = categoria.nome;
           select.appendChild(option);
         });
       });
     }
 
-    // Função para salvar uma nova categoria (usada no modal "Gerenciar Categorias")
+    // Salva uma nova categoria e atualiza a lista e o select
     function salvarCategoria() {
       const nomeCategoria = document.getElementById("categoriaNome").value;
       if (!nomeCategoria.trim()) {
         alert("Digite o nome da categoria.");
         return;
       }
-      // Salva a categoria na referência "categorias"
       db.ref("categorias").push({ nome: nomeCategoria.trim(), timestamp: new Date().toISOString() })
         .then(() => {
           alert("Categoria salva com sucesso!");
           document.getElementById("categoriaNome").value = "";
-          loadCategorias(); // Atualiza a lista no modal de gerenciamento
-          updateCategoriaSelect(); // Atualiza o select no cadastro de despesa
+          loadCategorias();
+          updateCategoriaSelect();
         })
         .catch(err => alert("Erro ao salvar categoria: " + err));
     }
 
-    // Exemplo de função para carregar a lista de categorias no modal de gerenciamento
+    // Carrega as categorias no modal de gerenciamento
     function loadCategorias() {
       const categoriasLista = document.getElementById("categoriasLista");
       categoriasLista.innerHTML = "";
@@ -681,7 +678,7 @@
       });
     }
 
-    // Função placeholder para atualizar o select de cartões no cadastro de despesa
+    // Atualiza o select de cartões no cadastro de despesa
     function updateCartaoSelect() {
       const select = document.getElementById("cartaoDespesa");
       select.innerHTML = '<option value="">Selecione o Cartão</option>';
@@ -694,6 +691,20 @@
           option.setAttribute("data-fatura", cartao.diaFatura);
           option.setAttribute("data-fechamento", cartao.diaFechamento);
           select.appendChild(option);
+        });
+      });
+    }
+
+    // Carrega a lista de cartões no modal "Gerenciar Cartões"
+    function loadCartoes() {
+      const cartoesLista = document.getElementById("cartoesLista");
+      cartoesLista.innerHTML = "";
+      db.ref("cartoes").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const cartao = child.val();
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${cartao.nome}</strong> - Limite: R$ ${parseFloat(cartao.limite).toFixed(2)}`;
+          cartoesLista.appendChild(div);
         });
       });
     }
@@ -815,50 +826,6 @@
       loadCartoes();
       renderCalendar();
     };
-
-    // Função placeholder para carregar cartões (modifique conforme sua lógica)
-    function loadCartoes() {
-      const cartoesLista = document.getElementById("cartoesLista");
-      cartoesLista.innerHTML = "";
-      db.ref("cartoes").once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          const cartao = child.val();
-          const div = document.createElement("div");
-          div.innerHTML = `<strong>${cartao.nome}</strong> - Limite: R$ ${parseFloat(cartao.limite).toFixed(2)}`;
-          cartoesLista.appendChild(div);
-        });
-      });
-    }
-
-    // Função para salvar cartão
-    function salvarCartao() {
-      const nomeCartao = document.getElementById("nomeCartao").value;
-      const diaFatura = parseInt(document.getElementById("diaFatura").value);
-      const diaFechamento = parseInt(document.getElementById("diaFechamento").value);
-      const limiteCartao = parseFloat(document.getElementById("limiteCartao").value);
-      if (!nomeCartao || isNaN(diaFatura) || isNaN(diaFechamento) || isNaN(limiteCartao)) {
-        alert("Preencha todos os campos corretamente.");
-        return;
-      }
-      const dadosCartao = {
-        nome: nomeCartao,
-        diaFatura,
-        diaFechamento,
-        limite: limiteCartao,
-        timestamp: new Date().toISOString()
-      };
-      db.ref("cartoes").push(dadosCartao)
-        .then(() => {
-          alert("Cartão salvo com sucesso!");
-          document.getElementById("nomeCartao").value = "";
-          document.getElementById("diaFatura").value = "";
-          document.getElementById("diaFechamento").value = "";
-          document.getElementById("limiteCartao").value = "";
-          loadCartoes();
-          updateCartaoSelect();
-        })
-        .catch(err => alert("Erro ao salvar cartão: " + err));
-    }
   </script>
 </body>
 </html>
