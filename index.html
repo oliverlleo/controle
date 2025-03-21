@@ -173,13 +173,13 @@
     <button onclick="salvarDespesa()">Salvar Despesa</button>
   </div>
 
-  <!-- Pagar Despesa -->
+  <!-- Módulo Pagar Despesa -->
   <div class="container">
     <h2>Pagar Despesa</h2>
     <label>Pesquisar Despesa:</label>
     <input type="text" id="despesaSearch" placeholder="Digite parte da descrição...">
     <select id="despesaSelect" size="5"></select>
-    <button onclick="pagarDespesaSelecionada()">Pagar Despesa Selecionada</button>
+    <button onclick="pagarDespesaSelecionada()">Pagar Parcela Selecionada</button>
   </div>
 
   <!-- Relatório Mensal -->
@@ -438,37 +438,79 @@
     }
 
     /* Módulo Pagar Despesa */
+    // Agora, se a despesa for do tipo "cartao" e tiver parcelas, cada parcela não paga é listada individualmente.
+    // O valor da opção terá o formato "expenseKey|parcelIndex". Para despesas à vista, o valor é somente a chave.
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
       db.ref("despesas").orderByChild("pago").equalTo(false).once("value").then(snapshot => {
         snapshot.forEach(child => {
           const despesa = child.val();
-          const option = document.createElement("option");
-          option.value = child.key;
-          const dataExibicao = (despesa.formaPagamento === "cartao" && despesa.parcelas && despesa.parcelas.length > 0)
-                                ? despesa.parcelas[0].vencimento
-                                : despesa.dataCompra;
-          const valorExibido = despesa.valor ? "R$ " + parseFloat(despesa.valor).toFixed(2) : "";
-          option.text = despesa.descricao + " " + valorExibido + " - " + dataExibicao;
-          despesaSelect.appendChild(option);
+          // Se a despesa for à vista, lista normalmente
+          if(despesa.formaPagamento === "avista") {
+            const option = document.createElement("option");
+            option.value = child.key;
+            const dataExibicao = despesa.dataCompra;
+            const valorExibido = despesa.valor ? "R$ " + parseFloat(despesa.valor).toFixed(2) : "";
+            option.text = despesa.descricao + " " + valorExibido + " - " + dataExibicao;
+            despesaSelect.appendChild(option);
+          }
+          // Se a despesa for com cartão, lista cada parcela não paga
+          else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach((parcela, index) => {
+              if(!parcela.pago) {
+                const option = document.createElement("option");
+                // O valor contém "expenseKey|parcelIndex"
+                option.value = child.key + "|" + index;
+                option.text = `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
+                despesaSelect.appendChild(option);
+              }
+            });
+          }
         });
       });
     }
+
+    // Ao pagar, se o valor da opção tiver "|", é uma parcela. Atualiza apenas essa parcela.
     function pagarDespesaSelecionada() {
       const despesaSelect = document.getElementById("despesaSelect");
       const selectedValue = despesaSelect.value;
       if(!selectedValue) {
-        alert("Selecione uma despesa!");
+        alert("Selecione uma despesa/parcela!");
         return;
       }
-      db.ref("despesas").child(selectedValue).update({ pago: true })
-        .then(() => {
-          alert("Despesa paga com sucesso!");
-          loadDespesasNaoPagasSelect();
-          renderCalendar();
-        })
-        .catch(err => alert("Erro ao pagar a despesa: " + err));
+      // Se for uma despesa à vista
+      if(selectedValue.indexOf("|") === -1) {
+        db.ref("despesas").child(selectedValue).update({ pago: true })
+          .then(() => {
+            alert("Despesa paga com sucesso!");
+            loadDespesasNaoPagasSelect();
+            renderCalendar();
+          })
+          .catch(err => alert("Erro ao pagar a despesa: " + err));
+      }
+      // Se for uma parcela de despesa de cartão
+      else {
+        const [expenseKey, parcelIndex] = selectedValue.split("|");
+        const parcelaRef = db.ref("despesas/" + expenseKey + "/parcelas/" + parcelIndex);
+        parcelaRef.update({ pago: true })
+          .then(() => {
+            // Opcional: se todas as parcelas estiverem pagas, marca a despesa inteira como paga.
+            db.ref("despesas/" + expenseKey + "/parcelas").once("value").then(snapshot => {
+              let allPaid = true;
+              snapshot.forEach(child => {
+                if(!child.val().pago) { allPaid = false; }
+              });
+              if(allPaid) {
+                db.ref("despesas").child(expenseKey).update({ pago: true });
+              }
+            });
+            alert("Parcela paga com sucesso!");
+            loadDespesasNaoPagasSelect();
+            renderCalendar();
+          })
+          .catch(err => alert("Erro ao pagar a parcela: " + err));
+      }
     }
 
     /* Calendário – utilizando estrutura em tabela */
@@ -645,7 +687,6 @@
         });
       });
     }
-
     // Salva uma nova categoria e atualiza a lista e o select
     function salvarCategoria() {
       const nomeCategoria = document.getElementById("categoriaNome").value;
@@ -662,7 +703,6 @@
         })
         .catch(err => alert("Erro ao salvar categoria: " + err));
     }
-
     // Carrega as categorias no modal de gerenciamento
     function loadCategorias() {
       const categoriasLista = document.getElementById("categoriasLista");
@@ -676,7 +716,6 @@
         });
       });
     }
-
     // Atualiza o select de cartões no cadastro de despesa
     function updateCartaoSelect() {
       const select = document.getElementById("cartaoDespesa");
@@ -693,7 +732,6 @@
         });
       });
     }
-
     // Carrega a lista de cartões no modal "Gerenciar Cartões"
     function loadCartoes() {
       const cartoesLista = document.getElementById("cartoesLista");
@@ -707,7 +745,6 @@
         });
       });
     }
-
     function toggleClt() {
       document.getElementById("cltFields").style.display =
         document.getElementById("cltCheckbox").checked ? "block" : "none";
@@ -814,7 +851,6 @@
         })
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
-
     // Window onload
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
