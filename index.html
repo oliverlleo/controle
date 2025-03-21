@@ -148,7 +148,7 @@
       justify-content: center;
     }
     
-    /* Responsividade: rolagem horizontal para o calendário em telas pequenas */
+    /* Responsividade */
     @media (max-width: 600px) {
       #calendarGrid {
         overflow-x: auto;
@@ -360,11 +360,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    /* Inicialização do Daterangepicker com configurações em português e máscara */
+    /* Inicialização do Daterangepicker com máscara e configurações em português */
     $(function() {
-      // Aplica a máscara para o campo de data
-      $('#dataRange').mask('00/00/0000 - 00/00/0000');
-
+      // Aplica a máscara ao input de intervalo
+      $('#dataRange').mask('00/00/0000 - 00/00/0000', {placeholder: "DD/MM/AAAA - DD/MM/AAAA"});
+      
       $('#dataRange').daterangepicker({
         autoUpdateInput: false,
         locale: {
@@ -381,7 +381,6 @@
         }
       });
       
-      // Atualiza o input e filtra o relatório ao confirmar a seleção
       $('#dataRange').on('apply.daterangepicker', function(ev, picker) {
         rangeStart = picker.startDate.toDate();
         rangeEnd = picker.endDate.toDate();
@@ -396,7 +395,6 @@
         loadRelatorioMensal();
       });
       
-      // Traz o campo para a visualização quando o seletor é aberto
       $('#dataRange').on('show.daterangepicker', function(ev, picker) {
         this.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
