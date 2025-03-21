@@ -122,12 +122,14 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
+      flex-wrap: wrap;
     }
     #filtrosRelatorio label {
       font-weight: bold;
       white-space: nowrap;
+      font-size: 1.1rem;
     }
-    /* Campo de data com design mais bonito */
+    /* Campo de data com design aprimorado */
     #dataRange {
       padding: 8px;
       max-width: 300px;
@@ -135,6 +137,7 @@
       border-radius: 4px;
       background: #fff;
       cursor: pointer;
+      font-size: 1rem;
     }
     
     /* Cadastro de Renda */
@@ -155,10 +158,11 @@
   </style>
 </head>
 <body>
-  <!-- Inclusão das bibliotecas jQuery, Moment.js e Daterangepicker -->
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <!-- Inclusão das bibliotecas jQuery, Moment.js, Daterangepicker e jQuery Mask -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
@@ -216,9 +220,9 @@
   <div class="container" id="relatorioMensalSection">
     <h2>Relatório Mensal de Despesas Pagas</h2>
     <div id="filtrosRelatorio">
-      <label for="dataRange">Data Inicial - Data Final:</label>
+      <label for="dataRange">Selecione o Período:</label>
       <!-- Campo único para seleção do intervalo -->
-      <input type="text" id="dataRange" placeholder="DD/MM/AAAA - DD/MM/AAAA">
+      <input type="text" id="dataRange" placeholder="00/00/0000 - 00/00/0000">
     </div>
     <div id="relatorioMensalContainer"></div>
   </div>
@@ -356,8 +360,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    /* Inicialização do Daterangepicker com configurações em português */
+    /* Inicialização do Daterangepicker com configurações em português e máscara */
     $(function() {
+      // Aplica a máscara para o campo de data
+      $('#dataRange').mask('00/00/0000 - 00/00/0000');
+
       $('#dataRange').daterangepicker({
         autoUpdateInput: false,
         locale: {
@@ -389,7 +396,7 @@
         loadRelatorioMensal();
       });
       
-      // Quando o seletor for aberto, traz o campo para a visualização
+      // Traz o campo para a visualização quando o seletor é aberto
       $('#dataRange').on('show.daterangepicker', function(ev, picker) {
         this.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
