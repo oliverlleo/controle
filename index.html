@@ -112,6 +112,18 @@
       text-align: center;
     }
     #relatorioMensalSection th { background: #007bff; color: #fff; }
+    #filtrosRelatorio {
+      margin: 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      align-items: center;
+    }
+    #filtrosRelatorio label {
+      margin: 0;
+      font-weight: normal;
+    }
     
     /* Cadastro de Renda */
     .checkbox-group {
@@ -185,7 +197,30 @@
   <!-- Relatório Mensal -->
   <div class="container" id="relatorioMensalSection">
     <h2>Relatório Mensal de Despesas Pagas</h2>
-    <button onclick="loadRelatorioMensal()">Atualizar Relatório</button>
+    <div id="filtrosRelatorio">
+      <label for="filtroMes">Mês:</label>
+      <select id="filtroMes">
+        <option value="">Todos</option>
+        <option value="0">Janeiro</option>
+        <option value="1">Fevereiro</option>
+        <option value="2">Março</option>
+        <option value="3">Abril</option>
+        <option value="4">Maio</option>
+        <option value="5">Junho</option>
+        <option value="6">Julho</option>
+        <option value="7">Agosto</option>
+        <option value="8">Setembro</option>
+        <option value="9">Outubro</option>
+        <option value="10">Novembro</option>
+        <option value="11">Dezembro</option>
+      </select>
+      <label for="filtroAno">Ano:</label>
+      <select id="filtroAno">
+        <option value="">Todos</option>
+        <!-- Os anos serão preenchidos dinamicamente -->
+      </select>
+      <button onclick="loadRelatorioMensal()">Filtrar</button>
+    </div>
     <div id="relatorioMensalContainer"></div>
   </div>
 
@@ -438,15 +473,14 @@
     }
 
     /* Módulo Pagar Despesa */
-    // Agora, se a despesa for do tipo "cartao" e tiver parcelas, cada parcela não paga é listada individualmente.
-    // O valor da opção terá o formato "expenseKey|parcelIndex". Para despesas à vista, o valor é somente a chave.
+    // Lista as despesas pagas: se for à vista, a despesa inteira; se for cartão, cada parcela individualmente.
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
       db.ref("despesas").orderByChild("pago").equalTo(false).once("value").then(snapshot => {
         snapshot.forEach(child => {
           const despesa = child.val();
-          // Se a despesa for à vista, lista normalmente
+          // Despesa à vista
           if(despesa.formaPagamento === "avista") {
             const option = document.createElement("option");
             option.value = child.key;
@@ -455,12 +489,11 @@
             option.text = despesa.descricao + " " + valorExibido + " - " + dataExibicao;
             despesaSelect.appendChild(option);
           }
-          // Se a despesa for com cartão, lista cada parcela não paga
+          // Despesa com cartão - cada parcela não paga
           else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach((parcela, index) => {
               if(!parcela.pago) {
                 const option = document.createElement("option");
-                // O valor contém "expenseKey|parcelIndex"
                 option.value = child.key + "|" + index;
                 option.text = `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
                 despesaSelect.appendChild(option);
@@ -471,7 +504,7 @@
       });
     }
 
-    // Ao pagar, se o valor da opção tiver "|", é uma parcela. Atualiza apenas essa parcela.
+    // Ao pagar, se o valor tiver "|" é parcela de cartão; senão, despesa à vista.
     function pagarDespesaSelecionada() {
       const despesaSelect = document.getElementById("despesaSelect");
       const selectedValue = despesaSelect.value;
@@ -479,7 +512,6 @@
         alert("Selecione uma despesa/parcela!");
         return;
       }
-      // Se for uma despesa à vista
       if(selectedValue.indexOf("|") === -1) {
         db.ref("despesas").child(selectedValue).update({ pago: true })
           .then(() => {
@@ -488,14 +520,11 @@
             renderCalendar();
           })
           .catch(err => alert("Erro ao pagar a despesa: " + err));
-      }
-      // Se for uma parcela de despesa de cartão
-      else {
+      } else {
         const [expenseKey, parcelIndex] = selectedValue.split("|");
         const parcelaRef = db.ref("despesas/" + expenseKey + "/parcelas/" + parcelIndex);
         parcelaRef.update({ pago: true })
           .then(() => {
-            // Opcional: se todas as parcelas estiverem pagas, marca a despesa inteira como paga.
             db.ref("despesas/" + expenseKey + "/parcelas").once("value").then(snapshot => {
               let allPaid = true;
               snapshot.forEach(child => {
@@ -511,6 +540,81 @@
           })
           .catch(err => alert("Erro ao pagar a parcela: " + err));
       }
+    }
+
+    /* Relatório Mensal de Despesas Pagas */
+    // Exibe todas as despesas pagas e parcelas pagas com filtro por mês/ano.
+    function loadRelatorioMensal() {
+      const filtroMes = document.getElementById("filtroMes").value;
+      const filtroAno = document.getElementById("filtroAno").value;
+      const container = document.getElementById("relatorioMensalContainer");
+      container.innerHTML = "";      
+      db.ref("despesas").once("value").then(snapshot => {
+        let rows = [];
+        snapshot.forEach(child => {
+          const despesa = child.val();
+          // Despesa à vista paga
+          if(despesa.formaPagamento === "avista" && despesa.pago) {
+            const data = new Date(despesa.dataCompra);
+            if ((filtroMes === "" || data.getMonth().toString() === filtroMes) &&
+                (filtroAno === "" || data.getFullYear().toString() === filtroAno)) {
+              rows.push({
+                descricao: despesa.descricao,
+                data: despesa.dataCompra,
+                valor: despesa.valor,
+                forma: "À Vista"
+              });
+            }
+          }
+          // Despesa com cartão: cada parcela paga
+          else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach((parcela, index) => {
+              if(parcela.pago) {
+                const data = new Date(parcela.vencimento);
+                if ((filtroMes === "" || data.getMonth().toString() === filtroMes) &&
+                    (filtroAno === "" || data.getFullYear().toString() === filtroAno)) {
+                  rows.push({
+                    descricao: `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length}`,
+                    data: parcela.vencimento,
+                    valor: parcela.valor,
+                    forma: "Cartão"
+                  });
+                }
+              }
+            });
+          }
+        });
+        // Cria tabela se houver dados
+        if(rows.length > 0) {
+          let table = document.createElement("table");
+          let header = document.createElement("tr");
+          ["Descrição", "Data", "Valor", "Forma"].forEach(col => {
+            let th = document.createElement("th");
+            th.innerText = col;
+            header.appendChild(th);
+          });
+          table.appendChild(header);
+          rows.forEach(r => {
+            let tr = document.createElement("tr");
+            let tdDesc = document.createElement("td");
+            tdDesc.innerText = r.descricao;
+            let tdData = document.createElement("td");
+            tdData.innerText = new Date(r.data).toLocaleDateString();
+            let tdValor = document.createElement("td");
+            tdValor.innerText = "R$ " + parseFloat(r.valor).toFixed(2);
+            let tdForma = document.createElement("td");
+            tdForma.innerText = r.forma;
+            tr.appendChild(tdDesc);
+            tr.appendChild(tdData);
+            tr.appendChild(tdValor);
+            tr.appendChild(tdForma);
+            table.appendChild(tr);
+          });
+          container.appendChild(table);
+        } else {
+          container.innerHTML = "<p>Nenhum registro encontrado para os filtros selecionados.</p>";
+        }
+      });
     }
 
     /* Calendário – utilizando estrutura em tabela */
@@ -673,7 +777,6 @@
     }
 
     /* Funções de Cadastro de Renda, Categorias e Cartões */
-    // Atualiza o select de categorias no cadastro de despesa
     function updateCategoriaSelect() {
       const select = document.getElementById("categoriaDespesa");
       select.innerHTML = '<option value="">Selecione a Categoria</option>';
@@ -687,7 +790,6 @@
         });
       });
     }
-    // Salva uma nova categoria e atualiza a lista e o select
     function salvarCategoria() {
       const nomeCategoria = document.getElementById("categoriaNome").value;
       if (!nomeCategoria.trim()) {
@@ -703,7 +805,6 @@
         })
         .catch(err => alert("Erro ao salvar categoria: " + err));
     }
-    // Carrega as categorias no modal de gerenciamento
     function loadCategorias() {
       const categoriasLista = document.getElementById("categoriasLista");
       categoriasLista.innerHTML = "";
@@ -716,7 +817,6 @@
         });
       });
     }
-    // Atualiza o select de cartões no cadastro de despesa
     function updateCartaoSelect() {
       const select = document.getElementById("cartaoDespesa");
       select.innerHTML = '<option value="">Selecione o Cartão</option>';
@@ -732,7 +832,6 @@
         });
       });
     }
-    // Carrega a lista de cartões no modal "Gerenciar Cartões"
     function loadCartoes() {
       const cartoesLista = document.getElementById("cartoesLista");
       cartoesLista.innerHTML = "";
@@ -851,9 +950,97 @@
         })
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
+
+    // Preenche o select de anos para o relatório (ex.: últimos 10 anos)
+    function preencherFiltroAno() {
+      const filtroAno = document.getElementById("filtroAno");
+      filtroAno.innerHTML = '<option value="">Todos</option>';
+      const anoAtual = new Date().getFullYear();
+      for(let y = anoAtual - 10; y <= anoAtual; y++) {
+        let option = document.createElement("option");
+        option.value = y;
+        option.text = y;
+        filtroAno.appendChild(option);
+      }
+    }
+
+    // Função para carregar o relatório mensal com filtros
+    function loadRelatorioMensal() {
+      const filtroMes = document.getElementById("filtroMes").value;
+      const filtroAno = document.getElementById("filtroAno").value;
+      const container = document.getElementById("relatorioMensalContainer");
+      container.innerHTML = "";
+      db.ref("despesas").once("value").then(snapshot => {
+        let rows = [];
+        snapshot.forEach(child => {
+          const despesa = child.val();
+          // Para despesas à vista pagas
+          if(despesa.formaPagamento === "avista" && despesa.pago) {
+            let data = new Date(despesa.dataCompra);
+            if((filtroMes === "" || data.getMonth().toString() === filtroMes) &&
+               (filtroAno === "" || data.getFullYear().toString() === filtroAno)) {
+              rows.push({
+                descricao: despesa.descricao,
+                data: despesa.dataCompra,
+                valor: despesa.valor,
+                forma: "À Vista"
+              });
+            }
+          }
+          // Para despesas com cartão: cada parcela paga
+          else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach((parcela, index) => {
+              if(parcela.pago) {
+                let data = new Date(parcela.vencimento);
+                if((filtroMes === "" || data.getMonth().toString() === filtroMes) &&
+                   (filtroAno === "" || data.getFullYear().toString() === filtroAno)) {
+                  rows.push({
+                    descricao: `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length}`,
+                    data: parcela.vencimento,
+                    valor: parcela.valor,
+                    forma: "Cartão"
+                  });
+                }
+              }
+            });
+          }
+        });
+        if(rows.length > 0) {
+          let table = document.createElement("table");
+          let header = document.createElement("tr");
+          ["Descrição", "Data", "Valor", "Forma"].forEach(col => {
+            let th = document.createElement("th");
+            th.innerText = col;
+            header.appendChild(th);
+          });
+          table.appendChild(header);
+          rows.forEach(r => {
+            let tr = document.createElement("tr");
+            let tdDesc = document.createElement("td");
+            tdDesc.innerText = r.descricao;
+            let tdData = document.createElement("td");
+            tdData.innerText = new Date(r.data).toLocaleDateString();
+            let tdValor = document.createElement("td");
+            tdValor.innerText = "R$ " + parseFloat(r.valor).toFixed(2);
+            let tdForma = document.createElement("td");
+            tdForma.innerText = r.forma;
+            tr.appendChild(tdDesc);
+            tr.appendChild(tdData);
+            tr.appendChild(tdValor);
+            tr.appendChild(tdForma);
+            table.appendChild(tr);
+          });
+          container.appendChild(table);
+        } else {
+          container.innerHTML = "<p>Nenhum registro encontrado para os filtros selecionados.</p>";
+        }
+      });
+    }
+
     // Window onload
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
+      preencherFiltroAno();
       updateCategoriaSelect();
       updateCartaoSelect();
       loadDespesasNaoPagasSelect();
