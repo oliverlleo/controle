@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciamento de Contas</title>
-  <!-- CSS do Daterangepicker (biblioteca para seleção de intervalo) -->
+  <!-- CSS do Daterangepicker -->
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
   <style>
     /* Estilos Gerais */
@@ -208,13 +208,13 @@
     <h2>Relatório Mensal de Despesas Pagas</h2>
     <div id="filtrosRelatorio">
       <label for="dataRange">Intervalo de Datas:</label>
-      <!-- Campo único para seleção do intervalo (o usuário pode digitar ou selecionar via calendário bonito) -->
-      <input type="text" id="dataRange" readonly style="background: #fff; cursor: pointer;">
+      <!-- Campo único para seleção do intervalo (pode ser digitado ou selecionado) -->
+      <input type="text" id="dataRange" style="background: #fff; cursor: pointer;">
     </div>
     <div id="relatorioMensalContainer"></div>
   </div>
 
-  <!-- Modal de Calendário (mantido para outras funções, se necessário) -->
+  <!-- Modal de Calendário (mantido para outras funções) -->
   <div id="calendarModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal('calendarModal')">&times;</span>
@@ -330,7 +330,6 @@
     'use strict';
     var currentCalendarMonth = new Date().getMonth();
     var currentCalendarYear = new Date().getFullYear();
-    // Variáveis globais para uso do relatório
     var rangeStart = null;
     var rangeEnd = null;
     
@@ -348,17 +347,25 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    /* Inicialização do Daterangepicker para o campo único de intervalo */
+    /* Inicialização do Daterangepicker com configurações em português */
     $(function() {
       $('#dataRange').daterangepicker({
         autoUpdateInput: false,
         locale: {
-          cancelLabel: 'Limpar',
           format: 'DD/MM/YYYY',
-          applyLabel: 'Aplicar'
+          applyLabel: 'Aplicar',
+          cancelLabel: 'Cancelar',
+          fromLabel: 'De',
+          toLabel: 'Até',
+          customRangeLabel: 'Personalizado',
+          weekLabel: 'S',
+          daysOfWeek: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
+          monthNames: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
+          firstDay: 0
         }
       });
       
+      // Atualiza o input e filtra o relatório ao confirmar a seleção
       $('#dataRange').on('apply.daterangepicker', function(ev, picker) {
         rangeStart = picker.startDate.toDate();
         rangeEnd = picker.endDate.toDate();
@@ -371,6 +378,11 @@
         rangeStart = null;
         rangeEnd = null;
         loadRelatorioMensal();
+      });
+      
+      // Quando o seletor for aberto, garante que o campo esteja visível
+      $('#dataRange').on('show.daterangepicker', function(ev, picker) {
+        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     });
 
