@@ -204,12 +204,15 @@
       main { padding: 10px; }
     }
 
-    /* Estilo para reduzir o tamanho do seletor de mês/ano mantendo a proporção e centralizado */
+    /* Estilo para o container do seletor de mês/ano */
     #dashboardMonthSelector {
-      display: inline-block;
-      transform: scale(0.5);
-      transform-origin: top center;
-      margin: 0 auto;
+      width: 50%;
+      transform: scale(0.8);
+      transform-origin: center;
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
     }
   </style>
 </head>
@@ -236,7 +239,7 @@
     <section id="dashboardSection" class="container">
       <h2>Dashboard Resumido</h2>
       <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-        <!-- Seletor de mês/ano com tamanho reduzido e centralizado -->
+        <!-- Seção com o seletor de mês/ano reduzido e centralizado -->
         <div id="dashboardMonthSelector">
           <label for="dashboardMonth">Mês:</label>
           <select id="dashboardMonth">
@@ -253,6 +256,7 @@
             <option value="10">Novembro</option>
             <option value="11">Dezembro</option>
           </select>
+          <br>
           <label for="dashboardYear">Ano:</label>
           <select id="dashboardYear">
             <option value="2020">2020</option>
@@ -267,10 +271,11 @@
             <option value="2029">2029</option>
             <option value="2030">2030</option>
           </select>
+          <br>
           <button onclick="atualizarDashboard()">Atualizar Dashboard</button>
         </div>
         
-        <!-- Resumo dos dados ocupando o restante do espaço -->
+        <!-- Resumo dos dados -->
         <div id="dashboardResumo" style="flex: 1; display: flex; justify-content: space-around; align-items: center;">
           <div class="dashboard-item" style="text-align: center;">
             <h3>Saldo Atual</h3>
