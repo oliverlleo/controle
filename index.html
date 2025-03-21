@@ -1157,19 +1157,23 @@
       });
     }
     
-    window.onload = () => {
-      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
-      updateCategoriaSelect();
-      updateCartaoSelect();
-      loadDespesasNaoPagasSelect();
-      loadCategorias();
-      loadCartoes();
-      renderCalendar();
-      loadCategoriasFiltro();
-      atualizarDashboard();
-      atualizarTransacoes();
-      renderChart();
-    };
+   window.onload = () => {
+  const dataCompraEl = document.getElementById("dataCompra");
+  if(dataCompraEl){
+    dataCompraEl.value = new Date().toISOString().split("T")[0];
+  }
+  updateCategoriaSelect();
+  updateCartaoSelect();
+  loadDespesasNaoPagasSelect();
+  loadCategorias();
+  loadCartoes();
+  renderCalendar();
+  loadCategoriasFiltro();
+  atualizarDashboard();
+  atualizarTransacoes();
+  renderChart();
+};
+
   </script>
 </body>
 </html>
