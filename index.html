@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -1415,6 +1415,8 @@
       renderCalendar();
       loadCategoriasFiltro();
       preencherDashboardAno();
+      // Atualiza o seletor do mês para o mês atual
+      document.getElementById("dashboardMonth").value = new Date().getMonth();
       atualizarDashboard();
     };
   </script>
