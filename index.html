@@ -890,6 +890,8 @@
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let despesa = child.val();
+          // NÃO processa despesas já pagas
+          if(despesa.pago) return;
           // Para despesas à vista, soma se a data da compra pertence ao mês/ano selecionado
           if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
             let dt = new Date(despesa.dataCompra);
@@ -921,6 +923,8 @@
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let despesa = child.val();
+          // NÃO processa despesas que já foram pagas
+          if(despesa.pago) return;
           // Processa despesas à vista
           if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
             let dt = new Date(despesa.dataCompra);
@@ -1151,7 +1155,7 @@
             renderCalendar();
             updateCartaoSelect();
             atualizarDashboard();
-            // Recarrega a página para corrigir o gráfico
+            // Recarrega a página para simular fechar e reabrir
             window.location.reload();
           })
           .catch(err => alert("Erro: " + err));
@@ -1171,7 +1175,7 @@
             filtrarDespesas();
             renderCalendar();
             atualizarDashboard();
-            // Recarrega a página para corrigir o gráfico
+            // Recarrega a página para simular fechar e reabrir
             window.location.reload();
           })
           .catch(err => alert("Erro: " + err));
@@ -1251,7 +1255,7 @@
             filtrarDespesas();
             renderCalendar();
             atualizarDashboard();
-            // Recarrega a página para corrigir o gráfico
+            // Recarrega a página para simular fechar e reabrir
             window.location.reload();
           })
           .catch(err => alert("Erro ao pagar a despesa: " + err));
@@ -1269,7 +1273,7 @@
             filtrarDespesas();
             renderCalendar();
             atualizarDashboard();
-            // Recarrega a página para corrigir o gráfico
+            // Recarrega a página para simular fechar e reabrir
             window.location.reload();
           })
           .catch(err => alert("Erro ao pagar a parcela: " + err));
@@ -1936,35 +1940,9 @@
     }
     
     /* ================= NOVA FUNCIONALIDADE: Recarregar a Página ================= */
-    // Após cadastrar ou pagar uma despesa, a página é recarregada para "fechar e reabrir" o sistema
-    // Essa abordagem força a reconstrução completa dos gráficos e interface, corrigindo o bug visual.
-    // As chamadas a window.location.reload() foram inseridas nos then() dos métodos de salvarDespesa() e pagarDespesaSelecionada()
-    
-    /* Carrega dados iniciais */
-    window.onload = () => {
-      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
-      updateCategoriaSelect();
-      updateCartaoSelect();
-      loadDespesasNaoPagasSelect();
-      loadCategorias();
-      loadCartoes();
-      renderCalendar();
-      loadCategoriasFiltro();
-      preencherDashboardAno();
-      document.getElementById("dashboardMonth").value = new Date().getMonth();
-      atualizarDashboard();
-      updateDespesasMesTitle();
-      // Chama o painel de despesas após carregar a página
-      carregarPainelDespesasMes();
-    };
-    
-    // Adiciona eventos para atualizar o painel de despesas do mês quando o dashboard for atualizado
-    document.getElementById("dashboardMonth").addEventListener("change", carregarPainelDespesasMes);
-    document.getElementById("dashboardYear").addEventListener("change", carregarPainelDespesasMes);
-    // Também adiciona ao botão de atualizar dashboard (com um pequeno delay para garantir a atualização dos dados)
-    document.querySelector("button[onclick='atualizarDashboard()']").addEventListener("click", function() {
-      setTimeout(carregarPainelDespesasMes, 500);
-    });
+    // Após cadastrar ou pagar uma despesa, a página é recarregada para simular fechar e reabrir o sistema,
+    // garantindo que despesas pagas não apareçam no painel e o gráfico seja reconstruído.
+    // As chamadas a window.location.reload() foram adicionadas nas funções salvarDespesa() e pagarDespesaSelecionada().
     
     /* ================= NOVA FUNCIONALIDADE: Corrigir Eixo Y do Gráfico ================= */
     (function(){
@@ -1992,6 +1970,32 @@
         }
       }
     })();
+    
+    /* Carrega dados iniciais */
+    window.onload = () => {
+      document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
+      updateCategoriaSelect();
+      updateCartaoSelect();
+      loadDespesasNaoPagasSelect();
+      loadCategorias();
+      loadCartoes();
+      renderCalendar();
+      loadCategoriasFiltro();
+      preencherDashboardAno();
+      document.getElementById("dashboardMonth").value = new Date().getMonth();
+      atualizarDashboard();
+      updateDespesasMesTitle();
+      // Chama o painel de despesas após carregar a página
+      carregarPainelDespesasMes();
+    };
+    
+    // Adiciona eventos para atualizar o painel de despesas do mês quando o dashboard for atualizado
+    document.getElementById("dashboardMonth").addEventListener("change", carregarPainelDespesasMes);
+    document.getElementById("dashboardYear").addEventListener("change", carregarPainelDespesasMes);
+    // Também adiciona ao botão de atualizar dashboard (com um pequeno delay para garantir a atualização dos dados)
+    document.querySelector("button[onclick='atualizarDashboard()']").addEventListener("click", function() {
+      setTimeout(carregarPainelDespesasMes, 500);
+    });
   </script>
 </body>
 </html>
