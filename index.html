@@ -355,7 +355,7 @@
       
       <!-- Gráfico de Despesas e Painel de Despesas do Mês divididos em duas colunas -->
       <div class="grafico-painel-container">
-        <canvas id="graficoDespesas" width="809" height="375"></canvas>
+        <canvas id="graficoDespesas" width="809" height="375" style="box-sizing: border-box; display: block; height: 300px; width: 647px;"></canvas>
         <div id="painelDespesasMes">
           <h4>Despesas do Mês</h4>
           <div id="listaDespesasMes">
@@ -1952,6 +1952,23 @@
     document.querySelector("button[onclick='atualizarDashboard()']").addEventListener("click", function() {
       setTimeout(carregarPainelDespesasMes, 500);
     });
+    
+    /* ================= NOVA FUNCIONALIDADE: Corrigir Visual do Gráfico ================= */
+    // Wrapper para atualizar o gráfico sem causar bug visual
+    (function(){
+      const originalAtualizarGrafico = atualizarGrafico;
+      atualizarGrafico = function() {
+        originalAtualizarGrafico();
+        // Após 100ms, força a "reinicialização" do canvas
+        setTimeout(novo_corrigirGrafico, 100);
+      }
+      
+      function novo_corrigirGrafico() {
+        const canvas = document.getElementById("graficoDespesas");
+        canvas.style.display = "none";
+        setTimeout(() => { canvas.style.display = "block"; }, 50);
+      }
+    })();
   </script>
 </body>
 </html>
