@@ -1927,6 +1927,33 @@
       });
     }
     
+    /* ================= NOVA FUNCIONALIDADE: Corrigir Eixo Y do Gráfico ================= */
+    (function(){
+      // Armazena o valor máximo inicial do eixo Y
+      window.novo_maxEixoFixo = null;
+      
+      const originalAtualizarGrafico = atualizarGrafico;
+      atualizarGrafico = function() {
+        originalAtualizarGrafico();
+        // Aguarda a atualização e depois ajusta o eixo Y sem alterar a estrutura existente
+        setTimeout(novo_ajustarEixoY, 150);
+      }
+      
+      function novo_ajustarEixoY() {
+        if(grafico && grafico.data && grafico.data.datasets && grafico.data.datasets[0]) {
+          const dados = grafico.data.datasets[0].data;
+          const maxAtual = Math.max(...dados);
+          // Se não foi definido um valor máximo fixo, o define com o primeiro valor máximo
+          if(window.novo_maxEixoFixo === null) {
+            window.novo_maxEixoFixo = maxAtual;
+          }
+          // Se o novo máximo for menor que o fixo, mantenha o fixo
+          grafico.options.scales.y.max = (maxAtual < window.novo_maxEixoFixo) ? window.novo_maxEixoFixo : maxAtual;
+          grafico.update();
+        }
+      }
+    })();
+    
     /* Carrega dados iniciais */
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
@@ -1952,38 +1979,6 @@
     document.querySelector("button[onclick='atualizarDashboard()']").addEventListener("click", function() {
       setTimeout(carregarPainelDespesasMes, 500);
     });
-    
-    /* ================= NOVA FUNCIONALIDADE: Corrigir Visual e Eixo Y do Gráfico ================= */
-    (function(){
-      const originalAtualizarGrafico = atualizarGrafico;
-      atualizarGrafico = function() {
-        originalAtualizarGrafico();
-        // Após 150ms, corrige visualmente o canvas e ajusta o eixo Y
-        setTimeout(novo_corrigirGraficoEixo, 150);
-      }
-      
-      function novo_corrigirGraficoEixo() {
-        // Força re-renderização do canvas para corrigir problemas visuais
-        const canvas = document.getElementById("graficoDespesas");
-        canvas.style.display = "none";
-        setTimeout(() => { canvas.style.display = "block"; }, 50);
-        
-        // Ajusta o eixo Y para manter o valor máximo original
-        if(grafico) {
-          const dataset = grafico.data.datasets[0].data;
-          const maxValue = Math.max(...dataset);
-          // Armazena o máximo inicial globalmente
-          window.novo_maxEixo = window.novo_maxEixo || maxValue;
-          if(maxValue < window.novo_maxEixo) {
-            grafico.options.scales.y.max = window.novo_maxEixo;
-          } else {
-            window.novo_maxEixo = maxValue;
-            grafico.options.scales.y.max = maxValue;
-          }
-          grafico.update();
-        }
-      }
-    })();
   </script>
 </body>
 </html>
