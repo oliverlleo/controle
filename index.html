@@ -358,7 +358,14 @@
         <canvas id="graficoDespesas" width="809" height="375"></canvas>
         <div id="painelDespesasMes">
           <h4>Despesas do Mês</h4>
-          <div id="listaDespesasMes"></div>
+          <div id="listaDespesasMes">
+            <!-- Exemplo existente:
+            <div style="border-bottom: 1px solid rgb(204, 204, 204); padding: 5px 0px;">
+              <strong>cartão </strong> - À Vista - R$ 4440.00<br>
+              <small>20/03/2025</small>
+            </div>
+            -->
+          </div>
         </div>
       </div>
       
@@ -942,6 +949,8 @@
             });
           }
         });
+        // Após popular a lista, chama a nova função para verificar despesas vencidas
+        novo_verificarDespesasVencidas();
       });
     }
     
@@ -1882,6 +1891,41 @@
     
     // Chama a verificação de alertas a cada 24h
     setInterval(novo_verificarAlertas, 86400000);
+    
+    /* ================= NOVA FUNCIONALIDADE: Verificar Despesas Vencidas ================= */
+    function novo_verificarDespesasVencidas() {
+      const lista = document.getElementById("listaDespesasMes");
+      const hoje = new Date();
+      // Para cada despesa (cada div dentro de #listaDespesasMes)
+      const itens = lista.querySelectorAll("div");
+      itens.forEach(item => {
+        const smallElem = item.querySelector("small");
+        if (!smallElem) return;
+        const dataText = smallElem.innerText.trim(); // formato: dd/mm/aaaa
+        const partes = dataText.split("/");
+        if (partes.length === 3) {
+          const dia = parseInt(partes[0]);
+          const mes = parseInt(partes[1]) - 1;
+          const ano = parseInt(partes[2]);
+          const dataDespesa = new Date(ano, mes, dia);
+          if (dataDespesa < hoje) {
+            // Se a despesa estiver vencida, adiciona o alerta "Conta atrasada" em vermelho, se ainda não estiver presente
+            if (!item.querySelector(".novo-alerta-vencida")) {
+              const alertaSpan = document.createElement("span");
+              alertaSpan.className = "novo-alerta-vencida";
+              alertaSpan.style.color = "red";
+              alertaSpan.style.marginLeft = "10px";
+              alertaSpan.innerText = "Conta atrasada";
+              item.appendChild(alertaSpan);
+            }
+          } else {
+            // Se a despesa não estiver vencida, remove o alerta, se existir
+            const alertaExistente = item.querySelector(".novo-alerta-vencida");
+            if (alertaExistente) alertaExistente.remove();
+          }
+        }
+      });
+    }
     
     /* Carrega dados iniciais */
     window.onload = () => {
