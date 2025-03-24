@@ -327,7 +327,7 @@
             <!-- Título com navegação por mês -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
               <button class="nav-mes-btn" onclick="prevDashboardMonth()"><i class="fa-solid fa-arrow-left"></i></button>
-              <h3 id="despesasMesTitle">Despesas de Janeiro</h3>
+              <h3 id="despesasMesTitle">Despesas de Março</h3>
               <button class="nav-mes-btn" onclick="nextDashboardMonth()"><i class="fa-solid fa-arrow-right"></i></button>
             </div>
             <p id="despesasMes">R$ 4440.00</p>
@@ -855,7 +855,7 @@
       });
     }
     
-    /* Nova Função: Atualiza o painel de despesas do mês */
+    /* Nova Função: Atualiza o painel de despesas do mês com busca automática no banco de dados */
     function carregarPainelDespesasMes() {
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
@@ -866,7 +866,7 @@
         snapshot.forEach(child => {
           let despesa = child.val();
           let exibir = false;
-          let dataDespesa = null;
+          let dataDespesa = "";
           if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
             let dt = new Date(despesa.dataCompra);
             if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
@@ -884,9 +884,9 @@
           }
           if(exibir) {
             let divDespesa = document.createElement("div");
-            divDespesa.style.borderBottom = "1px solid #ccc";
-            divDespesa.style.padding = "5px 0";
-            divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - ${despesa.formaPagamento === "avista" ? "À Vista" : "Cartão"}<br><small>${dataDespesa || ""}</small>`;
+            divDespesa.style.borderBottom = "1px solid rgb(204, 204, 204)";
+            divDespesa.style.padding = "5px 0px";
+            divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - ${despesa.formaPagamento === "avista" ? "À Vista" : "Cartão"}<br><small>${dataDespesa}</small>`;
             listaContainer.appendChild(divDespesa);
           }
         });
