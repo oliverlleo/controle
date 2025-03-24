@@ -451,6 +451,12 @@
       <label>Categoria:</label>
       <select id="categoriaDespesa">
         <option value="">Selecione a Categoria</option>
+        <option value="-OLp0FXlAC6bjHph1w4E">Fixo</option>
+        <option value="-OLs5YvsxD2FPYqe6ATi">Casa</option>
+        <option value="-OLs5_qmZZmFqKmaSE2S">Carro</option>
+        <option value="-OLs5eHQkVx5m9JbmuVK">Alimentação</option>
+        <option value="-OLs5m5bXk2uRhNfCawq">Pet</option>
+        <option value="-OM7odu2iJfsBwYv9wyV">Lazer</option>
       </select>
       <label>Forma de Pagamento:</label>
       <select id="formaPagamento" onchange="toggleParcelamento()">
@@ -680,6 +686,14 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    
+    /* Carrega mapeamento de categorias (ID => Nome) sem alterar a estrutura existente */
+    window.novo_categoriasMap = {};
+    db.ref("categorias").once("value").then(snapshot => {
+      snapshot.forEach(child => {
+        window.novo_categoriasMap[child.key] = child.val().nome;
+      });
+    });
     
     /* Inicialização do Daterangepicker com máscara */
     $(function() {
@@ -984,7 +998,8 @@
             });
           }
         });
-        const labels = Object.keys(categorias);
+        // Converte as chaves (IDs de categoria) para os nomes usando o mapeamento global
+        const labels = Object.keys(categorias).map(id => window.novo_categoriasMap[id] || id);
         const data = Object.values(categorias);
         const ctx = document.getElementById("graficoDespesas").getContext("2d");
         if(grafico) grafico.destroy();
@@ -1187,61 +1202,7 @@
       document.getElementById("parcelamentoDiv").classList.toggle("hidden", forma !== "cartao");
     }
     
-    function filtrarDespesas() {
-      const searchText = document.getElementById("despesaSearch").value.toLowerCase();
-      const mesFiltro = document.getElementById("mesFiltro").value.toUpperCase();
-      const anoFiltro = document.getElementById("anoFiltro").value;
-      const categoriaFiltro = document.getElementById("categoriaFiltro").value;
-      const contaMes = document.getElementById("contaMesFiltro").checked;
-      const despesaSelect = document.getElementById("despesaSelect");
-      despesaSelect.innerHTML = "";
-      
-      const mesesAbreviados = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
-      
-      db.ref("despesas").once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          const despesa = child.val();
-          if (!despesa.pago) {
-            if (searchText && !despesa.descricao.toLowerCase().includes(searchText)) return;
-            
-            let data = despesa.dataCompra ? new Date(despesa.dataCompra) : null;
-            if (despesa.formaPagamento === "cartao" && despesa.parcelas && despesa.parcelas.length > 0) {
-              data = new Date(despesa.parcelas[0].vencimento);
-            }
-            if (mesFiltro && data) {
-              const mesAbrev = mesesAbreviados[data.getMonth()];
-              if (mesAbrev !== mesFiltro) return;
-            }
-            if (anoFiltro && data) {
-              const ano = data.getFullYear().toString();
-              if (ano !== anoFiltro) return;
-            }
-            if (categoriaFiltro && despesa.categoria !== categoriaFiltro) return;
-            if (contaMes && !despesa.contaMes) return;
-            
-            if (despesa.formaPagamento === "avista") {
-              const option = document.createElement("option");
-              option.value = child.key;
-              const dataExibicao = despesa.dataCompra;
-              const valorExibido = despesa.valor ? "R$ " + parseFloat(despesa.valor).toFixed(2) : "";
-              option.text = despesa.descricao + " " + valorExibido + " - " + dataExibicao;
-              despesaSelect.appendChild(option);
-            } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-              despesa.parcelas.forEach((parcela, index) => {
-                if (!parcela.pago) {
-                  const option = document.createElement("option");
-                  option.value = child.key + "|" + index;
-                  option.text = `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
-                  despesaSelect.appendChild(option);
-                }
-              });
-            }
-          }
-        });
-      });
-    }
-    
-    // Modificação: Verifica se há saldo suficiente antes de permitir o pagamento
+    // Modificação: Impede o pagamento se não houver saldo suficiente
     function pagarDespesaSelecionada() {
       const despesaSelect = document.getElementById("despesaSelect");
       const selectedValue = despesaSelect.value;
@@ -1983,7 +1944,6 @@
     
     /* ================= NOVA FUNCIONALIDADE: Recarregar a Página ================= */
     // Após cadastrar ou pagar uma despesa, a página é recarregada para simular fechar e reabrir o sistema.
-    // Essa abordagem garante que despesas pagas não sejam exibidas e o gráfico seja reconstruído.
     
     /* Carrega dados iniciais */
     window.onload = () => {
