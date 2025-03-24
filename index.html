@@ -701,7 +701,9 @@
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
       
       let saldo = 0;
+      // Normaliza a data atual para o início do dia (00:00)
       let hoje = new Date();
+      hoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
       
       // Novo cálculo: soma o saldo inicial de cada pessoa e os pagamentos (se já ocorreram)
       db.ref("pessoas").once("value").then(snapshot => {
@@ -710,7 +712,6 @@
           saldo += parseFloat(pessoa.saldoInicial) || 0; // adiciona o saldo inicial
           if(pessoa.pagamentos) {
             pessoa.pagamentos.forEach(pag => { 
-              // Considera o pagamento apenas se o dia do pagamento já passou no mês atual
               let pagamentoDia = parseInt(pag.dia);
               if(pagamentoDia <= hoje.getDate()){
                 saldo += parseFloat(pag.valor) || 0;
@@ -719,26 +720,41 @@
           }
         });
         
-        // Subtrai as despesas pagas
+        // Calcula quantos dias faltam para o próximo vencimento
+        let proximosVencimentos = Infinity;
         db.ref("despesas").once("value").then(snapshot2 => {
           snapshot2.forEach(child => {
             let despesa = child.val();
-            if(despesa.pago) {
-              if(despesa.formaPagamento === "avista") {
-                saldo -= parseFloat(despesa.valor) || 0;
-              } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
-                despesa.parcelas.forEach(parcela => {
-                  if(parcela.pago) {
-                    saldo -= parseFloat(parcela.valor) || 0;
-                  }
-                });
+            
+            // Para despesas à vista não pagas
+            if(despesa.formaPagamento === "avista" && !despesa.pago) {
+              let dt = moment(despesa.dataCompra, "YYYY-MM-DD").startOf('day');
+              if(dt.isSameOrAfter(moment(hoje))) {
+                let diff = dt.diff(moment(hoje), 'days');
+                if(diff < proximosVencimentos) {
+                  proximosVencimentos = diff;
+                }
               }
+            }
+            // Para despesas com cartão não pagas
+            else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+              despesa.parcelas.forEach(parcela => {
+                if(!parcela.pago) {
+                  let dt = moment(parcela.vencimento, "YYYY-MM-DD").startOf('day');
+                  if(dt.isSameOrAfter(moment(hoje))) {
+                    let diff = dt.diff(moment(hoje), 'days');
+                    if(diff < proximosVencimentos) {
+                      proximosVencimentos = diff;
+                    }
+                  }
+                }
+              });
             }
           });
           document.getElementById("saldoAtual").innerText = "R$ " + saldo.toFixed(2);
+          document.getElementById("proximosVencimentos").innerText = proximosVencimentos === Infinity ? 0 : proximosVencimentos;
           
-          // Atualiza outras partes do dashboard
-          atualizarDespesasMes();
+          // Atualiza calendário para o mês/ano selecionado
           currentCalendarMonth = dashboardMonth;
           currentCalendarYear = dashboardYear;
           renderCalendar();
@@ -755,14 +771,12 @@
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let despesa = child.val();
-          // Para despesas à vista, soma se a data da compra pertence ao mês/ano selecionado
           if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
             let dt = new Date(despesa.dataCompra);
             if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
               despesasMes += parseFloat(despesa.valor) || 0;
             }
           }
-          // Para despesas com cartão, percorre todas as parcelas do mês/ano selecionado
           else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach(parcela => {
               let dt = new Date(parcela.vencimento);
@@ -776,7 +790,7 @@
       });
     }
     
-    /* Gráfico de Despesas por Categoria (usando Chart.js) - Agora inclui todas as despesas do mês */
+    /* Gráfico de Despesas por Categoria (usando Chart.js) */
     let grafico;
     function atualizarGrafico() {
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
@@ -785,14 +799,12 @@
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let despesa = child.val();
-          // Para despesas à vista, inclui se a data da compra pertence ao mês/ano selecionado
           if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
             let dt = new Date(despesa.dataCompra);
             if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
               categorias[despesa.categoria] = (categorias[despesa.categoria] || 0) + parseFloat(despesa.valor);
             }
           }
-          // Para despesas com cartão, percorre todas as parcelas do mês/ano selecionado
           else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach(parcela => {
               let dt = new Date(parcela.vencimento);
@@ -1342,7 +1354,6 @@
       e.preventDefault();
       let nome = document.getElementById("nome").value;
       let parentesco = document.getElementById("parentesco").value;
-      // Novo campo: saldoInicial
       let saldoInicial = parseFloat(document.getElementById("saldoInicial").value) || 0;
       let salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
@@ -1359,7 +1370,7 @@
       let dados = {
         nome,
         parentesco,
-        saldoInicial,  // Armazena o saldo inicial informado
+        saldoInicial,
         salarioBruto,
         salarioLiquido,
         numPagamentos,
@@ -1427,7 +1438,7 @@
       }
     }
     
-    /* Função para carregar despesas não pagas (usada em outros módulos) */
+    /* Função para carregar despesas não pagas */
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
@@ -1455,7 +1466,7 @@
       });
     }
     
-    /* NOVAS FUNÇÕES DE NAVEGAÇÃO DO DASHBOARD (setas para alterar o mês e atualizar título) */
+    /* NOVAS FUNÇÕES DE NAVEGAÇÃO DO DASHBOARD */
     function prevDashboardMonth() {
       let selectMonth = document.getElementById("dashboardMonth");
       let selectYear = document.getElementById("dashboardYear");
