@@ -257,6 +257,17 @@
       box-sizing: border-box;
       display: block;
     }
+    
+    /* CSS para alertas (novos) */
+    .toast-alerta {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -270,6 +281,9 @@
     <a href="#" onclick="showSection('cartoesSection')"><i class="fa-solid fa-credit-card"></i> Cartões</a>
     <a href="#" onclick="showSection('rendaSection')"><i class="fa-solid fa-user"></i> Renda</a>
     <a href="#" onclick="exportData()"><i class="fa-solid fa-file-export"></i> Exportar Dados</a>
+    <!-- Novos itens no Menu Lateral -->
+    <a href="#" onclick="showSection('previsaoSection')"><i class="fa-solid fa-chart-line"></i> Previsões</a>
+    <a href="#" onclick="showSection('alertasSection')"><i class="fa-solid fa-bell"></i> Alertas</a>
   </aside>
   
   <!-- Conteúdo Principal -->
@@ -389,6 +403,29 @@
       <button onclick="abrirModal('cadastroModal')">Cadastrar Nova Renda</button>
       <button onclick="loadRendas()">Ver Rendas Cadastradas</button>
       <div id="usuariosListaPrincipal"></div>
+    </section>
+    
+    <!-- NOVAS SEÇÕES -->
+    <!-- Seção de Previsões -->
+    <section id="previsaoSection" class="container" style="display:none;">
+      <h2>Previsão de Gastos</h2>
+      <div class="grafico-painel-container">
+        <canvas id="novo_graficoPrevisao"></canvas>
+        <div id="novo_tabelaPrevisao">
+          <h4>Próximos 3 Meses</h4>
+          <!-- Dados serão preenchidos via JS -->
+        </div>
+      </div>
+      <button onclick="novo_calcularPrevisoes()">Gerar Previsões</button>
+    </section>
+    
+    <!-- Seção de Alertas -->
+    <section id="alertasSection" class="container" style="display:none;">
+      <h2>Alertas</h2>
+      <button onclick="abrirModal('novo_limitesModal')">
+        <i class="fa-solid fa-sliders"></i> Configurar Limites
+      </button>
+      <div id="novo_listaAlertas" style="margin-top: 20px;"></div>
     </section>
   </main>
   
@@ -591,6 +628,16 @@
     </div>
   </div>
   
+  <!-- Modal NOVO: Configurar Limites (Limites por Categoria) -->
+  <div id="novo_limitesModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('novo_limitesModal')">&times;</span>
+      <h2>Configurar Limites por Categoria</h2>
+      <div id="novo_limitesContainer"></div>
+      <button onclick="novo_salvarLimites()">Salvar Limites</button>
+    </div>
+  </div>
+  
   <!-- ===================== SCRIPTS ===================== -->
   <!-- Inclusão de bibliotecas externas -->
   <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
@@ -702,6 +749,8 @@
         renderCalendar();
       }
       if (id === "pagarDespesaModal") filtrarDespesas();
+      // NOVO: Se abrir o modal de limites, carregar limites existentes
+      if (id === "novo_limitesModal") novo_carregarLimites();
     };
     
     window.fecharModal = function(id) {
@@ -1614,6 +1663,225 @@
       let monthName = new Date(2020, monthIndex).toLocaleString('pt-BR', { month: 'long' });
       document.getElementById("despesasMesTitle").innerText = "Despesas de " + monthName.charAt(0).toUpperCase() + monthName.slice(1);
     }
+    
+    /* ================= NOVAS FUNCIONALIDADES ================= */
+    
+    // A. Cadastro de Limites por Categoria
+    function novo_carregarLimites() {
+      const container = document.getElementById("novo_limitesContainer");
+      container.innerHTML = "";
+      // Busca categorias existentes SEM alterar função original
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const div = document.createElement("div");
+          div.style.marginBottom = "10px";
+          div.innerHTML = `<label>${categoria.nome}:</label>
+                           <input type="number" id="novo_limite_${child.key}" placeholder="Limite para ${categoria.nome}" step="0.01">`;
+          container.appendChild(div);
+        });
+      });
+    }
+    
+    function novo_salvarLimites() {
+      // Para cada categoria, salva na nova tabela "limites_categorias"
+      db.ref("categorias").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const categoria = child.val();
+          const input = document.getElementById("novo_limite_" + child.key);
+          if(input && input.value) {
+            const limite = parseFloat(input.value);
+            db.ref("limites_categorias").child(child.key).set({
+              categoriaId: child.key,
+              limite: limite,
+              userId: "default" // ou usar id do usuário se disponível
+            });
+          }
+        });
+        alert("Limites salvos com sucesso!");
+        fecharModal("novo_limitesModal");
+      });
+    }
+    
+    // B. Previsão de Despesas
+    function novo_calcularPrevisoes() {
+      // Analisa despesas dos últimos 6 meses e aplica regressão linear para projetar os próximos 3 meses
+      // Para não interferir nas funções existentes, utiliza dados da coleção "despesas"
+      const hoje = new Date();
+      const seisMesesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 5, 1);
+      let despesasMes = {}; // chave: "ano-mes", valor: soma das despesas
+      
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          let despesa = child.val();
+          let dt;
+          if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
+            dt = new Date(despesa.dataCompra);
+            if(dt >= seisMesesAtras && dt <= hoje) {
+              let key = dt.getFullYear() + "-" + (dt.getMonth()+1);
+              despesasMes[key] = (despesasMes[key] || 0) + parseFloat(despesa.valor);
+            }
+          } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach(parcela => {
+              dt = new Date(parcela.vencimento);
+              if(dt >= seisMesesAtras && dt <= hoje) {
+                let key = dt.getFullYear() + "-" + (dt.getMonth()+1);
+                despesasMes[key] = (despesasMes[key] || 0) + parseFloat(parcela.valor);
+              }
+            });
+          }
+        });
+        
+        // Ordena as chaves (meses) e aplica uma regressão linear simples
+        const keys = Object.keys(despesasMes).sort();
+        let x = [];
+        let y = [];
+        keys.forEach((k, index) => {
+          x.push(index + 1);
+          y.push(despesasMes[k]);
+        });
+        
+        // Função de regressão linear simples (mínimos quadrados)
+        function regressaoLinear(x, y) {
+          let n = x.length;
+          let sumX = x.reduce((a, b) => a + b, 0);
+          let sumY = y.reduce((a, b) => a + b, 0);
+          let sumXY = x.reduce((acc, val, i) => acc + val * y[i], 0);
+          let sumX2 = x.reduce((acc, val) => acc + val * val, 0);
+          let m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+          let b = (sumY - m * sumX) / n;
+          return { m, b };
+        }
+        
+        const { m, b } = regressaoLinear(x, y);
+        // Projeta os próximos 3 meses
+        let previsoes = [];
+        for(let i = x.length + 1; i <= x.length + 3; i++) {
+          previsoes.push(b + m * i);
+        }
+        
+        // Atualiza o novo gráfico (#novo_graficoPrevisao)
+        const ctxPrev = document.getElementById("novo_graficoPrevisao").getContext("2d");
+        if(window.novoGraficoPrevisao) window.novoGraficoPrevisao.destroy();
+        window.novoGraficoPrevisao = new Chart(ctxPrev, {
+          type: 'line',
+          data: {
+            labels: ['Mês 1', 'Mês 2', 'Mês 3'],
+            datasets: [{
+              label: 'Previsão de Despesas',
+              data: previsoes,
+              backgroundColor: 'rgba(76, 175, 80, 0.6)',
+              borderColor: 'rgba(76, 175, 80, 1)',
+              fill: false,
+              tension: 0.1
+            }]
+          },
+          options: {
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+        
+        // Atualiza a tabela de previsão
+        const tabela = document.getElementById("novo_tabelaPrevisao");
+        tabela.innerHTML = "<h4>Próximos 3 Meses</h4>";
+        previsoes.forEach((prev, i) => {
+          const p = document.createElement("p");
+          p.innerText = `Mês ${i+1}: R$ ${prev.toFixed(2)}`;
+          tabela.appendChild(p);
+        });
+      });
+    }
+    
+    // C. Alertas Automáticos
+    function novo_verificarAlertas() {
+      const hoje = new Date();
+      const alertaLista = document.getElementById("novo_listaAlertas");
+      alertaLista.innerHTML = "";
+      
+      // 1. Checa vencimentos 3 dias antes
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          let despesa = child.val();
+          if(despesa.formaPagamento === "avista" && !despesa.pago && despesa.dataCompra) {
+            let dataCompra = new Date(despesa.dataCompra);
+            let diffDays = Math.ceil((dataCompra - hoje) / (1000 * 60 * 60 * 24));
+            if(diffDays === 3) {
+              novo_mostrarAlerta(`Despesa "${despesa.descricao}" vence em 3 dias.`);
+              // Salvar alerta no histórico
+              db.ref("alertas_historico").push({
+                tipo: "vencimento",
+                mensagem: `Despesa "${despesa.descricao}" vence em 3 dias.`,
+                data: hoje.toISOString().split("T")[0]
+              });
+            }
+          } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach(parcela => {
+              if(!parcela.pago) {
+                let venc = new Date(parcela.vencimento);
+                let diffDays = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+                if(diffDays === 3) {
+                  novo_mostrarAlerta(`Parcela de "${despesa.descricao}" vence em 3 dias.`);
+                  db.ref("alertas_historico").push({
+                    tipo: "vencimento",
+                    mensagem: `Parcela de "${despesa.descricao}" vence em 3 dias.`,
+                    data: hoje.toISOString().split("T")[0]
+                  });
+                }
+              }
+            });
+          }
+        });
+      });
+      
+      // 2. Checa limites por categoria (80% do limite)
+      db.ref("despesas").once("value").then(snapshot => {
+        let gastosCategoria = {};
+        snapshot.forEach(child => {
+          let despesa = child.val();
+          if(despesa.pago || (despesa.formaPagamento === "cartao" && despesa.parcelas.every(p => p.pago))) return;
+          let cat = despesa.categoria;
+          let valor = 0;
+          if(despesa.formaPagamento === "avista") {
+            valor = parseFloat(despesa.valor) || 0;
+          } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach(parcela => {
+              if(!parcela.pago) { valor += parseFloat(parcela.valor) || 0; }
+            });
+          }
+          gastosCategoria[cat] = (gastosCategoria[cat] || 0) + valor;
+        });
+        
+        // Verifica limites cadastrados na nova tabela "limites_categorias"
+        db.ref("limites_categorias").once("value").then(snapshotLimites => {
+          snapshotLimites.forEach(child => {
+            let limiteData = child.val();
+            let gasto = gastosCategoria[child.key] || 0;
+            if(gasto >= 0.8 * limiteData.limite) {
+              novo_mostrarAlerta(`Alerta: Categoria "${child.key}" atingiu ${((gasto/limiteData.limite)*100).toFixed(0)}% do limite.`);
+              db.ref("alertas_historico").push({
+                tipo: "limite_excedido",
+                mensagem: `Categoria "${child.key}" atingiu ${((gasto/limiteData.limite)*100).toFixed(0)}% do limite.`,
+                data: hoje.toISOString().split("T")[0]
+              });
+            }
+          });
+        });
+      });
+    }
+    
+    // Função de exibição de alerta (NOVA)
+    function novo_mostrarAlerta(mensagem) {
+      const toast = document.createElement("div");
+      toast.className = "toast-alerta";
+      toast.innerText = mensagem;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+    }
+    
+    // Chama a verificação de alertas a cada 24h
+    setInterval(novo_verificarAlertas, 86400000);
     
     /* Carrega dados iniciais */
     window.onload = () => {
