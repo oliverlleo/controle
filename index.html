@@ -865,29 +865,30 @@
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let despesa = child.val();
-          let exibir = false;
-          let dataDespesa = "";
+          // Processa despesas à vista
           if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
             let dt = new Date(despesa.dataCompra);
             if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
-              exibir = true;
-              dataDespesa = dt.toLocaleDateString();
+              let divDespesa = document.createElement("div");
+              divDespesa.style.borderBottom = "1px solid rgb(204, 204, 204)";
+              divDespesa.style.padding = "5px 0px";
+              divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - À Vista<br><small>${dt.toLocaleDateString()}</small>`;
+              listaContainer.appendChild(divDespesa);
             }
-          } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
-            despesa.parcelas.forEach(parcela => {
+          }
+          // Processa despesas com cartão e suas parcelas
+          else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            let totalParcelas = despesa.parcelas.length;
+            despesa.parcelas.forEach((parcela, index) => {
               let dt = new Date(parcela.vencimento);
               if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
-                exibir = true;
-                dataDespesa = dt.toLocaleDateString();
+                let divDespesa = document.createElement("div");
+                divDespesa.style.borderBottom = "1px solid rgb(204, 204, 204)";
+                divDespesa.style.padding = "5px 0px";
+                divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - Parcela ${index+1} de ${totalParcelas} - Cartão<br><small>${dt.toLocaleDateString()} - R$ ${parseFloat(parcela.valor).toFixed(2)}</small>`;
+                listaContainer.appendChild(divDespesa);
               }
             });
-          }
-          if(exibir) {
-            let divDespesa = document.createElement("div");
-            divDespesa.style.borderBottom = "1px solid rgb(204, 204, 204)";
-            divDespesa.style.padding = "5px 0px";
-            divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - ${despesa.formaPagamento === "avista" ? "À Vista" : "Cartão"}<br><small>${dataDespesa}</small>`;
-            listaContainer.appendChild(divDespesa);
           }
         });
       });
@@ -1586,6 +1587,7 @@
       selectMonth.value = currentMonth;
       atualizarDashboard();
       updateDespesasMesTitle();
+      carregarPainelDespesasMes();
     }
     
     function nextDashboardMonth() {
@@ -1601,6 +1603,7 @@
       selectMonth.value = currentMonth;
       atualizarDashboard();
       updateDespesasMesTitle();
+      carregarPainelDespesasMes();
     }
     
     function updateDespesasMesTitle() {
