@@ -1381,7 +1381,7 @@
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
     
-    /* Função para carregar/alternar rendas cadastradas na página de Renda */
+    /* Função para carregar/alternar rendas cadastradas na página de Renda com opção de excluir */
     function loadRendas() {
       const rendaList = document.getElementById("usuariosListaPrincipal");
       if (rendaVisivel) {
@@ -1393,16 +1393,38 @@
         rendaList.innerHTML = "";
         snapshot.forEach(child => {
           const pessoa = child.val();
+          const key = child.key;
           const div = document.createElement("div");
           div.style.padding = "10px";
           div.style.marginBottom = "10px";
           div.style.borderRadius = "8px";
           div.style.boxShadow = "3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)";
-          div.innerHTML = `<strong>Nome:</strong> ${pessoa.nome} - <strong>Saldo Inicial:</strong> R$ ${parseFloat(pessoa.saldoInicial).toFixed(2)} - <strong>Salário Líquido:</strong> R$ ${parseFloat(pessoa.salarioLiquido).toFixed(2)}`;
+          let pagamentosInfo = "";
+          if (pessoa.pagamentos) {
+            pagamentosInfo = "<br><strong>Pagamentos:</strong> ";
+            pessoa.pagamentos.forEach(pag => {
+              pagamentosInfo += `Dia: ${pag.dia}, Valor: R$ ${parseFloat(pag.valor).toFixed(2)}; `;
+            });
+          }
+          div.innerHTML = `<strong>Nome:</strong> ${pessoa.nome} - <strong>Saldo Inicial:</strong> R$ ${parseFloat(pessoa.saldoInicial).toFixed(2)} - <strong>Salário Líquido:</strong> R$ ${parseFloat(pessoa.salarioLiquido).toFixed(2)} ${pagamentosInfo}
+                           <button onclick="deleteRenda('${key}')" style="margin-left: 10px; background: red; color: white; border: none; border-radius: 50%; cursor: pointer;">X</button>`;
           rendaList.appendChild(div);
         });
         rendaVisivel = true;
       });
+    }
+    
+    /* Função para excluir uma renda */
+    function deleteRenda(key) {
+      if (confirm("Tem certeza que deseja excluir esta renda?")) {
+        db.ref("pessoas").child(key).remove()
+          .then(() => {
+            alert("Renda excluída com sucesso!");
+            loadRendas();
+            atualizarDashboard();
+          })
+          .catch(err => alert("Erro ao excluir renda: " + err));
+      }
     }
     
     /* Função para carregar despesas não pagas (usada em outros módulos) */
