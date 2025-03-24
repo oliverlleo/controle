@@ -1151,6 +1151,8 @@
             renderCalendar();
             updateCartaoSelect();
             atualizarDashboard();
+            // Recarrega a página para corrigir o gráfico
+            window.location.reload();
           })
           .catch(err => alert("Erro: " + err));
       } else {
@@ -1169,6 +1171,8 @@
             filtrarDespesas();
             renderCalendar();
             atualizarDashboard();
+            // Recarrega a página para corrigir o gráfico
+            window.location.reload();
           })
           .catch(err => alert("Erro: " + err));
       }
@@ -1247,6 +1251,8 @@
             filtrarDespesas();
             renderCalendar();
             atualizarDashboard();
+            // Recarrega a página para corrigir o gráfico
+            window.location.reload();
           })
           .catch(err => alert("Erro ao pagar a despesa: " + err));
       } else {
@@ -1263,6 +1269,8 @@
             filtrarDespesas();
             renderCalendar();
             atualizarDashboard();
+            // Recarrega a página para corrigir o gráfico
+            window.location.reload();
           })
           .catch(err => alert("Erro ao pagar a parcela: " + err));
       }
@@ -1927,6 +1935,11 @@
       });
     }
     
+    /* ================= NOVA FUNCIONALIDADE: Recarregar a Página ================= */
+    // Após cadastrar ou pagar uma despesa, a página é recarregada para "fechar e reabrir" o sistema
+    // Essa abordagem força a reconstrução completa dos gráficos e interface, corrigindo o bug visual.
+    // As chamadas a window.location.reload() foram inseridas nos then() dos métodos de salvarDespesa() e pagarDespesaSelecionada()
+    
     /* Carrega dados iniciais */
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
@@ -1953,20 +1966,30 @@
       setTimeout(carregarPainelDespesasMes, 500);
     });
     
-    /* ================= NOVA FUNCIONALIDADE: Corrigir Visual do Gráfico ================= */
-    // Wrapper para atualizar o gráfico sem causar bug visual
+    /* ================= NOVA FUNCIONALIDADE: Corrigir Eixo Y do Gráfico ================= */
     (function(){
+      // Armazena o valor máximo inicial do eixo Y
+      window.novo_maxEixoFixo = null;
+      
       const originalAtualizarGrafico = atualizarGrafico;
       atualizarGrafico = function() {
         originalAtualizarGrafico();
-        // Após 100ms, força a "reinicialização" do canvas
-        setTimeout(novo_corrigirGrafico, 100);
+        // Aguarda a atualização e depois ajusta o eixo Y
+        setTimeout(novo_ajustarEixoY, 150);
       }
       
-      function novo_corrigirGrafico() {
-        const canvas = document.getElementById("graficoDespesas");
-        canvas.style.display = "none";
-        setTimeout(() => { canvas.style.display = "block"; }, 50);
+      function novo_ajustarEixoY() {
+        if(grafico && grafico.data && grafico.data.datasets && grafico.data.datasets[0]) {
+          const dados = grafico.data.datasets[0].data;
+          const maxAtual = Math.max(...dados);
+          // Se não foi definido um valor máximo fixo, o define com o primeiro valor máximo
+          if(window.novo_maxEixoFixo === null) {
+            window.novo_maxEixoFixo = maxAtual;
+          }
+          // Se o novo máximo for menor que o fixo, mantenha o fixo
+          grafico.options.scales.y.max = (maxAtual < window.novo_maxEixoFixo) ? window.novo_maxEixoFixo : maxAtual;
+          grafico.update();
+        }
       }
     })();
   </script>
