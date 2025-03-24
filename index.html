@@ -224,6 +224,15 @@
       display: inline-block;
       margin-right: 20px;
     }
+    
+    /* Estilo para os botões de navegação por mês */
+    .nav-mes-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -291,7 +300,12 @@
             <p id="saldoAtual">R$ 9374.20</p>
           </div>
           <div class="dashboard-item" style="text-align: center;">
-            <h3>Despesas do Mês</h3>
+            <!-- Título com navegação por mês -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+              <button class="nav-mes-btn" onclick="prevDashboardMonth()"><i class="fa-solid fa-arrow-left"></i></button>
+              <h3 id="despesasMesTitle">Despesas de Janeiro</h3>
+              <button class="nav-mes-btn" onclick="nextDashboardMonth()"><i class="fa-solid fa-arrow-right"></i></button>
+            </div>
             <p id="despesasMes">R$ 0.00</p>
           </div>
           <div class="dashboard-item" style="text-align: center;">
@@ -1426,6 +1440,44 @@
       });
     }
     
+    /* NOVAS FUNÇÕES DE NAVEGAÇÃO DO DASHBOARD (setas para alterar o mês e atualizar título) */
+    function prevDashboardMonth() {
+      let selectMonth = document.getElementById("dashboardMonth");
+      let selectYear = document.getElementById("dashboardYear");
+      let currentMonth = parseInt(selectMonth.value);
+      if (currentMonth === 0) {
+        currentMonth = 11;
+        selectYear.value = parseInt(selectYear.value) - 1;
+      } else {
+        currentMonth--;
+      }
+      selectMonth.value = currentMonth;
+      atualizarDashboard();
+      updateDespesasMesTitle();
+    }
+    
+    function nextDashboardMonth() {
+      let selectMonth = document.getElementById("dashboardMonth");
+      let selectYear = document.getElementById("dashboardYear");
+      let currentMonth = parseInt(selectMonth.value);
+      if (currentMonth === 11) {
+        currentMonth = 0;
+        selectYear.value = parseInt(selectYear.value) + 1;
+      } else {
+        currentMonth++;
+      }
+      selectMonth.value = currentMonth;
+      atualizarDashboard();
+      updateDespesasMesTitle();
+    }
+    
+    function updateDespesasMesTitle() {
+      let selectMonth = document.getElementById("dashboardMonth");
+      let monthIndex = parseInt(selectMonth.value);
+      let monthName = new Date(2020, monthIndex).toLocaleString('pt-BR', { month: 'long' });
+      document.getElementById("despesasMesTitle").innerText = "Despesas de " + monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    }
+    
     /* Carrega dados iniciais */
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
@@ -1439,6 +1491,7 @@
       preencherDashboardAno();
       document.getElementById("dashboardMonth").value = new Date().getMonth();
       atualizarDashboard();
+      updateDespesasMesTitle();
     };
   </script>
 </body>
