@@ -705,11 +705,11 @@
       let hoje = new Date();
       hoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
       
-      // Novo cálculo: soma o saldo inicial de cada pessoa e os pagamentos (se já ocorreram)
+      // Soma o saldo inicial e os pagamentos que já ocorreram
       db.ref("pessoas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let pessoa = child.val();
-          saldo += parseFloat(pessoa.saldoInicial) || 0; // adiciona o saldo inicial
+          saldo += parseFloat(pessoa.saldoInicial) || 0;
           if(pessoa.pagamentos) {
             pessoa.pagamentos.forEach(pag => { 
               let pagamentoDia = parseInt(pag.dia);
@@ -720,29 +720,27 @@
           }
         });
         
-        // Calcula quantos dias faltam para o próximo vencimento
+        // Cálculo dos próximos vencimentos (apenas vencimentos futuros)
         let proximosVencimentos = Infinity;
         db.ref("despesas").once("value").then(snapshot2 => {
           snapshot2.forEach(child => {
             let despesa = child.val();
-            
-            // Para despesas à vista não pagas
             if(despesa.formaPagamento === "avista" && !despesa.pago) {
-              let dt = moment(despesa.dataCompra, "YYYY-MM-DD").startOf('day');
-              if(dt.isSameOrAfter(moment(hoje))) {
-                let diff = dt.diff(moment(hoje), 'days');
+              let dt = new Date(despesa.dataCompra);
+              dt = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+              if(dt >= hoje) {
+                let diff = Math.ceil((dt - hoje) / (1000 * 60 * 60 * 24));
                 if(diff < proximosVencimentos) {
                   proximosVencimentos = diff;
                 }
               }
-            }
-            // Para despesas com cartão não pagas
-            else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
               despesa.parcelas.forEach(parcela => {
                 if(!parcela.pago) {
-                  let dt = moment(parcela.vencimento, "YYYY-MM-DD").startOf('day');
-                  if(dt.isSameOrAfter(moment(hoje))) {
-                    let diff = dt.diff(moment(hoje), 'days');
+                  let dt = new Date(parcela.vencimento);
+                  dt = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+                  if(dt >= hoje) {
+                    let diff = Math.ceil((dt - hoje) / (1000 * 60 * 60 * 24));
                     if(diff < proximosVencimentos) {
                       proximosVencimentos = diff;
                     }
@@ -754,7 +752,7 @@
           document.getElementById("saldoAtual").innerText = "R$ " + saldo.toFixed(2);
           document.getElementById("proximosVencimentos").innerText = proximosVencimentos === Infinity ? 0 : proximosVencimentos;
           
-          // Atualiza calendário para o mês/ano selecionado
+          // Atualiza calendário e gráfico conforme o mês/ano selecionado
           currentCalendarMonth = dashboardMonth;
           currentCalendarYear = dashboardYear;
           renderCalendar();
@@ -763,7 +761,7 @@
       });
     }
     
-    /* Nova Função: Atualiza as Despesas do Mês (considerando todas as despesas programadas para o mês) */
+    /* Atualiza as Despesas do Mês (sem alterar sua lógica original) */
     function atualizarDespesasMes() {
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
@@ -1466,7 +1464,7 @@
       });
     }
     
-    /* NOVAS FUNÇÕES DE NAVEGAÇÃO DO DASHBOARD */
+    /* Funções de navegação do Dashboard */
     function prevDashboardMonth() {
       let selectMonth = document.getElementById("dashboardMonth");
       let selectYear = document.getElementById("dashboardYear");
