@@ -1241,6 +1241,7 @@
       });
     }
     
+    // Modificação: Verifica se há saldo suficiente antes de permitir o pagamento
     function pagarDespesaSelecionada() {
       const despesaSelect = document.getElementById("despesaSelect");
       const selectedValue = despesaSelect.value;
@@ -1248,6 +1249,20 @@
         alert("Selecione uma despesa/parcela!");
         return;
       }
+      // Obtém o saldo disponível
+      const saldoAtualText = document.getElementById("saldoAtual").innerText;
+      const saldoAtual = parseFloat(saldoAtualText.replace("R$", "").replace(",", ".").trim());
+      // Obtém o valor da despesa/parcela a partir do texto da opção
+      const optionText = despesaSelect.options[despesaSelect.selectedIndex].text;
+      const match = optionText.match(/R\$\s*([\d.,]+)/);
+      if(match) {
+        const despesaValor = parseFloat(match[1].replace(",", "."));
+        if(saldoAtual < despesaValor) {
+          alert("Saldo insuficiente");
+          return;
+        }
+      }
+      
       if (selectedValue.indexOf("|") === -1) {
         db.ref("despesas").child(selectedValue).update({ pago: true })
           .then(() => {
@@ -1939,11 +1954,6 @@
       });
     }
     
-    /* ================= NOVA FUNCIONALIDADE: Recarregar a Página ================= */
-    // Após cadastrar ou pagar uma despesa, a página é recarregada para simular fechar e reabrir o sistema,
-    // garantindo que despesas pagas não apareçam no painel e o gráfico seja reconstruído.
-    // As chamadas a window.location.reload() foram adicionadas nas funções salvarDespesa() e pagarDespesaSelecionada().
-    
     /* ================= NOVA FUNCIONALIDADE: Corrigir Eixo Y do Gráfico ================= */
     (function(){
       // Armazena o valor máximo inicial do eixo Y
@@ -1970,6 +1980,10 @@
         }
       }
     })();
+    
+    /* ================= NOVA FUNCIONALIDADE: Recarregar a Página ================= */
+    // Após cadastrar ou pagar uma despesa, a página é recarregada para simular fechar e reabrir o sistema.
+    // Essa abordagem garante que despesas pagas não sejam exibidas e o gráfico seja reconstruído.
     
     /* Carrega dados iniciais */
     window.onload = () => {
