@@ -494,6 +494,9 @@
           <option value="filha">Filha</option>
           <option value="outros">Outros</option>
         </select>
+        <!-- Novo campo: Saldo Inicial -->
+        <label for="saldoInicial">Saldo Inicial (R$):</label>
+        <input type="number" id="saldoInicial" placeholder="Digite o saldo inicial" step="0.01" required>
         <div class="checkbox-group" style="display: flex; gap: 20px; margin: 15px 0; justify-content: center;">
           <label><input type="checkbox" id="cltCheckbox" onclick="toggleClt()"> CLT</label>
           <label><input type="checkbox" id="pjCheckbox"> PJ</label>
@@ -698,60 +701,47 @@
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
       
       let saldo = 0;
-      // Variável para armazenar o menor número de dias até o vencimento de uma despesa não paga
-      let proximosVencimentos = Infinity;
       let hoje = new Date();
       
-      // Para rendimentos (pagamentos), vamos assumir que são mensais e somá-los sem filtro de data.
+      // Novo cálculo: soma o saldo inicial de cada pessoa e os pagamentos (se já ocorreram)
       db.ref("pessoas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let pessoa = child.val();
+          saldo += parseFloat(pessoa.saldoInicial) || 0; // adiciona o saldo inicial
           if(pessoa.pagamentos) {
             pessoa.pagamentos.forEach(pag => { 
-              saldo += parseFloat(pag.valor) || 0; 
+              // Considera o pagamento apenas se o dia do pagamento já passou no mês atual
+              let pagamentoDia = parseInt(pag.dia);
+              if(pagamentoDia <= hoje.getDate()){
+                saldo += parseFloat(pag.valor) || 0;
+              }
             });
           }
         });
         
-        // Atualiza o valor das despesas do mês utilizando a nova função
-        atualizarDespesasMes();
-        
-        // Para o cálculo dos próximos vencimentos, percorre as despesas cadastradas
+        // Subtrai as despesas pagas
         db.ref("despesas").once("value").then(snapshot2 => {
           snapshot2.forEach(child => {
             let despesa = child.val();
-            
-            // Cálculo dos próximos vencimentos: verifica despesas não pagas
-            if(despesa.formaPagamento === "avista" && !despesa.pago) {
-              let dt = new Date(despesa.dataCompra);
-              if(dt >= hoje) {
-                let diff = Math.ceil((dt - hoje) / (1000 * 60 * 60 * 24));
-                if(diff < proximosVencimentos) {
-                  proximosVencimentos = diff;
-                }
-              }
-            } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
-              despesa.parcelas.forEach(parcela => {
-                if(!parcela.pago) {
-                  let dt = new Date(parcela.vencimento);
-                  if(dt >= hoje) {
-                    let diff = Math.ceil((dt - hoje) / (1000 * 60 * 60 * 24));
-                    if(diff < proximosVencimentos) {
-                      proximosVencimentos = diff;
-                    }
+            if(despesa.pago) {
+              if(despesa.formaPagamento === "avista") {
+                saldo -= parseFloat(despesa.valor) || 0;
+              } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+                despesa.parcelas.forEach(parcela => {
+                  if(parcela.pago) {
+                    saldo -= parseFloat(parcela.valor) || 0;
                   }
-                }
-              });
+                });
+              }
             }
           });
           document.getElementById("saldoAtual").innerText = "R$ " + saldo.toFixed(2);
-          document.getElementById("proximosVencimentos").innerText = proximosVencimentos === Infinity ? 0 : proximosVencimentos;
           
-          // Atualiza calendário para o mês/ano selecionado
+          // Atualiza outras partes do dashboard
+          atualizarDespesasMes();
           currentCalendarMonth = dashboardMonth;
           currentCalendarYear = dashboardYear;
           renderCalendar();
-          // Atualiza gráfico também (nesse exemplo, sem filtro por período)
           atualizarGrafico();
         });
       });
@@ -1352,6 +1342,8 @@
       e.preventDefault();
       let nome = document.getElementById("nome").value;
       let parentesco = document.getElementById("parentesco").value;
+      // Novo campo: saldoInicial
+      let saldoInicial = parseFloat(document.getElementById("saldoInicial").value) || 0;
       let salarioBruto = parseFloat(document.getElementById("salarioBruto").value) || 0;
       let salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value) || 0;
       let numPagamentos = parseInt(document.getElementById("numPagamentos").value) || 0;
@@ -1367,6 +1359,7 @@
       let dados = {
         nome,
         parentesco,
+        saldoInicial,  // Armazena o saldo inicial informado
         salarioBruto,
         salarioLiquido,
         numPagamentos,
@@ -1405,7 +1398,7 @@
           div.style.marginBottom = "10px";
           div.style.borderRadius = "8px";
           div.style.boxShadow = "3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)";
-          div.innerHTML = `<strong>Nome:</strong> ${pessoa.nome} - <strong>Salário Líquido:</strong> R$ ${parseFloat(pessoa.salarioLiquido).toFixed(2)}`;
+          div.innerHTML = `<strong>Nome:</strong> ${pessoa.nome} - <strong>Saldo Inicial:</strong> R$ ${parseFloat(pessoa.saldoInicial).toFixed(2)} - <strong>Salário Líquido:</strong> R$ ${parseFloat(pessoa.salarioLiquido).toFixed(2)}`;
           rendaList.appendChild(div);
         });
         rendaVisivel = true;
