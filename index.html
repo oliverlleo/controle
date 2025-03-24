@@ -972,48 +972,78 @@
       });
     }
     
-    /* Gráfico de Despesas por Categoria (usando Chart.js) - Agora inclui todas as despesas do mês */
+    /* Gráfico de Despesas por Categoria (usando Chart.js)
+       Agora exibe duas séries: uma para valores pagos e outra para valores a pagar,
+       cada uma com cor distinta conforme a paleta (verde para "Pago" e vermelho para "A Pagar").
+    */
     let grafico;
     function atualizarGrafico() {
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
-      let categorias = {};
+      
+      // Inicializa objetos para somar valores pagos e a pagar por categoria
+      let pagos = {};
+      let aPagar = {};
+      
       db.ref("despesas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let despesa = child.val();
-          // Para despesas à vista, inclui se a data da compra pertence ao mês/ano selecionado
+          // Para despesas à vista
           if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
             let dt = new Date(despesa.dataCompra);
             if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
-              categorias[despesa.categoria] = (categorias[despesa.categoria] || 0) + parseFloat(despesa.valor);
+              if(despesa.pago) {
+                pagos[despesa.categoria] = (pagos[despesa.categoria] || 0) + parseFloat(despesa.valor);
+              } else {
+                aPagar[despesa.categoria] = (aPagar[despesa.categoria] || 0) + parseFloat(despesa.valor);
+              }
             }
           }
-          // Para despesas com cartão, percorre todas as parcelas do mês/ano selecionado
+          // Para despesas com cartão
           else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
             despesa.parcelas.forEach(parcela => {
               let dt = new Date(parcela.vencimento);
               if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
-                categorias[despesa.categoria] = (categorias[despesa.categoria] || 0) + parseFloat(parcela.valor);
+                if(parcela.pago) {
+                  pagos[despesa.categoria] = (pagos[despesa.categoria] || 0) + parseFloat(parcela.valor);
+                } else {
+                  aPagar[despesa.categoria] = (aPagar[despesa.categoria] || 0) + parseFloat(parcela.valor);
+                }
               }
             });
           }
         });
-        // Converte as chaves (IDs de categoria) para os nomes usando o mapeamento global
-        const labels = Object.keys(categorias).map(id => window.novo_categoriasMap[id] || id);
-        const data = Object.values(categorias);
+        
+        // Une as categorias de ambos os grupos
+        const categoriasUnicas = Array.from(new Set([...Object.keys(pagos), ...Object.keys(aPagar)]));
+        // Converte IDs para nomes usando o mapeamento global
+        const labels = categoriasUnicas.map(id => window.novo_categoriasMap[id] || id);
+        // Cria arrays para os valores, mantendo a ordem
+        const dataPagos = categoriasUnicas.map(id => pagos[id] || 0);
+        const dataAPagar = categoriasUnicas.map(id => aPagar[id] || 0);
+        
         const ctx = document.getElementById("graficoDespesas").getContext("2d");
         if(grafico) grafico.destroy();
         grafico = new Chart(ctx, {
           type: 'bar',
           data: {
             labels,
-            datasets: [{
-              label: 'Despesas por Categoria',
-              data,
-              backgroundColor: 'rgba(76, 175, 80, 0.6)',
-              borderColor: 'rgba(76, 175, 80, 1)',
-              borderWidth: 1
-            }]
+            datasets: [
+              {
+                label: 'Pago',
+                data: dataPagos,
+                backgroundColor: 'rgba(76, 175, 80, 0.6)', // verde
+                borderColor: 'rgba(76, 175, 80, 1)',
+                borderWidth: 1
+              },
+              {
+                label: 'A Pagar',
+                data: dataAPagar,
+                backgroundColor: 'rgba(244,67,54,0.6)', // vermelho
+                borderColor: 'rgba(244,67,54,1)',
+                borderWidth: 1
+              }
+            ]
           },
           options: {
             scales: { y: { beginAtZero: true } }
@@ -1929,7 +1959,7 @@
       
       function novo_ajustarEixoY() {
         if(grafico && grafico.data && grafico.data.datasets && grafico.data.datasets[0]) {
-          const dados = grafico.data.datasets[0].data;
+          const dados = grafico.data.datasets[0].data.concat(grafico.data.datasets[1].data);
           const maxAtual = Math.max(...dados);
           // Se não foi definido um valor máximo fixo, o define com o primeiro valor máximo
           if(window.novo_maxEixoFixo === null) {
