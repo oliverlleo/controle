@@ -683,7 +683,7 @@
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
       
-      let saldo = 0, despesasMes = 0;
+      let saldo = 0;
       // Variável para armazenar o menor número de dias até o vencimento de uma despesa não paga
       let proximosVencimentos = Infinity;
       let hoje = new Date();
@@ -699,6 +699,9 @@
           }
         });
         
+        // Atualiza o valor das despesas do mês utilizando a nova função
+        atualizarDespesasMes();
+        
         // Para despesas, filtramos as datas conforme o mês/ano selecionado
         db.ref("despesas").once("value").then(snapshot2 => {
           snapshot2.forEach(child => {
@@ -708,13 +711,13 @@
             if(despesa.formaPagamento === "avista" && despesa.pago) {
               let dt = new Date(despesa.dataCompra);
               if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
-                despesasMes += parseFloat(despesa.valor) || 0;
+                // A função atualizarDespesasMes já calcula este valor
               }
             } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
               despesa.parcelas.forEach(parcela => {
                 let dt = new Date(parcela.vencimento);
                 if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear && parcela.pago) {
-                  despesasMes += parseFloat(parcela.valor) || 0;
+                  // A função atualizarDespesasMes já calcula este valor
                 }
               });
             }
@@ -744,8 +747,6 @@
             }
           });
           document.getElementById("saldoAtual").innerText = "R$ " + saldo.toFixed(2);
-          document.getElementById("despesasMes").innerText = "R$ " + despesasMes.toFixed(2);
-          // Se nenhum vencimento for encontrado, exibe 0
           document.getElementById("proximosVencimentos").innerText = proximosVencimentos === Infinity ? 0 : proximosVencimentos;
           
           // Atualiza calendário para o mês/ano selecionado
@@ -755,6 +756,32 @@
           // Atualiza gráfico também (nesse exemplo, sem filtro por período)
           atualizarGrafico();
         });
+      });
+    }
+    
+    /* Nova Função: Atualiza as Despesas do Mês */
+    function atualizarDespesasMes() {
+      const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
+      const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
+      let despesasMes = 0;
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          let despesa = child.val();
+          if(despesa.formaPagamento === "avista" && despesa.pago) {
+            let dt = new Date(despesa.dataCompra);
+            if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
+              despesasMes += parseFloat(despesa.valor) || 0;
+            }
+          } else if(despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach(parcela => {
+              let dt = new Date(parcela.vencimento);
+              if(dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear && parcela.pago) {
+                despesasMes += parseFloat(parcela.valor) || 0;
+              }
+            });
+          }
+        });
+        document.getElementById("despesasMes").innerText = "R$ " + despesasMes.toFixed(2);
       });
     }
     
