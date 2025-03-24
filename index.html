@@ -331,14 +331,12 @@
       </div>
       
       <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
-        <!-- Resumo dos dados ocupando o restante do espaço -->
         <div id="dashboardResumo" style="flex: 1; display: flex; justify-content: space-around; align-items: center;">
           <div class="dashboard-item" style="text-align: center;">
             <h3>Saldo Atual</h3>
             <p id="saldoAtual">R$ 6416.60</p>
           </div>
           <div class="dashboard-item" style="text-align: center;">
-            <!-- Título com navegação por mês -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
               <button class="nav-mes-btn" onclick="prevDashboardMonth()"><i class="fa-solid fa-arrow-left"></i></button>
               <h3 id="despesasMesTitle">Despesas de Março</h3>
@@ -353,18 +351,12 @@
         </div>
       </div>
       
-      <!-- Gráfico de Despesas e Painel de Despesas do Mês divididos em duas colunas -->
       <div class="grafico-painel-container">
         <canvas id="graficoDespesas" width="809" height="375" style="box-sizing: border-box; display: block; height: 300px; width: 647px;"></canvas>
         <div id="painelDespesasMes">
           <h4>Despesas do Mês</h4>
           <div id="listaDespesasMes">
-            <!-- Exemplo existente:
-            <div style="border-bottom: 1px solid rgb(204, 204, 204); padding: 5px 0px;">
-              <strong>cartão </strong> - À Vista - R$ 4440.00<br>
-              <small>20/03/2025</small>
-            </div>
-            -->
+            <!-- Exemplo existente -->
           </div>
         </div>
       </div>
@@ -372,7 +364,7 @@
       <button onclick="abrirModal('cadastroDespesaModal')">Cadastrar Nova Despesa</button>
     </section>
     
-    <!-- Seção de Despesas (Cadastro e Pagamento) -->
+    <!-- Seção de Despesas -->
     <section id="despesasSection" class="container" style="display: none;">
       <h2>Despesas</h2>
       <button onclick="abrirModal('cadastroDespesaModal')">Cadastrar Despesa</button>
@@ -420,7 +412,6 @@
         <canvas id="novo_graficoPrevisao"></canvas>
         <div id="novo_tabelaPrevisao">
           <h4>Próximos 3 Meses</h4>
-          <!-- Dados serão preenchidos via JS -->
         </div>
       </div>
       <button onclick="novo_calcularPrevisoes()">Gerar Previsões</button>
@@ -429,15 +420,13 @@
     <!-- Seção de Alertas -->
     <section id="alertasSection" class="container" style="display:none;">
       <h2>Alertas</h2>
-      <button onclick="abrirModal('novo_limitesModal')">
-        <i class="fa-solid fa-sliders"></i> Configurar Limites
-      </button>
+      <button onclick="abrirModal('novo_limitesModal')"><i class="fa-solid fa-sliders"></i> Configurar Limites</button>
       <div id="novo_listaAlertas" style="margin-top: 20px;"></div>
     </section>
   </main>
   
   <!-- ===================== MODAIS ===================== -->
-  <!-- Modal: Cadastro de Despesa (Reutiliza as funções originais) -->
+  <!-- Modal: Cadastro de Despesa -->
   <div id="cadastroDespesaModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="fecharModal('cadastroDespesaModal')">&times;</span>
@@ -484,32 +473,38 @@
         <input type="text" id="despesaSearch" placeholder="Descrição" maxlength="25">
         <input type="text" id="mesFiltro" placeholder="Mês (ex: JAN)" list="meses">
         <datalist id="meses">
-          <option value="JAN">
-          <option value="FEV">
-          <option value="MAR">
-          <option value="ABR">
-          <option value="MAI">
-          <option value="JUN">
-          <option value="JUL">
-          <option value="AGO">
-          <option value="SET">
-          <option value="OUT">
-          <option value="NOV">
-          <option value="DEZ">
+          <option value="JAN"></option>
+          <option value="FEV"></option>
+          <option value="MAR"></option>
+          <option value="ABR"></option>
+          <option value="MAI"></option>
+          <option value="JUN"></option>
+          <option value="JUL"></option>
+          <option value="AGO"></option>
+          <option value="SET"></option>
+          <option value="OUT"></option>
+          <option value="NOV"></option>
+          <option value="DEZ"></option>
         </datalist>
         <input type="text" id="anoFiltro" placeholder="Ano (ex: 2025)" list="anos">
         <datalist id="anos">
-          <option value="2020">
-          <option value="2021">
-          <option value="2022">
-          <option value="2023">
-          <option value="2024">
-          <option value="2025">
-          <option value="2026">
-          <option value="2027">
+          <option value="2020"></option>
+          <option value="2021"></option>
+          <option value="2022"></option>
+          <option value="2023"></option>
+          <option value="2024"></option>
+          <option value="2025"></option>
+          <option value="2026"></option>
+          <option value="2027"></option>
         </datalist>
         <select id="categoriaFiltro">
           <option value="">Todas as Categorias</option>
+          <option value="-OLp0FXlAC6bjHph1w4E">Fixo</option>
+          <option value="-OLs5YvsxD2FPYqe6ATi">Casa</option>
+          <option value="-OLs5_qmZZmFqKmaSE2S">Carro</option>
+          <option value="-OLs5eHQkVx5m9JbmuVK">Alimentação</option>
+          <option value="-OLs5m5bXk2uRhNfCawq">Pet</option>
+          <option value="-OM7odu2iJfsBwYv9wyV">Lazer</option>
         </select>
         <label style="display: flex; align-items: center; gap: 5px;">
           <input type="checkbox" id="contaMesFiltro">
@@ -580,7 +575,6 @@
           <option value="filha">Filha</option>
           <option value="outros">Outros</option>
         </select>
-        <!-- Novo campo: Saldo Inicial -->
         <label for="saldoInicial">Saldo Inicial (R$):</label>
         <input type="number" id="saldoInicial" placeholder="Digite o saldo inicial" step="0.01" required>
         <div class="checkbox-group" style="display: flex; gap: 20px; margin: 15px 0; justify-content: center;">
@@ -652,28 +646,22 @@
   </div>
   
   <!-- ===================== SCRIPTS ===================== -->
-  <!-- Inclusão de bibliotecas externas -->
   <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
   
   <script>
     'use strict';
     
-    // Variável para controlar a exibição das rendas
     let rendaVisivel = false;
-    
-    // Variáveis de navegação e calendário
     let currentCalendarMonth = new Date().getMonth();
     let currentCalendarYear = new Date().getFullYear();
     let rangeStart = null;
     let rangeEnd = null;
     
-    // Firebase Configuração – mantenha os dados originais inalterados
     const firebaseConfig = {
       apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
       authDomain: "controlegasto-df3f1.firebaseapp.com",
@@ -687,7 +675,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
-    /* Carrega mapeamento de categorias (ID => Nome) sem alterar a estrutura existente */
     window.novo_categoriasMap = {};
     db.ref("categorias").once("value").then(snapshot => {
       snapshot.forEach(child => {
@@ -695,14 +682,12 @@
       });
     });
     
-    /* Inicialização do Daterangepicker com máscara */
     $(function() {
       $('#dataRange').mask('00/00/0000 - 00/00/0000', {
         placeholder: "00/00/0000 - 00/00/0000",
         clearIfNotMatch: false,
         selectOnFocus: true
       });
-      
       $('#dataRange').daterangepicker({
         autoUpdateInput: false,
         locale: {
@@ -718,27 +703,23 @@
           firstDay: 0
         }
       });
-      
       $('#dataRange').on('apply.daterangepicker', function(ev, picker) {
         rangeStart = picker.startDate.toDate();
         rangeEnd = picker.endDate.toDate();
         $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
         loadRelatorioMensal();
       });
-      
       $('#dataRange').on('cancel.daterangepicker', function(ev, picker) {
         $(this).val('');
         rangeStart = null;
         rangeEnd = null;
         loadRelatorioMensal();
       });
-      
       $('#dataRange').on('show.daterangepicker', function(ev, picker) {
         this.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     });
     
-    /* Preenche o seletor de ano do dashboard */
     function preencherDashboardAno() {
       const selectAno = document.getElementById("dashboardYear");
       selectAno.innerHTML = "";
@@ -752,14 +733,12 @@
       }
     }
     
-    /* Função para mostrar seções do sistema */
     function showSection(sectionId) {
       const sections = document.querySelectorAll('main > section');
       sections.forEach(sec => sec.style.display = 'none');
       document.getElementById(sectionId).style.display = 'block';
     }
     
-    /* Funções de Modal */
     window.abrirModal = function(id) {
       document.getElementById(id).style.display = "flex";
       if (id === "fonteModal") loadUsuarios();
@@ -770,7 +749,6 @@
         renderCalendar();
       }
       if (id === "pagarDespesaModal") filtrarDespesas();
-      // NOVO: Se abrir o modal de limites, carregar limites existentes
       if (id === "novo_limitesModal") novo_carregarLimites();
     };
     
@@ -778,7 +756,6 @@
       document.getElementById(id).style.display = "none";
     };
     
-    /* Função para exportar dados em CSV */
     function exportData() {
       db.ref("despesas").once("value").then(snapshot => {
         let csv = "Descrição,Valor,Data,Forma de Pagamento\n";
@@ -801,7 +778,6 @@
       });
     }
     
-    /* Dashboard: Atualiza resumo e gráficos conforme o mês/ano selecionado */
     function atualizarDashboard() {
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
@@ -809,7 +785,6 @@
       let saldo = 0;
       let hoje = new Date();
       
-      // Novo cálculo: soma o saldo inicial de cada pessoa e os pagamentos (se já ocorreram)
       db.ref("pessoas").once("value").then(snapshot => {
         snapshot.forEach(child => {
           let pessoa = child.val();
@@ -824,7 +799,6 @@
           }
         });
         
-        // Subtrai as despesas pagas
         db.ref("despesas").once("value").then(snapshot2 => {
           snapshot2.forEach(child => {
             let despesa = child.val();
@@ -852,7 +826,6 @@
       });
     }
     
-    /* Nova Função: Atualiza o contador de próximos vencimentos */
     function updateProximosVencimentos() {
       const hoje = new Date();
       let proximoVencimento = null;
@@ -891,7 +864,6 @@
       });
     }
     
-    /* Nova Função: Atualiza as Despesas do Mês */
     function atualizarDespesasMes() {
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
@@ -919,7 +891,6 @@
       });
     }
     
-    /* Nova Função: Atualiza o painel de despesas do mês */
     function carregarPainelDespesasMes() {
       const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
       const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
@@ -958,10 +929,59 @@
       });
     }
     
-    /* Função filtrarDespesas (inclusa para corrigir o erro) */
+    /* Função filtrarDespesas corrigida para combinar todos os filtros */
     function filtrarDespesas() {
-      // Recarrega as despesas não pagas no select
-      loadDespesasNaoPagasSelect();
+      const searchText = document.getElementById("despesaSearch").value.toLowerCase();
+      const mesFiltro = document.getElementById("mesFiltro").value.toUpperCase();
+      const anoFiltro = document.getElementById("anoFiltro").value;
+      const categoriaFiltro = document.getElementById("categoriaFiltro").value;
+      const contaMes = document.getElementById("contaMesFiltro").checked;
+      const despesaSelect = document.getElementById("despesaSelect");
+      despesaSelect.innerHTML = "";
+      
+      const mesesAbreviados = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+      
+      db.ref("despesas").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const despesa = child.val();
+          if (despesa.pago) return;
+          if (searchText && !despesa.descricao.toLowerCase().includes(searchText)) return;
+          
+          let data = null;
+          if(despesa.formaPagamento === "avista" && despesa.dataCompra) {
+            data = new Date(despesa.dataCompra);
+          } else if(despesa.formaPagamento === "cartao" && despesa.parcelas && despesa.parcelas.length > 0) {
+            data = new Date(despesa.parcelas[0].vencimento);
+          }
+          if (mesFiltro && data) {
+            const mesAbrev = mesesAbreviados[data.getMonth()];
+            if(mesAbrev !== mesFiltro) return;
+          }
+          if (anoFiltro && data) {
+            if(data.getFullYear().toString() !== anoFiltro) return;
+          }
+          if (categoriaFiltro && despesa.categoria !== categoriaFiltro) return;
+          if (contaMes && !despesa.contaMes) return;
+          
+          if (despesa.formaPagamento === "avista") {
+            const option = document.createElement("option");
+            option.value = child.key;
+            const dataExibicao = despesa.dataCompra;
+            const valorExibido = despesa.valor ? "R$ " + parseFloat(despesa.valor).toFixed(2) : "";
+            option.text = despesa.descricao + " " + valorExibido + " - " + dataExibicao;
+            despesaSelect.appendChild(option);
+          } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+            despesa.parcelas.forEach((parcela, index) => {
+              if (!parcela.pago) {
+                const option = document.createElement("option");
+                option.value = child.key + "|" + index;
+                option.text = `${despesa.descricao} - Parcela ${index+1} de ${despesa.parcelas.length} - Venc: ${parcela.vencimento} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
+                despesaSelect.appendChild(option);
+              }
+            });
+          }
+        });
+      });
     }
     
     /* Gráfico de Despesas por Categoria – Exibe "Pago" e "A Pagar" */
@@ -1015,14 +1035,14 @@
               {
                 label: 'Pago',
                 data: dataPagos,
-                backgroundColor: 'rgba(76, 175, 80, 0.6)', // verde
+                backgroundColor: 'rgba(76, 175, 80, 0.6)',
                 borderColor: 'rgba(76, 175, 80, 1)',
                 borderWidth: 1
               },
               {
                 label: 'A Pagar',
                 data: dataAPagar,
-                backgroundColor: 'rgba(244,67,54,0.6)', // vermelho
+                backgroundColor: 'rgba(244,67,54,0.6)',
                 borderColor: 'rgba(244,67,54,1)',
                 borderWidth: 1
               }
@@ -1035,7 +1055,6 @@
       });
     }
     
-    /* Funções de Categorias, Cartões, Despesas e Renda */
     function updateCategoriaSelect() {
       const select = document.getElementById("categoriaDespesa");
       select.innerHTML = '<option value="">Selecione a Categoria</option>';
@@ -1213,7 +1232,6 @@
       document.getElementById("parcelamentoDiv").classList.toggle("hidden", forma !== "cartao");
     }
     
-    // Impede o pagamento se não houver saldo suficiente
     function pagarDespesaSelecionada() {
       const despesaSelect = document.getElementById("despesaSelect");
       const selectedValue = despesaSelect.value;
@@ -1553,7 +1571,6 @@
         .catch(err => alert("Erro ao salvar os dados de renda: " + err));
     });
     
-    /* Função para carregar/alternar rendas cadastradas na página de Renda com opção de excluir */
     function loadRendas() {
       const rendaList = document.getElementById("usuariosListaPrincipal");
       if (rendaVisivel) {
@@ -1586,7 +1603,6 @@
       });
     }
     
-    /* Função para excluir uma renda */
     function deleteRenda(key) {
       if (confirm("Tem certeza que deseja excluir esta renda?")) {
         db.ref("pessoas").child(key).remove()
@@ -1599,7 +1615,6 @@
       }
     }
     
-    /* Função para carregar despesas não pagas (usada em outros módulos) */
     function loadDespesasNaoPagasSelect() {
       const despesaSelect = document.getElementById("despesaSelect");
       despesaSelect.innerHTML = "";
@@ -1627,7 +1642,6 @@
       });
     }
     
-    /* NOVAS FUNÇÕES DE NAVEGAÇÃO DO DASHBOARD */
     function prevDashboardMonth() {
       let selectMonth = document.getElementById("dashboardMonth");
       let selectYear = document.getElementById("dashboardYear");
@@ -1669,7 +1683,6 @@
     
     /* ================= NOVAS FUNCIONALIDADES ================= */
     
-    // A. Cadastro de Limites por Categoria
     function novo_carregarLimites() {
       const container = document.getElementById("novo_limitesContainer");
       container.innerHTML = "";
@@ -1703,7 +1716,6 @@
       });
     }
     
-    // B. Previsão de Despesas
     function novo_calcularPrevisoes() {
       const hoje = new Date();
       const seisMesesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 5, 1);
@@ -1787,7 +1799,6 @@
       });
     }
     
-    // C. Alertas Automáticos
     function novo_verificarAlertas() {
       const hoje = new Date();
       const alertaLista = document.getElementById("novo_listaAlertas");
@@ -1870,7 +1881,6 @@
     
     setInterval(novo_verificarAlertas, 86400000);
     
-    /* Verificar Despesas Vencidas */
     function novo_verificarDespesasVencidas() {
       const lista = document.getElementById("listaDespesasMes");
       const hoje = new Date();
@@ -1902,7 +1912,6 @@
       });
     }
     
-    /* Corrigir Eixo Y do Gráfico */
     (function(){
       window.novo_maxEixoFixo = null;
       const originalAtualizarGrafico = atualizarGrafico;
@@ -1924,7 +1933,6 @@
       }
     })();
     
-    /* Recarregar a Página */
     window.onload = () => {
       document.getElementById("dataCompra").value = new Date().toISOString().split("T")[0];
       updateCategoriaSelect();
