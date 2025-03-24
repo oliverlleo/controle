@@ -872,7 +872,8 @@
               let divDespesa = document.createElement("div");
               divDespesa.style.borderBottom = "1px solid rgb(204, 204, 204)";
               divDespesa.style.padding = "5px 0px";
-              divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - À Vista<br><small>${dt.toLocaleDateString()}</small>`;
+              // Exibe descrição, valor e data para despesas à vista
+              divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - À Vista - R$ ${parseFloat(despesa.valor).toFixed(2)}<br><small>${dt.toLocaleDateString()}</small>`;
               listaContainer.appendChild(divDespesa);
             }
           }
@@ -885,7 +886,8 @@
                 let divDespesa = document.createElement("div");
                 divDespesa.style.borderBottom = "1px solid rgb(204, 204, 204)";
                 divDespesa.style.padding = "5px 0px";
-                divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - Parcela ${index+1} de ${totalParcelas} - Cartão<br><small>${dt.toLocaleDateString()} - R$ ${parseFloat(parcela.valor).toFixed(2)}</small>`;
+                // Exibe descrição, número da parcela, total de parcelas, valor da parcela e data
+                divDespesa.innerHTML = `<strong>${despesa.descricao}</strong> - Parcela ${index+1} de ${totalParcelas} - Cartão - R$ ${parseFloat(parcela.valor).toFixed(2)}<br><small>${dt.toLocaleDateString()}</small>`;
                 listaContainer.appendChild(divDespesa);
               }
             });
