@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Gerenciamento de Contas Pessoais</title>
+  
+  <!-- Meta tags para evitar cache -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
+  <!-- Google Fonts: Roboto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS do Daterangepicker -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css?v=1.0.0" />
+  
+  <!-- ApexCharts para gráficos interativos -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  
+  <!-- Toastify para notificações -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  
+  <!-- Ícones (Font Awesome) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1.0.0">
+  
+  <!-- CSS personalizado -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/novo/styles-enhanced.css">
+</head>
+<body>
+  <!-- Botão de menu para dispositivos móveis -->
+  <button class="menu-toggle" id="menuToggle">
+    <i class="fas fa-bars"></i>
+  </button>
+  
+  <div class="app-container">
+    <!-- Menu Lateral Aprimorado -->
+    <aside id="sidebar">
+      <h2><i class="fa-solid fa-wallet"></i> Contas</h2>
+      
+      <!-- Informações do usuário serão inseridas aqui pelo auth.js -->
+      
+      <!-- Grupo: Principal -->
+      <div class="nav-group">
+        <div class="nav-group-title">Principal</div>
+        
+        <a href="#" class="nav-link active" data-section="dashboardSection" onclick="showSectionEnhanced('dashboardSection')">
+          <i class="fa-solid fa-house"></i>
+          <span>Dashboard</span>
+        </a>
+        
+        <a href="#" class="nav-link nav-link-with-submenu">
+          <i class="fa-solid fa-money-bill-wave"></i>
+          <span>Finanças</span>
+          <i class="fas fa-chevron-down submenu-toggle"></i>
+        </a>
+        <div class="submenu">
+          <a href="#" class="submenu-link" data-section="financasSection" onclick="showSectionEnhanced('financasSection')">
+            <span>Visão Geral</span>
+          </a>
+          <a href="#" class="submenu-link" data-section="despesasSection" onclick="showSectionEnhanced('despesasSection')">
+            <span>Despesas</span>
+          </a>
+          <a href="#" class="submenu-link" data-section="rendaSection" onclick="showSectionEnhanced('rendaSection')">
+            <span>Receitas</span>
+          </a>
+        </div>
+        
+        <a href="#" class="nav-link" data-section="metasSection" onclick="showSectionEnhanced('metasSection')">
+          <i class="fa-solid fa-bullseye"></i>
+          <span>Metas</span>
+        </a>
+        
+        <a href="#" class="nav-link" data-section="relatorioSection" onclick="showSectionEnhanced('relatorioSection')">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Relatórios</span>
+        </a>
+      </div>
+      
+      <!-- Grupo: Gerenciamento -->
+      <div class="nav-group">
+        <div class="nav-group-title">Gerenciamento</div>
+        
+        <a href="#" class="nav-link" data-section="categoriasSection" onclick="showSectionEnhanced('categoriasSection')">
+          <i class="fa-solid fa-tags"></i>
+          <span>Categorias</span>
+        </a>
+        
+        <a href="#" class="nav-link" data-section="cartoesSection" onclick="showSectionEnhanced('cartoesSection')">
+          <i class="fa-solid fa-credit-card"></i>
+          <span>Cartões</span>
+        </a>
+        
+        <a href="#" class="nav-link" data-section="alertasSection" onclick="showSectionEnhanced('alertasSection')">
+          <i class="fa-solid fa-bell"></i>
+          <span>Alertas</span>
+        </a>
+      </div>
+      
+      <!-- Grupo: Análise -->
+      <div class="nav-group">
+        <div class="nav-group-title">Análise</div>
+        
+        <a href="#" class="nav-link" data-section="previsaoSection" onclick="showSectionEnhanced('previsaoSection')">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Previsões</span>
+        </a>
+        
+        <a href="#" class="nav-link" onclick="exportData()">
+          <i class="fa-solid fa-file-export"></i>
+          <span>Exportar Dados</span>
+        </a>
+      </div>
+      
+      <!-- Botão de logout será inserido aqui pelo auth.js -->
+    </aside>
+    
+    <!-- Conteúdo Principal -->
+    <main>
+      <header>
+        <h1>Sistema de Gerenciamento de Contas</h1>
+      </header>
+      
+      <!-- Dashboard Resumido (Mantido como está, mas aprimorado) -->
+      <section id="dashboardSection" class="container">
+        <div class="chart-header">
+          <h2>Dashboard Resumido</h2>
+          <div id="dashboardMonthSelector" class="d-flex align-center gap-2 flex-wrap">
+            <div class="form-group mb-0">
+              <select id="dashboardMonth" class="form-control">
+                <option value="0">Janeiro</option>
+                <option value="1">Fevereiro</option>
+                <option value="2">Março</option>
+                <option value="3">Abril</option>
+                <option value="4">Maio</option>
+                <option value="5">Junho</option>
+                <option value="6">Julho</option>
+                <option value="7">Agosto</option>
+                <option value="8">Setembro</option>
+                <option value="9">Outubro</option>
+                <option value="10">Novembro</option>
+                <option value="11">Dezembro</option>
+              </select>
+            </div>
+            <div class="form-group mb-0">
+              <select id="dashboardYear" class="form-control">
+                <option value="2020">2020</option>
+                <option value="2021">2021</option>
+                <option value="2022">2022</option>
+                <option value="2023">2023</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="atualizarDashboard()">
+              <i class="fas fa-sync-alt"></i>
+              <span>Atualizar</span>
+            </button>
+          </div>
+        </div>
+        
+        <div class="dashboard-cards">
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <div class="dashboard-card-title">Saldo Atual</div>
+              <div class="dashboard-card-icon">
+                <i class="fas fa-wallet"></i>
+              </div>
+            </div>
+            <div class="dashboard-card-value" id="saldoAtual">R$ 6416.60</div>
+            <div class="dashboard-card-label">Disponível para uso</div>
+          </div>
+          
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <div class="dashboard-card-title">Despesas do Mês</div>
+              <div class="d-flex gap-1">
+                <button class="btn-icon" onclick="prevDashboardMonth()">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn-icon" onclick="nextDashboardMonth()">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+            <div class="dashboard-card-value" id="despesasMes">R$ 4440.00</div>
+            <div class="dashboard-card-label" id="despesasMesTitle">Março de 2025</div>
+          </div>
+          
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <div class="dashboard-card-title">Próximos Vencimentos</div>
+              <div class="dashboard-card-icon">
+                <i class="fas fa-calendar-alt"></i>
+              </div>
+            </div>
+            <div class="dashboard-card-value" id="proximosVencimentos">27</div>
+            <div class="dashboard-card-label">Dias até o próximo vencimento</div>
+          </div>
+        </div>
+        
+        <!-- Novos widgets do dashboard -->
+        <div class="dashboard-widgets">
+          <div class="dashboard-row">
+            <div class="dashboard-col" id="resumoMensalWidget">
+              <!-- Preenchido dinamicamente pelo dashboard-enhanced.js -->
+            </div>
+            <div class="dashboard-col" id="proximosVencimentosWidget">
+              <!-- Preenchido dinamicamente pelo dashboard-enhanced.js -->
+            </div>
+          </div>
+          
+          <div class="dashboard-row">
+            <div class="dashboard-col" id="tendenciasGastosWidget">
+              <!-- Preenchido dinamicamente pelo dashboard-enhanced.js -->
+            </div>
+            <div class="dashboard-col" id="metasResumoWidget">
+              <!-- Preenchido dinamicamente pelo dashboard-enhanced.js -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3 class="chart-title">Análise de Despesas</h3>
+          </div>
+          <div class="grafico-painel-container">
+            <div class="chart-panel" style="flex: 3;">
+              <div id="graficoDespesas"></div>
+            </div>
+            <div class="chart-panel" style="flex: 2;">
+              <h4 class="mb-2">Despesas do Mês</h4>
+              <div id="listaDespesasMes" class="despesas-lista"></div>
+            </div>
+          </div>
+        </div>
+        
+        <button class="btn btn-primary btn-block" onclick="abrirModal('cadastroDespesaModal')">
+          <i class="fas fa-plus"></i>
+          <span>Cadastrar Nova Despesa</span>
+        </button>
+      </section>
+      
+      <!-- Nova Seção de Finanças (Integra Despesas, Receitas e Planejamento) -->
+      <section id="financasSection" class="container" style="display: none;">
+        <div class="page-header">
+          <h2 class="page-title"><i class="fas fa-money-bill-wave"></i> Finanças</h2>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="abrirModal('cadastroDespesaModal')">
+              <i class="fas fa-plus"></i>
+              <span>Nova Despesa</span>
+            </button>
+            <button class="btn btn-success" onclick="abrirModal('cadastroModal')">
+              <i class="fas fa-plus"></i>
+              <span>Nova Receita</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Tabs da seção de finanças -->
+        <div class="section-tabs" data-tab-group="financas">
+          <div class="section-tab active" data-content="fluxoCaixaContent">Fluxo de Caixa</div>
+          <div class="section-tab" data-content="despesasCategorizadasContent">Despesas por Categoria</div>
+          <div class="section-tab" data-content="planejamentoFinanceiroContent">Planejamento</div>
+        </div>
+        
+        <!-- Conteúdo das tabs -->
+        <div id="fluxoCaixaContent" class="tab-content" data-tab-group="financas">
+          <div class="content-section">
+            <div class="content-header">
+              <h3 class="content-title">Resumo do Fluxo de Caixa</h3>
+            </div>
+            <div id="fluxoCaixaResumo" class="dashboard-cards">
+              <!-- Preenchido dinamicamente pelo financas.js -->
+            </div>
+          </div>
+          
+          <div class="content-section">
+            <div class="content-header">
+              <h3 class="content-title">Gráfico de Fluxo de Caixa</h3>
+            </div>
+            <div id="fluxoCaixaGrafico" class="chart-container">
+              <!-- Preenchido dinamicamente pelo financas.js -->
+            </div>
+          </div>
+          
+          <div class="content-section">
+            <div class="content-header">
+              <h3 class="content-title">Transações</h3>
+            </div>
+            <div id="fluxoCaixaTransacoes" class="table-container">
+              <!-- Preenchido dinamicamente pelo financas.js -->
+            </div>
+          </div>
+        </div>
+        
+        <div id="despesasCategorizadasContent" class="tab-content" data-tab-group="financas" style="display: none;">
+          <div class="content-section">
+            <div class="content-header">
+              <h3 class="content-title">Distribuição de Despesas</h3>
+            </div>
+            <div id="despesasCategorizadasGrafico" class="chart-container">
+              <!-- Preenchido dinamicamente pelo financas.js -->
+            </div>
+          </div>
+          
+          <div class="content-section">
+            <div class="content-header">
+              <h3 class="content-title">Despesas por Categoria</h3>
+            </div>
+            <div id="despesasCategorizadasLista">
+              <!-- Preenchido dinamicamente pelo financas.js -->
+            </div>
+          </div>
+        </div>
+        
+        <div id="planejamentoFinanceiroContent" class="tab-content" data-tab-group="financas" style="display: none;">
+          <div class="content-section">
+            <div class="content-header">
+              <h3 class="content-title">Planejamento Financeiro</h3>
+            </div>
+            <div id="planejamentoFinanceiroContainer">
+              <!-- Preenchido dinamicamente pelo financas.js -->
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Nova Seção de Metas Financeiras -->
+      <section id="metasSection" class="container" style="display: none;">
+        <div class="page-header">
+          <h2 class="page-title"><i class="fas fa-bullseye"></i> Metas Financeiras</h2>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="abrirModalNovaMeta()">
+              <i class="fas fa-plus"></i>
+              <span>Nova Meta</span>
+            </button>
+          </div>
+        </div>
+        
+        <div id="metasContainer">
+          <!-- Preenchido dinamicamente pelo metas.js -->
+        </div>
+      </section>
+      
+      <!-- Seção de Despesas (Mantida para compatibilidade) -->
+      <section id="despesasSection" class="container" style="display: none;">
+        <h2 class="mb-3">Despesas</h2>
+        <div class="d-flex gap-2 flex-wrap mb-3">
+          <button class="btn btn-primary" onclick="abrirModal('cadastroDespesaModal')">
+            <i class="fas fa-plus"></i>
+            <span>Cadastrar Despesa</span>
+          </button>
+          <button class="btn btn-success" onclick="abrirModal('pagarDespesaModal')">
+            <i class="fas fa-check"></i>
+            <span>Pagar Despesa</span>
+          </button>
+          <button class="btn btn-outline" onclick="abrirModal('calendarModal'); renderCalendar()">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Calendário</span>
+          </button>
+        </div>
+        
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3 class="chart-title">Todas as Despesas</h3>
+            <div class="d-flex gap-2">
+              <div class="form-group mb-0">
+                <input type="text" id="filtroDescricao" class="form-control" placeholder="Filtrar por descrição">
+              </div>
+              <button class="btn btn-primary" onclick="filtrarTodasDespesas()">
+                <i clas
+(Content truncated due to size limit. Use line ranges to read in chunks)
