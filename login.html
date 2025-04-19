@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Sistema de Gestão Financeira</title>
+  
+  <!-- Fontes -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body class="login-page">
+  <!-- Tela de Carregamento -->
+  <div id="loading-screen">
+    <div class="loading-content">
+      <div class="loading-logo">
+        <i class="fas fa-wallet"></i>
+      </div>
+      <h2>FinanControl</h2>
+      <p>Carregando...</p>
+      <div class="loading-spinner"></div>
+    </div>
+  </div>
+
+  <!-- Container de Login -->
+  <div class="login-container">
+    <div class="login-header">
+      <div class="login-logo">
+        <i class="fas fa-wallet"></i>
+      </div>
+      <h1 class="login-title">FinanControl</h1>
+      <p class="login-subtitle">Gerencie suas finanças de forma simples e eficiente</p>
+    </div>
+    
+    <div class="login-tabs">
+      <div class="login-tab active" data-tab="login">Login</div>
+      <div class="login-tab" data-tab="register">Cadastro</div>
+      <div class="login-tab" data-tab="recovery">Recuperar Senha</div>
+    </div>
+    
+    <div class="login-form-container">
+      <!-- Mensagens de erro e sucesso -->
+      <div class="login-error" id="loginError"></div>
+      <div class="login-success" id="loginSuccess"></div>
+      
+      <!-- Formulário de Login -->
+      <form class="login-form active" id="loginForm" data-form="login">
+        <div class="social-login">
+          <button type="button" class="social-login-button google" id="googleLoginBtn">
+            <i class="fab fa-google"></i> Entrar com Google
+          </button>
+        </div>
+        
+        <div class="divider">ou</div>
+        
+        <div class="form-group">
+          <input type="email" class="form-control" id="loginEmail" placeholder=" " required>
+          <label class="form-label" for="loginEmail">Email</label>
+        </div>
+        
+        <div class="form-group">
+          <input type="password" class="form-control" id="loginPassword" placeholder=" " required>
+          <label class="form-label" for="loginPassword">Senha</label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Entrar</button>
+      </form>
+      
+      <!-- Formulário de Cadastro -->
+      <form class="login-form" id="registerForm" data-form="register">
+        <div class="form-group">
+          <input type="text" class="form-control" id="registerName" placeholder=" " required>
+          <label class="form-label" for="registerName">Nome</label>
+        </div>
+        
+        <div class="form-group">
+          <input type="email" class="form-control" id="registerEmail" placeholder=" " required>
+          <label class="form-label" for="registerEmail">Email</label>
+        </div>
+        
+        <div class="form-group">
+          <input type="password" class="form-control" id="registerPassword" placeholder=" " required>
+          <label class="form-label" for="registerPassword">Senha</label>
+        </div>
+        
+        <div class="form-group">
+          <input type="password" class="form-control" id="registerConfirmPassword" placeholder=" " required>
+          <label class="form-label" for="registerConfirmPassword">Confirmar Senha</label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Cadastrar</button>
+      </form>
+      
+      <!-- Formulário de Recuperação de Senha -->
+      <form class="login-form" id="recoveryForm" data-form="recovery">
+        <div class="form-group">
+          <input type="email" class="form-control" id="recoveryEmail" placeholder=" " required>
+          <label class="form-label" for="recoveryEmail">Email</label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Recuperar Senha</button>
+      </form>
+      
+      <!-- Loading -->
+      <div class="login-loading" id="loginLoading">
+        <div class="login-loading-spinner"></div>
+        <div class="login-loading-text">Processando...</div>
+      </div>
+    </div>
+    
+    <div class="login-footer">
+      <p>&copy; 2025 FinanControl. Todos os direitos reservados.</p>
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script>
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
+      authDomain: "controlegasto-df3f1.firebaseapp.com",
+      databaseURL: "https://controlegasto-df3f1-default-rtdb.firebaseio.com",
+      projectId: "controlegasto-df3f1",
+      storageBucket: "controlegasto-df3f1.firebasestorage.app",
+      messagingSenderId: "1034936676414",
+      appId: "1:1034936676414:web:61c67ce39c3ab71a07a16f",
+      measurementId: "G-PTN43GZHGR"
+    };
+    
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    // Verificar autenticação
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        // Usuário está logado, redirecionar para a página principal
+        window.location.href = 'index.html';
+      } else {
+        // Usuário não está logado, mostrar tela de login
+        document.getElementById('loading-screen').style.display = 'none';
+      }
+    });
+    
+    // Navegação entre abas
+    const tabs = document.querySelectorAll('.login-tab');
+    const forms = document.querySelectorAll('.login-form');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+        
+        // Atualizar abas ativas
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Mostrar formulário correspondente
+        forms.forEach(form => {
+          form.classList.remove('active');
+          if (form.getAttribute('data-form') === tabName) {
+            form.classList.add('active');
+          }
+        });
+        
+        // Limpar mensagens de erro e sucesso
+        document.getElementById('loginError').style.display = 'none';
+        document.getElementById('loginSuccess').style.display = 'none';
+      });
+    });
+    
+    // Login com email e senha
+    document.getElementById('loginForm').addEventListener('submit', e => {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      // Mostrar loading
+      document.getElementById('loginLoading').style.display = 'flex';
+      
+      auth.signInWithEmailAndPassword(email, password)
+        .then(userCredential => {
+          // Login bem-sucedido
+          const user = userCredential.user;
+          console.log('Login bem-sucedido:', user);
+          
+          // Redirecionar para a página principal
+          window.location.href = 'index.html';
+        })
+        .catch(error => {
+          // Erro no login
+          console.error('Erro no login:', error);
+          
+          // Esconder loading
+          document.getElementById('loginLoading').style.display = 'none';
+          
+          // Mostrar mensagem de erro
+          const errorElement = document.getElementById('loginError');
+          errorElement.style.display = 'block';
+          
+          switch (error.code) {
+            case 'auth/user-not-found':
+              errorElement.textContent = 'Usuário não encontrado.';
+              break;
+            case 'auth/wrong-password':
+              errorElement.textContent = 'Senha incorreta.';
+              break;
+            case 'auth/invalid-email':
+              errorElement.textContent = 'Email inválido.';
+              break;
+            default:
+              errorElement.textContent = 'Erro ao fazer login. Tente novamente.';
+          }
+        });
+    });
+    
+    // Cadastro de novo usuário
+    document.getElementById('registerForm').addEventListener('submit', e => {
+      e.preventDefault();
+      
+      const name = document.getElementById('registerName').value;
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      const confirmPassword = document.getElementById('registerConfirmPassword').value;
+      
+      // Verificar se as senhas coincidem
+      if (password !== confirmPassword) {
+        const errorElement = document.getElementById('loginError');
+        errorElement.style.display = 'block';
+        errorElement.textContent = 'As senhas não coincidem.';
+        return;
+      }
+      
+      // Mostrar loading
+      document.getElementById('loginLoading').style.display = 'flex';
+      
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(userCredential => {
+          // Cadastro bem-sucedido
+          const user = userCredential.user;
+          
+          // Atualizar perfil do usuário
+          return user.updateProfile({
+            displayName: name
+          }).then(() => {
+            // Criar nó do usuário no banco de dados
+            return db.ref(`users/${user.uid}`).set({
+              name: name,
+              email: email,
+              createdAt: new Date().toISOString()
+            });
+          }).then(() => {
+            console.log('Cadastro bem-sucedido:', user);
+            
+            // Redirecionar para a página principal
+            window.location.href = 'index.html';
+          });
+        })
+        .catch(error => {
+          // Erro no cadastro
+          console.error('Erro no cadastro:', error);
+          
+          // Esconder loading
+          document.getElementById('loginLoading').style.display = 'none';
+          
+          // Mostrar mensagem de erro
+          const errorElement = document.getElementById('loginError');
+          errorElement.style.display = 'block';
+          
+          switch (error.code) {
+            case 'auth/email-already-in-use':
+              errorElement.textContent = 'Este email já está em uso.';
+              break;
+            case 'auth/invalid-email':
+              errorElement.textContent = 'Email inválido.';
+              break;
+            case 'auth/weak-password':
+              errorElement.textContent = 'A senha é muito fraca.';
+              break;
+            default:
+              errorElement.textContent = 'Erro ao criar conta. Tente novamente.';
+          }
+        });
+    });
+    
+    // Recuperação de senha
+    document.getElementById('recoveryForm').addEventListener('submit', e => {
+      e.preventDefault();
+      
+      const email = document.getElementById('recoveryEmail').value;
+      
+      // Mostrar loading
+      document.getElementById('loginLoading').style.display = 'flex';
+      
+      auth.sendPasswordResetEmail(email)
+        .then(() => {
+          // Email enviado com sucesso
+          console.log('Email de recuperação enviado');
+          
+          // Esconder loading
+          document.getElementById('loginLoading').style.display = 'none';
+          
+          // Mostrar mensagem de sucesso
+          const successElement = document.getElementById('loginSuccess');
+          successElement.style.display = 'block';
+          successElement.textContent = 'Email de recuperação enviado. Verifique sua caixa de entrada.';
+          
+          // Limpar formulário
+          document.getElementById('recoveryForm').reset();
+        })
+        .catch(error => {
+          // Erro ao enviar email
+          console.error('Erro ao enviar email de recuperação:', error);
+          
+          // Esconder loading
+          document.getElementById('loginLoading').style.display = 'none';
+          
+          // Mostrar mensagem de erro
+          const errorElement = document.getElementById('loginError');
+          errorElement.style.display = 'block';
+          
+          switch (error.code) {
+            case 'auth/user-not-found':
+              errorElement.textContent = 'Não há usuário registrado com este email.';
+              break;
+            case 'auth/invalid-email':
+              errorElement.textContent = 'Email inválido.';
+              break;
+            default:
+              errorElement.textContent = 'Erro ao enviar email de recuperação. Tente novamente.';
+          }
+        });
+    });
+    
+    // Login com Google
+    document.getElementById('googleLoginBtn').addEventListener('click', () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      
+      // Mostrar loading
+      document.getElementById('loginLoading').style.display = 'flex';
+      
+      auth.signInWithPopup(provider)
+        .then(result => {
+          // Login bem-sucedido
+          const user = result.user;
+          console.log('Login com Google bem-sucedido:', user);
+          
+          // Verificar se é um novo usuário
+          const isNewUser = result.additionalUserInfo.isNewUser;
+          
+          if (isNewUser) {
+            // Criar nó do usuário no banco de dados
+            return db.ref(`users/${user.uid}`).set({
+              name: user.displayName,
+              email: user.email,
+              photoURL: user.photoURL,
+              createdAt: new Date().toISOString()
+            }).then(() => {
+              // Redirecionar para a página principal
+              window.location.href = 'index.html';
+            });
+          } else {
+            // Redirecionar para a página principal
+            window.location.href = 'index.html';
+          }
+        })
+        .catch(error => {
+          // Erro no login com Google
+          console.error('Erro no login com Google:', error);
+          
+          // Esconder loading
+          document.getElementById('loginLoading').style.display = 'none';
+          
+          // Mostrar mensagem de erro
+          const errorElement = document.getElementById('loginError');
+          errorElement.style.display = 'block';
+          errorElement.textContent = 'Erro ao fazer login com Google. Tente novamente.';
+        });
+    });
+  </script>
+</body>
+</html>
