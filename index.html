@@ -29,8 +29,19 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1.0.0">
   
   <!-- CSS personalizado -->
+  <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/redesigned.css">
   <link rel="stylesheet" href="css/auth.css">
+  
+  <!-- jQuery e Moment.js para o DateRangePicker -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  
+  <!-- Firebase (se necessário para autenticação) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
   <!-- Botão de menu para dispositivos móveis -->
@@ -178,18 +189,6 @@
           <button class="tab-button" data-tab="previsao-tab">
             <i class="fas fa-chart-pie"></i> Previsões
           </button>
-          <button class="tab-button" data-tab="calendario-tab">
-            <i class="fas fa-calendar-alt"></i> Calendário
-          </button>
-          <button class="tab-button" data-tab="categorias-tab">
-            <i class="fas fa-tags"></i> Categorias
-          </button>
-          <button class="tab-button" data-tab="cartoes-tab">
-            <i class="fas fa-credit-card"></i> Cartões
-          </button>
-          <button class="tab-button" data-tab="renda-tab">
-            <i class="fas fa-user"></i> Renda
-          </button>
         </div>
         
         <!-- Aba Dashboard -->
@@ -226,10 +225,26 @@
               </div>
             </div>
           </div>
+          
+          <button class="btn btn-primary btn-block mt-3" onclick="abrirModal('cadastroDespesaModal')">
+            <i class="fas fa-plus"></i>
+            <span>Cadastrar Nova Despesa</span>
+          </button>
         </div>
         
         <!-- Aba Despesas -->
         <div class="tab-content" id="despesas-tab">
+          <div class="d-flex gap-2 flex-wrap mb-3">
+            <button class="btn btn-primary" onclick="abrirModal('cadastroDespesaModal')">
+              <i class="fas fa-plus"></i>
+              <span>Cadastrar Despesa</span>
+            </button>
+            <button class="btn btn-success" onclick="abrirModal('pagarDespesaModal')">
+              <i class="fas fa-check"></i>
+              <span>Pagar Despesa</span>
+            </button>
+          </div>
+          
           <div class="chart-container">
             <div class="chart-header">
               <h3 class="chart-title">Todas as Despesas</h3>
@@ -309,6 +324,29 @@
             </div>
             <div id="novo_tabelaPrevisao"></div>
           </div>
+          
+          <button class="btn btn-primary btn-block mt-3" onclick="novo_calcularPrevisoes()">
+            <i class="fas fa-calculator"></i>
+            <span>Gerar Previsões</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Painel Inferior -->
+      <div class="tabs-container mt-4">
+        <div class="tabs-header">
+          <button class="tab-button" data-tab="calendario-tab">
+            <i class="fas fa-calendar-alt"></i> Calendário
+          </button>
+          <button class="tab-button" data-tab="categorias-tab">
+            <i class="fas fa-tags"></i> Categorias
+          </button>
+          <button class="tab-button" data-tab="cartoes-tab">
+            <i class="fas fa-credit-card"></i> Cartões
+          </button>
+          <button class="tab-button" data-tab="renda-tab">
+            <i class="fas fa-user"></i> Renda
+          </button>
         </div>
         
         <!-- Aba Calendário -->
@@ -362,20 +400,7 @@
                     <i class="fas fa-plus"></i> Nova Categoria
                   </button>
                 </div>
-                <div class="table-container">
-                  <table id="categoriasTable">
-                    <thead>
-                      <tr>
-                        <th>Nome</th>
-                        <th>Cor</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="categoriasBody">
-                      <!-- Preenchido dinamicamente -->
-                    </tbody>
-                  </table>
-                </div>
+                <div id="categoriasListaPrincipal"></div>
               </div>
             </div>
             
@@ -400,59 +425,24 @@
           <div class="chart-container">
             <div class="chart-header">
               <h3 class="chart-title">Cartões de Crédito</h3>
-              <button class="btn btn-primary" onclick="abrirModal('cartoesModal')">
+              <button class="btn btn-primary" onclick="abrirModal('cartaoModal')">
                 <i class="fas fa-plus"></i> Novo Cartão
               </button>
             </div>
-            <div class="table-container">
-              <table id="cartoesTable">
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Limite</th>
-                    <th>Fechamento</th>
-                    <th>Vencimento</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="cartoesBody">
-                  <!-- Preenchido dinamicamente -->
-                </tbody>
-              </table>
-            </div>
+            <div id="cartoesListaPrincipal"></div>
           </div>
         </div>
         
         <!-- Aba Renda -->
         <div class="tab-content" id="renda-tab">
-          <div class="panel-row">
-            <div class="panel-main">
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h3 class="chart-title">Dados Pessoais</h3>
-                  <button class="btn btn-primary" onclick="abrirModal('cadastroModal')">
-                    <i class="fas fa-edit"></i> Editar
-                  </button>
-                </div>
-                <div id="dadosPessoais">
-                  <!-- Preenchido dinamicamente -->
-                </div>
-              </div>
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Cadastro de Renda</h3>
+              <button class="btn btn-primary" onclick="abrirModal('cadastroModal')">
+                <i class="fas fa-plus"></i> Nova Renda
+              </button>
             </div>
-            
-            <div class="panel-side">
-              <div class="chart-container">
-                <div class="chart-header">
-                  <h3 class="chart-title">Rendas Adicionais</h3>
-                  <button class="btn btn-outline" onclick="abrirModal('rendasModal')">
-                    <i class="fas fa-plus"></i> Adicionar
-                  </button>
-                </div>
-                <div id="rendasAdicionais">
-                  <!-- Preenchido dinamicamente -->
-                </div>
-              </div>
-            </div>
+            <div id="usuariosListaPrincipal"></div>
           </div>
         </div>
       </div>
@@ -464,179 +454,229 @@
     </main>
   </div>
   
-  <!-- Modais -->
-  <!-- Modal de Cadastro de Despesa -->
-  <div class="modal" id="cadastroDespesaModal">
+  <!-- ===================== MODAIS ===================== -->
+  <!-- Modal: Cadastro de Despesa -->
+  <div id="cadastroDespesaModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">Nova Despesa</h3>
-        <button class="close" onclick="fecharModal('cadastroDespesaModal')">
-          <i class="fas fa-times"></i>
-        </button>
+        <h2 class="modal-title">Cadastrar Despesa</h2>
+        <button class="close" onclick="fecharModal('cadastroDespesaModal')">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Descrição</label>
-          <input type="text" id="descricaoDespesa" class="form-control" placeholder="Ex: Conta de Luz">
+          <label class="form-label">Descrição:</label>
+          <input type="text" id="despesaDescricao" class="form-control" placeholder="Descrição da despesa" required>
         </div>
         <div class="form-group">
-          <label class="form-label">Valor</label>
-          <input type="number" id="valorDespesa" class="form-control" step="0.01" min="0" placeholder="0.00">
+          <label class="form-label">Valor (R$):</label>
+          <input type="number" id="despesaValor" class="form-control" placeholder="Valor" step="0.01" required pattern="[0-9]*" inputmode="decimal">
         </div>
         <div class="form-group">
-          <label class="form-label">Data de Vencimento</label>
-          <input type="date" id="dataVencimento" class="form-control">
+          <label class="form-label">Data da Compra:</label>
+          <input type="date" id="dataCompra" class="form-control" required>
         </div>
         <div class="form-group">
-          <label class="form-label">Categoria</label>
+          <label class="form-label">Categoria:</label>
           <select id="categoriaDespesa" class="form-control">
+            <option value="">Selecione a Categoria</option>
             <!-- Preenchido dinamicamente -->
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Cartão (opcional)</label>
-          <select id="cartaoDespesa" class="form-control">
-            <option value="">Selecione um cartão</option>
-            <!-- Preenchido dinamicamente -->
+          <label class="form-label">Forma de Pagamento:</label>
+          <select id="formaPagamento" class="form-control" onchange="toggleParcelamento()">
+            <option value="avista">À Vista</option>
+            <option value="cartao">Cartão</option>
           </select>
         </div>
-        <div class="form-group">
-          <div class="d-flex align-center gap-2">
-            <input type="checkbox" id="parcelamento" onchange="toggleParcelamento()">
-            <label for="parcelamento">Parcelado</label>
-          </div>
-        </div>
-        <div id="parcelamentoOptions" style="display: none;">
+        <div id="parcelamentoDiv" class="hidden">
           <div class="form-group">
-            <label class="form-label">Número de Parcelas</label>
-            <input type="number" id="numParcelas" class="form-control" min="2" value="2">
+            <label class="form-label">Cartão:</label>
+            <select id="cartaoDespesa" class="form-control" required>
+              <option value="">Selecione o Cartão</option>
+              <!-- Preenchido dinamicamente -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Número de Parcelas:</label>
+            <input type="number" id="numParcelasDespesa" class="form-control" value="1" min="1" max="24">
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline" onclick="fecharModal('cadastroDespesaModal')">Cancelar</button>
+        <button class="btn btn-secondary" onclick="fecharModal('cadastroDespesaModal')">Cancelar</button>
         <button class="btn btn-primary" onclick="salvarDespesa()">Salvar</button>
       </div>
     </div>
   </div>
   
-  <!-- Modal de Pagar Despesa -->
-  <div class="modal" id="pagarDespesaModal">
+  <!-- Modal: Pagar Despesa -->
+  <div id="pagarDespesaModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">Pagar Despesa</h3>
-        <button class="close" onclick="fecharModal('pagarDespesaModal')">
-          <i class="fas fa-times"></i>
-        </button>
+        <h2 class="modal-title">Pagar Despesa</h2>
+        <button class="close" onclick="fecharModal('pagarDespesaModal')">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Despesa</label>
+          <label class="form-label">Despesa:</label>
           <select id="despesaNaoPaga" class="form-control">
+            <option value="">Selecione a Despesa</option>
             <!-- Preenchido dinamicamente -->
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Data de Pagamento</label>
-          <input type="date" id="dataPagamento" class="form-control">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Valor Pago</label>
-          <input type="number" id="valorPago" class="form-control" step="0.01" min="0" placeholder="0.00">
+          <label class="form-label">Data de Pagamento:</label>
+          <input type="date" id="dataPagamento" class="form-control" required>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline" onclick="fecharModal('pagarDespesaModal')">Cancelar</button>
+        <button class="btn btn-secondary" onclick="fecharModal('pagarDespesaModal')">Cancelar</button>
         <button class="btn btn-primary" onclick="pagarDespesa()">Pagar</button>
       </div>
     </div>
   </div>
   
-  <!-- Outros modais (categorias, cartões, etc.) mantidos conforme original -->
+  <!-- Modal: Categorias -->
+  <div id="categoriasModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Gerenciar Categorias</h2>
+        <button class="close" onclick="fecharModal('categoriasModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nome da Categoria:</label>
+          <input type="text" id="nomeCategoria" class="form-control" placeholder="Ex: Alimentação" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cor:</label>
+          <input type="color" id="corCategoria" class="form-control" value="#4361ee">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="adicionarCategoria()">Adicionar Categoria</button>
+        
+        <div class="mt-4" id="categoriasList">
+          <!-- Preenchido dinamicamente -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('categoriasModal')">Fechar</button>
+      </div>
+    </div>
+  </div>
   
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <!-- Modal: Cartões -->
+  <div id="cartaoModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Gerenciar Cartões</h2>
+        <button class="close" onclick="fecharModal('cartaoModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nome do Cartão:</label>
+          <input type="text" id="nomeCartao" class="form-control" placeholder="Ex: Nubank" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Limite:</label>
+          <input type="number" id="limiteCartao" class="form-control" placeholder="Limite" step="0.01" required pattern="[0-9]*" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dia de Fechamento:</label>
+          <input type="number" id="fechamentoCartao" class="form-control" placeholder="Dia" min="1" max="31" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dia de Vencimento:</label>
+          <input type="number" id="vencimentoCartao" class="form-control" placeholder="Dia" min="1" max="31" required>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="adicionarCartao()">Adicionar Cartão</button>
+        
+        <div class="mt-4" id="cartoesList">
+          <!-- Preenchido dinamicamente -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('cartaoModal')">Fechar</button>
+      </div>
+    </div>
+  </div>
   
-  <!-- Moment.js para manipulação de datas -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/pt-br.min.js"></script>
+  <!-- Modal: Cadastro de Renda -->
+  <div id="cadastroModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Cadastrar Renda</h2>
+        <button class="close" onclick="fecharModal('cadastroModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Descrição:</label>
+          <input type="text" id="descricaoRenda" class="form-control" placeholder="Ex: Salário" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor (R$):</label>
+          <input type="number" id="valorRenda" class="form-control" placeholder="Valor" step="0.01" required pattern="[0-9]*" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data de Recebimento:</label>
+          <input type="date" id="dataRenda" class="form-control" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('cadastroModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarRenda()">Salvar</button>
+      </div>
+    </div>
+  </div>
   
-  <!-- DateRangePicker -->
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <!-- Modal: Limites -->
+  <div id="novo_limitesModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Configurar Limites</h2>
+        <button class="close" onclick="fecharModal('novo_limitesModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="novo_limitesCategoriasList">
+          <!-- Preenchido dinamicamente -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('novo_limitesModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="novo_salvarLimites()">Salvar</button>
+      </div>
+    </div>
+  </div>
   
-  <!-- Scripts personalizados -->
-  <script src="js/auth.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/previsoes.js"></script>
-  <script src="js/alertas.js"></script>
+  <!-- Container para Toasts -->
+  <div id="toastContainer"></div>
   
+  <!-- Scripts do Firebase (configuração) -->
   <script>
-    // Script para ativar/desativar o menu em dispositivos móveis
-    document.getElementById('menuToggle').addEventListener('click', function() {
-      document.getElementById('sidebar').classList.toggle('show');
-    });
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDfRcYJiQKqHhMZaVrZcXTKkZCZHSGd-2A",
+      authDomain: "sistema-contas-123.firebaseapp.com",
+      projectId: "sistema-contas-123",
+      storageBucket: "sistema-contas-123.appspot.com",
+      messagingSenderId: "456789123456",
+      appId: "1:456789123456:web:a1b2c3d4e5f6a7b8c9d0e1"
+    };
     
-    // Script para ativar abas
-    function activateTab(tabId) {
-      // Desativa todas as abas
-      document.querySelectorAll('.tab-button').forEach(button => {
-        button.classList.remove('active');
-      });
-      
-      document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-      });
-      
-      // Ativa a aba selecionada
-      document.querySelectorAll(`.tab-button[data-tab="${tabId}"]`).forEach(button => {
-        button.classList.add('active');
-      });
-      
-      const tabContent = document.getElementById(tabId);
-      if (tabContent) {
-        tabContent.classList.add('active');
-      }
-      
-      // Ativa o item correspondente no menu lateral
-      document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-      });
-      
-      const navLinks = document.querySelectorAll('.nav-link');
-      for (let i = 0; i < navLinks.length; i++) {
-        if (navLinks[i].getAttribute('onclick').includes(tabId)) {
-          navLinks[i].classList.add('active');
-          break;
-        }
-      }
-      
-      // Fechar o menu em dispositivos móveis após selecionar uma opção
-      if (window.innerWidth <= 992) {
-        document.getElementById('sidebar').classList.remove('show');
-      }
-      
-      // Chamar funções específicas para cada aba
-      if (tabId === 'dashboard-tab') {
-        atualizarDashboard();
-      } else if (tabId === 'despesas-tab') {
-        loadTodasDespesas();
-      } else if (tabId === 'relatorio-tab') {
-        gerarRelatorio();
-      } else if (tabId === 'previsao-tab') {
-        novo_calcularPrevisoes();
-      } else if (tabId === 'calendario-tab') {
-        renderCalendar();
-      } else if (tabId === 'categorias-tab') {
-        loadCategorias();
-      } else if (tabId === 'cartoes-tab') {
-        loadCartoes();
-      } else if (tabId === 'renda-tab') {
-        loadRendas();
+    // Inicializar Firebase
+    if (typeof firebase !== 'undefined') {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
       }
     }
   </script>
+  
+  <!-- Scripts do sistema -->
+  <script src="js/main.js"></script>
+  <script src="js/previsoes.js"></script>
+  <script src="js/alertas.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/redesigned.js"></script>
+  <script src="js/bridge.js"></script>
 </body>
 </html>
