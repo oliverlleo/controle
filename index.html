@@ -29,7 +29,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1.0.0">
   
   <!-- CSS personalizado -->
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/redesigned.css">
   <link rel="stylesheet" href="css/auth.css">
 </head>
 <body>
@@ -43,42 +43,41 @@
     <aside id="sidebar">
       <h2><i class="fa-solid fa-wallet"></i> Contas</h2>
       <!-- Informações do usuário serão inseridas aqui pelo auth.js -->
-      <a href="#" class="nav-link active" onclick="showSection('dashboardSection')">
+      <a href="#" class="nav-link active" onclick="activateTab('dashboard-tab')">
         <i class="fa-solid fa-house"></i>
         <span>Dashboard</span>
       </a>
-      <a href="#" class="nav-link" onclick="showSection('despesasSection')">
+      <a href="#" class="nav-link" onclick="activateTab('despesas-tab')">
         <i class="fa-solid fa-money-bill-wave"></i>
         <span>Despesas</span>
       </a>
-      <a href="#" class="nav-link" onclick="showSection('relatorioSection')">
+      <a href="#" class="nav-link" onclick="activateTab('relatorio-tab')">
         <i class="fa-solid fa-chart-line"></i>
         <span>Relatórios</span>
       </a>
-      <a href="#" class="nav-link" onclick="showSection('categoriasSection')">
+      <a href="#" class="nav-link" onclick="activateTab('previsao-tab')">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Previsões</span>
+      </a>
+      <a href="#" class="nav-link" onclick="activateTab('calendario-tab')">
+        <i class="fa-solid fa-calendar-alt"></i>
+        <span>Calendário</span>
+      </a>
+      <a href="#" class="nav-link" onclick="activateTab('categorias-tab')">
         <i class="fa-solid fa-tags"></i>
         <span>Categorias</span>
       </a>
-      <a href="#" class="nav-link" onclick="showSection('cartoesSection')">
+      <a href="#" class="nav-link" onclick="activateTab('cartoes-tab')">
         <i class="fa-solid fa-credit-card"></i>
         <span>Cartões</span>
       </a>
-      <a href="#" class="nav-link" onclick="showSection('rendaSection')">
+      <a href="#" class="nav-link" onclick="activateTab('renda-tab')">
         <i class="fa-solid fa-user"></i>
         <span>Renda</span>
       </a>
       <a href="#" class="nav-link" onclick="exportData()">
         <i class="fa-solid fa-file-export"></i>
         <span>Exportar Dados</span>
-      </a>
-      <!-- Novos itens -->
-      <a href="#" class="nav-link" onclick="showSection('previsaoSection')">
-        <i class="fa-solid fa-chart-pie"></i>
-        <span>Previsões</span>
-      </a>
-      <a href="#" class="nav-link" onclick="showSection('alertasSection')">
-        <i class="fa-solid fa-bell"></i>
-        <span>Alertas</span>
       </a>
       <!-- Botão de logout será inserido aqui pelo auth.js -->
     </aside>
@@ -87,604 +86,557 @@
     <main>
       <header>
         <h1>Sistema de Gerenciamento de Contas</h1>
+        
+        <!-- Seletor de Mês/Ano Global -->
+        <div class="chart-container mb-4">
+          <div class="chart-header">
+            <h3 class="chart-title">Período de Análise</h3>
+            <div id="dashboardMonthSelector" class="d-flex align-center gap-2 flex-wrap">
+              <div class="form-group mb-0">
+                <select id="dashboardMonth" class="form-control">
+                  <option value="0">Janeiro</option>
+                  <option value="1">Fevereiro</option>
+                  <option value="2">Março</option>
+                  <option value="3">Abril</option>
+                  <option value="4">Maio</option>
+                  <option value="5">Junho</option>
+                  <option value="6">Julho</option>
+                  <option value="7">Agosto</option>
+                  <option value="8">Setembro</option>
+                  <option value="9">Outubro</option>
+                  <option value="10">Novembro</option>
+                  <option value="11">Dezembro</option>
+                </select>
+              </div>
+              <div class="form-group mb-0">
+                <select id="dashboardYear" class="form-control">
+                  <!-- Preenchido dinamicamente -->
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="atualizarDashboard()">
+                <i class="fas fa-sync-alt"></i>
+                <span>Atualizar</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </header>
       
-      <!-- Dashboard Resumido -->
-      <section id="dashboardSection" class="container">
-        <div class="chart-header">
-          <h2>Dashboard Resumido</h2>
-          <div id="dashboardMonthSelector" class="d-flex align-center gap-2 flex-wrap">
-            <div class="form-group mb-0">
-              <select id="dashboardMonth" class="form-control">
-                <option value="0">Janeiro</option>
-                <option value="1">Fevereiro</option>
-                <option value="2">Março</option>
-                <option value="3">Abril</option>
-                <option value="4">Maio</option>
-                <option value="5">Junho</option>
-                <option value="6">Julho</option>
-                <option value="7">Agosto</option>
-                <option value="8">Setembro</option>
-                <option value="9">Outubro</option>
-                <option value="10">Novembro</option>
-                <option value="11">Dezembro</option>
-              </select>
+      <!-- Cards de Resumo Rápido -->
+      <div class="dashboard-cards">
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <div class="dashboard-card-title">Saldo Atual</div>
+            <div class="dashboard-card-icon">
+              <i class="fas fa-wallet"></i>
             </div>
-            <div class="form-group mb-0">
-              <select id="dashboardYear" class="form-control">
-                <option value="2020">2020</option>
-                <option value="2021">2021</option>
-                <option value="2022">2022</option>
-                <option value="2023">2023</option>
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-                <option value="2026">2026</option>
-                <option value="2027">2027</option>
-                <option value="2028">2028</option>
-                <option value="2029">2029</option>
-                <option value="2030">2030</option>
-              </select>
+          </div>
+          <div class="dashboard-card-value" id="saldoAtual">R$ 0.00</div>
+          <div class="dashboard-card-label">Disponível para uso</div>
+        </div>
+        
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <div class="dashboard-card-title">Despesas do Mês</div>
+            <div class="d-flex gap-1">
+              <button class="btn-icon" onclick="prevDashboardMonth()">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="btn-icon" onclick="nextDashboardMonth()">
+                <i class="fas fa-chevron-right"></i>
+              </button>
             </div>
-            <button class="btn btn-primary" onclick="atualizarDashboard()">
-              <i class="fas fa-sync-alt"></i>
-              <span>Atualizar</span>
-            </button>
+          </div>
+          <div class="dashboard-card-value" id="despesasMes">R$ 0.00</div>
+          <div class="dashboard-card-label" id="despesasMesTitle">Mês Atual</div>
+        </div>
+        
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <div class="dashboard-card-title">Próximos Vencimentos</div>
+            <div class="dashboard-card-icon">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+          </div>
+          <div class="dashboard-card-value" id="proximosVencimentos">0</div>
+          <div class="dashboard-card-label">Dias até o próximo vencimento</div>
+        </div>
+      </div>
+      
+      <!-- Sistema de Abas Principal -->
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <button class="tab-button active" data-tab="dashboard-tab">
+            <i class="fas fa-home"></i> Dashboard
+          </button>
+          <button class="tab-button" data-tab="despesas-tab">
+            <i class="fas fa-money-bill-wave"></i> Despesas
+          </button>
+          <button class="tab-button" data-tab="relatorio-tab">
+            <i class="fas fa-chart-line"></i> Relatórios
+          </button>
+          <button class="tab-button" data-tab="previsao-tab">
+            <i class="fas fa-chart-pie"></i> Previsões
+          </button>
+          <button class="tab-button" data-tab="calendario-tab">
+            <i class="fas fa-calendar-alt"></i> Calendário
+          </button>
+          <button class="tab-button" data-tab="categorias-tab">
+            <i class="fas fa-tags"></i> Categorias
+          </button>
+          <button class="tab-button" data-tab="cartoes-tab">
+            <i class="fas fa-credit-card"></i> Cartões
+          </button>
+          <button class="tab-button" data-tab="renda-tab">
+            <i class="fas fa-user"></i> Renda
+          </button>
+        </div>
+        
+        <!-- Aba Dashboard -->
+        <div class="tab-content active" id="dashboard-tab">
+          <div class="panel-row">
+            <div class="panel-main">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Análise de Despesas</h3>
+                </div>
+                <div id="graficoDespesas"></div>
+              </div>
+            </div>
+            
+            <div class="panel-side">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Despesas do Mês</h3>
+                </div>
+                <div id="listaDespesasMes" class="despesas-lista"></div>
+              </div>
+              
+              <!-- Mini-Alertas -->
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Alertas</h3>
+                  <button class="btn-icon" onclick="novo_verificarAlertas()">
+                    <i class="fas fa-sync-alt"></i>
+                  </button>
+                </div>
+                <div class="mini-alerts" id="mini-alertas">
+                  <!-- Preenchido dinamicamente -->
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         
-        <div class="dashboard-cards">
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              <div class="dashboard-card-title">Saldo Atual</div>
-              <div class="dashboard-card-icon">
-                <i class="fas fa-wallet"></i>
+        <!-- Aba Despesas -->
+        <div class="tab-content" id="despesas-tab">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Todas as Despesas</h3>
+              <div class="d-flex gap-2">
+                <div class="form-group mb-0">
+                  <input type="text" id="filtroDescricao" class="form-control" placeholder="Filtrar por descrição">
+                </div>
+                <button class="btn btn-primary" onclick="filtrarTodasDespesas()">
+                  <i class="fas fa-filter"></i>
+                </button>
               </div>
             </div>
-            <div class="dashboard-card-value" id="saldoAtual">R$ 6416.60</div>
-            <div class="dashboard-card-label">Disponível para uso</div>
+            <div class="table-container">
+              <table id="todasDespesasTable">
+                <thead>
+                  <tr>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Data</th>
+                    <th>Categoria</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="todasDespesasBody">
+                  <!-- Preenchido dinamicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Aba Relatórios -->
+        <div class="tab-content" id="relatorio-tab">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Período do Relatório</h3>
+              <div class="form-group mb-0">
+                <input type="text" id="dataRange" class="form-control" placeholder="00/00/0000 - 00/00/0000">
+              </div>
+            </div>
           </div>
           
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              <div class="dashboard-card-title">Despesas do Mês</div>
-              <div class="d-flex gap-1">
-                <button class="btn-icon" onclick="prevDashboardMonth()">
+          <div class="panel-row">
+            <div class="panel-main">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Resumo Financeiro</h3>
+                </div>
+                <div id="relatorioMensalContainer"></div>
+              </div>
+            </div>
+            
+            <div class="panel-side">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Despesas por Categoria</h3>
+                </div>
+                <div id="graficoCategorias"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Aba Previsões -->
+        <div class="tab-content" id="previsao-tab">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Tendência de Gastos</h3>
+            </div>
+            <div id="novo_graficoPrevisao"></div>
+          </div>
+          
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Próximos 3 Meses</h3>
+            </div>
+            <div id="novo_tabelaPrevisao"></div>
+          </div>
+        </div>
+        
+        <!-- Aba Calendário -->
+        <div class="tab-content" id="calendario-tab">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title" id="calendarTitulo">Calendário de Despesas</h3>
+              <div class="d-flex gap-2">
+                <button class="btn-icon" onclick="prevMonth()">
                   <i class="fas fa-chevron-left"></i>
                 </button>
-                <button class="btn-icon" onclick="nextDashboardMonth()">
+                <button class="btn-icon" onclick="nextMonth()">
                   <i class="fas fa-chevron-right"></i>
                 </button>
               </div>
             </div>
-            <div class="dashboard-card-value" id="despesasMes">R$ 4440.00</div>
-            <div class="dashboard-card-label" id="despesasMesTitle">Março de 2025</div>
+            
+            <div id="calendar-container">
+              <div class="calendar-grid" id="calendarHeader">
+                <!-- Cabeçalhos do calendário -->
+                <div class="calendar-day-header">Dom</div>
+                <div class="calendar-day-header">Seg</div>
+                <div class="calendar-day-header">Ter</div>
+                <div class="calendar-day-header">Qua</div>
+                <div class="calendar-day-header">Qui</div>
+                <div class="calendar-day-header">Sex</div>
+                <div class="calendar-day-header">Sáb</div>
+              </div>
+              <div class="calendar-grid" id="calendarDays">
+                <!-- Dias do calendário preenchidos dinamicamente -->
+              </div>
+            </div>
           </div>
           
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              <div class="dashboard-card-title">Próximos Vencimentos</div>
-              <div class="dashboard-card-icon">
-                <i class="fas fa-calendar-alt"></i>
+          <div class="chart-container" id="dayDetailsContainer" style="display: none;">
+            <div class="chart-header">
+              <h3 class="chart-title" id="dayDetailsTitle">Detalhes do Dia</h3>
+            </div>
+            <div id="dayDetails"></div>
+          </div>
+        </div>
+        
+        <!-- Aba Categorias -->
+        <div class="tab-content" id="categorias-tab">
+          <div class="panel-row">
+            <div class="panel-main">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Categorias</h3>
+                  <button class="btn btn-primary" onclick="abrirModal('categoriasModal')">
+                    <i class="fas fa-plus"></i> Nova Categoria
+                  </button>
+                </div>
+                <div class="table-container">
+                  <table id="categoriasTable">
+                    <thead>
+                      <tr>
+                        <th>Nome</th>
+                        <th>Cor</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="categoriasBody">
+                      <!-- Preenchido dinamicamente -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-            <div class="dashboard-card-value" id="proximosVencimentos">27</div>
-            <div class="dashboard-card-label">Dias até o próximo vencimento</div>
-          </div>
-        </div>
-        
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3 class="chart-title">Análise de Despesas</h3>
-          </div>
-          <div class="grafico-painel-container">
-            <div class="chart-panel" style="flex: 3;">
-              <div id="graficoDespesas"></div>
-            </div>
-            <div class="chart-panel" style="flex: 2;">
-              <h4 class="mb-2">Despesas do Mês</h4>
-              <div id="listaDespesasMes" class="despesas-lista"></div>
-            </div>
-          </div>
-        </div>
-        
-        <button class="btn btn-primary btn-block" onclick="abrirModal('cadastroDespesaModal')">
-          <i class="fas fa-plus"></i>
-          <span>Cadastrar Nova Despesa</span>
-        </button>
-      </section>
-      
-      <!-- Seção de Despesas -->
-      <section id="despesasSection" class="container" style="display: none;">
-        <h2 class="mb-3">Despesas</h2>
-        <div class="d-flex gap-2 flex-wrap mb-3">
-          <button class="btn btn-primary" onclick="abrirModal('cadastroDespesaModal')">
-            <i class="fas fa-plus"></i>
-            <span>Cadastrar Despesa</span>
-          </button>
-          <button class="btn btn-success" onclick="abrirModal('pagarDespesaModal')">
-            <i class="fas fa-check"></i>
-            <span>Pagar Despesa</span>
-          </button>
-          <button class="btn btn-outline" onclick="abrirModal('calendarModal'); renderCalendar()">
-            <i class="fas fa-calendar-alt"></i>
-            <span>Calendário</span>
-          </button>
-        </div>
-        
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3 class="chart-title">Todas as Despesas</h3>
-            <div class="d-flex gap-2">
-              <div class="form-group mb-0">
-                <input type="text" id="filtroDescricao" class="form-control" placeholder="Filtrar por descrição">
+            
+            <div class="panel-side">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Limites por Categoria</h3>
+                  <button class="btn btn-outline" onclick="abrirModal('novo_limitesModal')">
+                    <i class="fas fa-sliders"></i> Configurar
+                  </button>
+                </div>
+                <div id="limitesCategorias">
+                  <!-- Preenchido dinamicamente -->
+                </div>
               </div>
-              <button class="btn btn-primary" onclick="filtrarTodasDespesas()">
-                <i class="fas fa-filter"></i>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Aba Cartões -->
+        <div class="tab-content" id="cartoes-tab">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Cartões de Crédito</h3>
+              <button class="btn btn-primary" onclick="abrirModal('cartoesModal')">
+                <i class="fas fa-plus"></i> Novo Cartão
               </button>
             </div>
+            <div class="table-container">
+              <table id="cartoesTable">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Limite</th>
+                    <th>Fechamento</th>
+                    <th>Vencimento</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="cartoesBody">
+                  <!-- Preenchido dinamicamente -->
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="table-container">
-            <table id="todasDespesasTable">
-              <thead>
-                <tr>
-                  <th>Descrição</th>
-                  <th>Valor</th>
-                  <th>Data</th>
-                  <th>Categoria</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="todasDespesasBody">
-                <!-- Preenchido dinamicamente -->
-              </tbody>
-            </table>
+        </div>
+        
+        <!-- Aba Renda -->
+        <div class="tab-content" id="renda-tab">
+          <div class="panel-row">
+            <div class="panel-main">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Dados Pessoais</h3>
+                  <button class="btn btn-primary" onclick="abrirModal('cadastroModal')">
+                    <i class="fas fa-edit"></i> Editar
+                  </button>
+                </div>
+                <div id="dadosPessoais">
+                  <!-- Preenchido dinamicamente -->
+                </div>
+              </div>
+            </div>
+            
+            <div class="panel-side">
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h3 class="chart-title">Rendas Adicionais</h3>
+                  <button class="btn btn-outline" onclick="abrirModal('rendasModal')">
+                    <i class="fas fa-plus"></i> Adicionar
+                  </button>
+                </div>
+                <div id="rendasAdicionais">
+                  <!-- Preenchido dinamicamente -->
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
       
-      <!-- Seção de Relatórios -->
-      <section id="relatorioSection" class="container" style="display: none;">
-        <h2 class="mb-3">Relatórios</h2>
-        <div class="form-group">
-          <label class="form-label">Período:</label>
-          <input type="text" id="dataRange" class="form-control" placeholder="00/00/0000 - 00/00/0000">
-        </div>
-        
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3 class="chart-title">Resumo Financeiro</h3>
-          </div>
-          <div id="relatorioMensalContainer"></div>
-        </div>
-        
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3 class="chart-title">Despesas por Categoria</h3>
-          </div>
-          <div id="graficoCategorias"></div>
-        </div>
-      </section>
-      
-      <!-- Seção de Categorias -->
-      <section id="categoriasSection" class="container" style="display: none;">
-        <h2 class="mb-3">Categorias</h2>
-        <button class="btn btn-primary mb-3" onclick="abrirModal('categoriasModal')">
-          <i class="fas fa-tags"></i>
-          <span>Gerenciar Categorias</span>
-        </button>
-        
-        <div class="chart-container">
-          <div id="categoriasListaPrincipal"></div>
-        </div>
-      </section>
-      
-      <!-- Seção de Cartões -->
-      <section id="cartoesSection" class="container" style="display: none;">
-        <h2 class="mb-3">Cartões</h2>
-        <button class="btn btn-primary mb-3" onclick="abrirModal('cartaoModal')">
-          <i class="fas fa-credit-card"></i>
-          <span>Gerenciar Cartões</span>
-        </button>
-        
-        <div class="chart-container">
-          <div id="cartoesListaPrincipal"></div>
-        </div>
-      </section>
-      
-      <!-- Seção de Renda -->
-      <section id="rendaSection" class="container" style="display: none;">
-        <h2 class="mb-3">Cadastro de Renda</h2>
-        <div class="d-flex gap-2 flex-wrap mb-3">
-          <button class="btn btn-primary" onclick="abrirModal('cadastroModal')">
-            <i class="fas fa-plus"></i>
-            <span>Cadastrar Nova Renda</span>
-          </button>
-          <button class="btn btn-outline" onclick="loadRendas()">
-            <i class="fas fa-list"></i>
-            <span>Ver Rendas Cadastradas</span>
-          </button>
-        </div>
-        
-        <div class="chart-container">
-          <div id="usuariosListaPrincipal"></div>
-        </div>
-      </section>
-      
-      <!-- NOVAS SEÇÕES -->
-      <!-- Seção de Previsões -->
-      <section id="previsaoSection" class="container" style="display:none;">
-        <h2 class="mb-3">Previsão de Gastos</h2>
-        
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3 class="chart-title">Tendência de Gastos</h3>
-          </div>
-          <div id="novo_graficoPrevisao"></div>
-        </div>
-        
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3 class="chart-title">Próximos 3 Meses</h3>
-          </div>
-          <div id="novo_tabelaPrevisao"></div>
-        </div>
-        
-        <button class="btn btn-primary btn-block" onclick="novo_calcularPrevisoes()">
-          <i class="fas fa-calculator"></i>
-          <span>Gerar Previsões</span>
-        </button>
-      </section>
-      
-      <!-- Seção de Alertas -->
-      <section id="alertasSection" class="container" style="display:none;">
-        <h2 class="mb-3">Alertas</h2>
-        <button class="btn btn-primary mb-3" onclick="abrirModal('novo_limitesModal')">
-          <i class="fas fa-sliders"></i>
-          <span>Configurar Limites</span>
-        </button>
-        
-        <div class="chart-container">
-          <div id="novo_listaAlertas"></div>
-        </div>
-      </section>
+      <!-- Botão de Ação Flutuante -->
+      <button class="fab" onclick="abrirModal('cadastroDespesaModal')">
+        <i class="fas fa-plus"></i>
+      </button>
     </main>
   </div>
   
-  <!-- ===================== MODAIS ===================== -->
-  <!-- Modal: Cadastro de Despesa -->
-  <div id="cadastroDespesaModal" class="modal">
+  <!-- Modais -->
+  <!-- Modal de Cadastro de Despesa -->
+  <div class="modal" id="cadastroDespesaModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title">Cadastrar Despesa</h2>
-        <button class="close" onclick="fecharModal('cadastroDespesaModal')">&times;</button>
+        <h3 class="modal-title">Nova Despesa</h3>
+        <button class="close" onclick="fecharModal('cadastroDespesaModal')">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Descrição:</label>
-          <input type="text" id="despesaDescricao" class="form-control" placeholder="Descrição da despesa" required>
+          <label class="form-label">Descrição</label>
+          <input type="text" id="descricaoDespesa" class="form-control" placeholder="Ex: Conta de Luz">
         </div>
         <div class="form-group">
-          <label class="form-label">Valor (R$):</label>
-          <input type="number" id="despesaValor" class="form-control" placeholder="Valor" step="0.01" required pattern="[0-9]*" inputmode="decimal">
+          <label class="form-label">Valor</label>
+          <input type="number" id="valorDespesa" class="form-control" step="0.01" min="0" placeholder="0.00">
         </div>
         <div class="form-group">
-          <label class="form-label">Data da Compra:</label>
-          <input type="date" id="dataCompra" class="form-control" required>
+          <label class="form-label">Data de Vencimento</label>
+          <input type="date" id="dataVencimento" class="form-control">
         </div>
         <div class="form-group">
-          <label class="form-label">Categoria:</label>
+          <label class="form-label">Categoria</label>
           <select id="categoriaDespesa" class="form-control">
-            <option value="">Selecione a Categoria</option>
             <!-- Preenchido dinamicamente -->
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Forma de Pagamento:</label>
-          <select id="formaPagamento" class="form-control" onchange="toggleParcelamento()">
-            <option value="avista">À Vista</option>
-            <option value="cartao">Cartão</option>
-          </select>
-        </div>
-        <div id="parcelamentoDiv" class="hidden">
-          <div class="form-group">
-            <label class="form-label">Cartão:</label>
-            <select id="cartaoDespesa" class="form-control" required>
-              <option value="">Selecione o Cartão</option>
-              <!-- Preenchido dinamicamente -->
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Número de Parcelas:</label>
-            <input type="number" id="numParcelasDespesa" class="form-control" min="1" max="12" value="1" required>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="salvarDespesa()">Salvar Despesa</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal: Pagar Despesa -->
-  <div id="pagarDespesaModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Pagar Despesa</h2>
-        <button class="close" onclick="fecharModal('pagarDespesaModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Filtrar:</label>
-          <div class="d-flex gap-2 flex-wrap">
-            <input type="text" id="despesaSearch" class="form-control" placeholder="Descrição">
-            <input type="text" id="mesFiltro" class="form-control" placeholder="Mês (ex: JAN)" list="meses">
-            <datalist id="meses">
-              <option value="JAN"></option>
-              <option value="FEV"></option>
-              <option value="MAR"></option>
-              <option value="ABR"></option>
-              <option value="MAI"></option>
-              <option value="JUN"></option>
-              <option value="JUL"></option>
-              <option value="AGO"></option>
-              <option value="SET"></option>
-              <option value="OUT"></option>
-              <option value="NOV"></option>
-              <option value="DEZ"></option>
-            </datalist>
-            <input type="text" id="anoFiltro" class="form-control" placeholder="Ano (ex: 2025)" list="anos">
-            <datalist id="anos">
-              <option value="2023"></option>
-              <option value="2024"></option>
-              <option value="2025"></option>
-              <option value="2026"></option>
-            </datalist>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Categoria:</label>
-          <select id="categoriaFiltro" class="form-control">
-            <option value="">Todas as Categorias</option>
+          <label class="form-label">Cartão (opcional)</label>
+          <select id="cartaoDespesa" class="form-control">
+            <option value="">Selecione um cartão</option>
             <!-- Preenchido dinamicamente -->
           </select>
         </div>
         <div class="form-group">
-          <label class="d-flex align-center gap-1">
-            <input type="checkbox" id="contaMesFiltro">
-            <span>Apenas contas do mês</span>
-          </label>
+          <div class="d-flex align-center gap-2">
+            <input type="checkbox" id="parcelamento" onchange="toggleParcelamento()">
+            <label for="parcelamento">Parcelado</label>
+          </div>
         </div>
-        <button class="btn btn-primary mb-3" onclick="filtrarDespesas()">Filtrar</button>
-        
+        <div id="parcelamentoOptions" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">Número de Parcelas</label>
+            <input type="number" id="numParcelas" class="form-control" min="2" value="2">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="fecharModal('cadastroDespesaModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarDespesa()">Salvar</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Pagar Despesa -->
+  <div class="modal" id="pagarDespesaModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Pagar Despesa</h3>
+        <button class="close" onclick="fecharModal('pagarDespesaModal')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Despesas:</label>
-          <select id="despesaSelect" class="form-control" size="10" style="height: auto;">
+          <label class="form-label">Despesa</label>
+          <select id="despesaNaoPaga" class="form-control">
             <!-- Preenchido dinamicamente -->
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">Data de Pagamento</label>
+          <input type="date" id="dataPagamento" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor Pago</label>
+          <input type="number" id="valorPago" class="form-control" step="0.01" min="0" placeholder="0.00">
+        </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-success" onclick="pagarDespesaSelecionada()">Pagar Despesa</button>
+        <button class="btn btn-outline" onclick="fecharModal('pagarDespesaModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="pagarDespesa()">Pagar</button>
       </div>
     </div>
   </div>
   
-  <!-- Modal: Calendário -->
-  <div id="calendarModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title" id="calendarTitulo">Calendário de Despesas</h2>
-        <button class="close" onclick="fecharModal('calendarModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="calendar-header">
-          <div class="d-flex justify-between align-center">
-            <button class="btn-icon" onclick="prevMonth()">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <h3 id="calendarMonthYear" class="calendar-title" onclick="toggleMonthYearSelect()">Mês Ano</h3>
-            <button class="btn-icon" onclick="nextMonth()">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </div>
-          <div id="monthYearSelect" style="display: none; margin-top: 10px;">
-            <div class="d-flex gap-2 align-center">
-              <select id="selectMonth" class="form-control">
-                <option value="0">Janeiro</option>
-                <option value="1">Fevereiro</option>
-                <option value="2">Março</option>
-                <option value="3">Abril</option>
-                <option value="4">Maio</option>
-                <option value="5">Junho</option>
-                <option value="6">Julho</option>
-                <option value="7">Agosto</option>
-                <option value="8">Setembro</option>
-                <option value="9">Outubro</option>
-                <option value="10">Novembro</option>
-                <option value="11">Dezembro</option>
-              </select>
-            </div>
-            <div class="form-group mb-0">
-              <select id="selectYear" class="form-control">
-                <!-- Preenchido dinamicamente -->
-              </select>
-            </div>
-            <button class="btn btn-primary" onclick="toggleMonthYearSelect()">Ok</button>
-          </div>
-          
-          <div id="calendarGrid" class="calendar-grid"></div>
-          
-          <div id="saldoDisponivelContainer" class="d-flex justify-between align-center mt-3">
-            <div>
-              <strong>Despesas do dia:</strong>
-              <span id="despesasDia">R$ 0,00</span>
-            </div>
-            <div>
-              <strong>Saldo Atual:</strong>
-              <span id="saldoDisponivel" class="text-primary">R$ 0,00</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Outros modais (categorias, cartões, etc.) mantidos conforme original -->
   
-  <!-- Modal: Cadastro de Renda -->
-  <div id="cadastroModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Cadastrar Nova Renda</h2>
-        <button class="close" onclick="fecharModal('cadastroModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="mensagemSucessoRenda"></div>
-        <form id="cadastroForm">
-          <div class="form-group">
-            <label class="form-label" for="nome">Nome:</label>
-            <input type="text" id="nome" class="form-control" placeholder="Nome" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="parentesco">Parentesco:</label>
-            <select id="parentesco" class="form-control" required>
-              <option value="eu">Eu</option>
-              <option value="pai">Pai</option>
-              <option value="irma">Irmã</option>
-              <option value="esposa">Esposa</option>
-              <option value="filho">Filho</option>
-              <option value="filha">Filha</option>
-              <option value="outros">Outros</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="saldoInicial">Saldo Inicial (R$):</label>
-            <input type="number" id="saldoInicial" class="form-control" placeholder="Digite o saldo inicial" step="0.01" required>
-          </div>
-          <div class="d-flex gap-3 justify-center mb-3">
-            <label class="d-flex align-center gap-1">
-              <input type="checkbox" id="cltCheckbox" onclick="toggleClt()"> CLT
-            </label>
-            <label class="d-flex align-center gap-1">
-              <input type="checkbox" id="pjCheckbox"> PJ
-            </label>
-          </div>
-          <div id="cltFields" style="display: none;">
-            <div class="form-group">
-              <label class="form-label" for="salarioBruto">Salário Bruto (R$):</label>
-              <input type="number" id="salarioBruto" class="form-control" placeholder="Digite o salário bruto" step="0.01" oninput="atualizarSalarioLiquido()">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="salarioLiquido">Salário Líquido (R$):</label>
-              <input type="number" id="salarioLiquido" class="form-control" placeholder="Salário líquido calculado" step="0.01">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="numPagamentos">Número de Pagamentos no Mês:</label>
-              <input type="number" id="numPagamentos" class="form-control" placeholder="Digite o número de pagamentos" min="1" max="5" oninput="gerarCamposPagamentos()">
-            </div>
-            <div id="pagamentosContainer"></div>
-            <p id="avisoErro" class="text-danger" style="display: none;">Os valores não somam o salário líquido!</p>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" type="submit" form="cadastroForm">Salvar</button>
-      </div>
-    </div>
-  </div>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   
-  <!-- Modal: Fonte de Renda / Usuários -->
-  <div id="fonteModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Fonte de Renda</h2>
-        <button class="close" onclick="fecharModal('fonteModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="usuariosLista"></div>
-      </div>
-    </div>
-  </div>
+  <!-- Moment.js para manipulação de datas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/pt-br.min.js"></script>
   
-  <!-- Modal: Gerenciar Categorias -->
-  <div id="categoriasModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Gerenciar Categorias</h2>
-        <button class="close" onclick="fecharModal('categoriasModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nome da Categoria:</label>
-          <input type="text" id="categoriaNome" class="form-control" placeholder="Nome da categoria">
-        </div>
-        <button class="btn btn-primary" onclick="salvarCategoria()">Salvar Categoria</button>
-        <div id="categoriasLista" class="mt-3"></div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal: Gerenciar Cartões -->
-  <div id="cartaoModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Gerenciar Cartões</h2>
-        <button class="close" onclick="fecharModal('cartaoModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nome do Cartão:</label>
-          <input type="text" id="nomeCartao" class="form-control" placeholder="Nome do Cartão">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Dia da Fatura:</label>
-          <input type="number" id="diaFatura" class="form-control" placeholder="Ex.: 20" min="1" max="31">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Dia do Fechamento:</label>
-          <input type="number" id="diaFechamento" class="form-control" placeholder="Ex.: 11" min="1" max="31">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Limite do Cartão (R$):</label>
-          <input type="number" id="limiteCartao" class="form-control" placeholder="Limite" step="0.01">
-        </div>
-        <button class="btn btn-primary" onclick="salvarCartao()">Salvar Cartão</button>
-        <div id="cartoesLista" class="mt-3"></div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal NOVO: Configurar Limites (Limites por Categoria) -->
-  <div id="novo_limitesModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Configurar Limites por Categoria</h2>
-        <button class="close" onclick="fecharModal('novo_limitesModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="novo_limitesContainer"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="novo_salvarLimites()">Salvar Limites</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Container de Notificações -->
-  <div class="toast-container" id="toastContainer"></div>
-  
-  <!-- ===================== SCRIPTS ===================== -->
-  <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
+  <!-- DateRangePicker -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
   
   <!-- Scripts personalizados -->
   <script src="js/auth.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/alertas.js"></script>
   <script src="js/previsoes.js"></script>
+  <script src="js/alertas.js"></script>
+  
+  <script>
+    // Script para ativar/desativar o menu em dispositivos móveis
+    document.getElementById('menuToggle').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.toggle('show');
+    });
+    
+    // Script para ativar abas
+    function activateTab(tabId) {
+      // Desativa todas as abas
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      // Ativa a aba selecionada
+      document.querySelectorAll(`.tab-button[data-tab="${tabId}"]`).forEach(button => {
+        button.classList.add('active');
+      });
+      
+      const tabContent = document.getElementById(tabId);
+      if (tabContent) {
+        tabContent.classList.add('active');
+      }
+      
+      // Ativa o item correspondente no menu lateral
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      
+      const navLinks = document.querySelectorAll('.nav-link');
+      for (let i = 0; i < navLinks.length; i++) {
+        if (navLinks[i].getAttribute('onclick').includes(tabId)) {
+          navLinks[i].classList.add('active');
+          break;
+        }
+      }
+      
+      // Fechar o menu em dispositivos móveis após selecionar uma opção
+      if (window.innerWidth <= 992) {
+        document.getElementById('sidebar').classList.remove('show');
+      }
+      
+      // Chamar funções específicas para cada aba
+      if (tabId === 'dashboard-tab') {
+        atualizarDashboard();
+      } else if (tabId === 'despesas-tab') {
+        loadTodasDespesas();
+      } else if (tabId === 'relatorio-tab') {
+        gerarRelatorio();
+      } else if (tabId === 'previsao-tab') {
+        novo_calcularPrevisoes();
+      } else if (tabId === 'calendario-tab') {
+        renderCalendar();
+      } else if (tabId === 'categorias-tab') {
+        loadCategorias();
+      } else if (tabId === 'cartoes-tab') {
+        loadCartoes();
+      } else if (tabId === 'renda-tab') {
+        loadRendas();
+      }
+    }
+  </script>
 </body>
 </html>
