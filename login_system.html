@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Sistema de Gerenciamento Financeiro</title>
+  
+  <!-- Meta tags para evitar cache -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Ícones (Font Awesome) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --success: #4cc9f0;
+      --warning: #f72585;
+      --danger: #e63946;
+      --bg-light: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-primary: #212529;
+      --text-secondary: #6c757d;
+      --border-color: #dee2e6;
+      --shadow-light: rgba(255, 255, 255, 0.7);
+      --shadow-dark: rgba(0, 0, 0, 0.1);
+      --border-radius-md: 12px;
+      --spacing-xs: 0.25rem;
+      --spacing-sm: 0.5rem;
+      --spacing-md: 1rem;
+      --spacing-lg: 1.5rem;
+      --spacing-xl: 2rem;
+      --transition-speed: 0.3s;
+    }
+    
+    [data-theme="dark"] {
+      --bg-light: #121212;
+      --card-bg: #1e1e1e;
+      --text-primary: #f8f9fa;
+      --text-secondary: #adb5bd;
+      --border-color: #343a40;
+      --shadow-light: rgba(255, 255, 255, 0.05);
+      --shadow-dark: rgba(0, 0, 0, 0.3);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #4361ee, #3a0ca3);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-md);
+    }
+    
+    .login-container {
+      width: 100%;
+      max-width: 400px;
+      background: var(--card-bg);
+      border-radius: var(--border-radius-md);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .login-header {
+      background: var(--primary);
+      padding: var(--spacing-xl);
+      text-align: center;
+      color: white;
+    }
+    
+    .login-logo {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    .login-subtitle {
+      font-size: 1rem;
+      opacity: 0.8;
+    }
+    
+    .login-body {
+      padding: var(--spacing-xl);
+    }
+    
+    .login-tabs {
+      display: flex;
+      margin-bottom: var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .login-tab {
+      flex: 1;
+      text-align: center;
+      padding: var(--spacing-md);
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all var(--transition-speed) ease;
+      border-bottom: 2px solid transparent;
+    }
+    
+    .login-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    
+    .login-form {
+      display: none;
+    }
+    
+    .login-form.active {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .form-group {
+      position: relative;
+      margin-bottom: var(--spacing-lg);
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: var(--spacing-md);
+      padding-left: 40px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      font-size: 1rem;
+      transition: all var(--transition-speed) ease;
+    }
+    
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+      outline: none;
+    }
+    
+    .form-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+    
+    .form-label {
+      position: absolute;
+      left: 40px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      transition: all var(--transition-speed) ease;
+      pointer-events: none;
+    }
+    
+    .form-control:focus ~ .form-label,
+    .form-control:not(:placeholder-shown) ~ .form-label {
+      top: 0;
+      left: 10px;
+      font-size: 0.75rem;
+      background: var(--card-bg);
+      padding: 0 var(--spacing-xs);
+      color: var(--primary);
+    }
+    
+    .form-control::placeholder {
+      color: transparent;
+    }
+    
+    .forgot-password {
+      text-align: right;
+      margin-bottom: var(--spacing-lg);
+    }
+    
+    .forgot-password a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color var(--transition-speed) ease;
+    }
+    
+    .forgot-password a:hover {
+      color: var(--secondary);
+      text-decoration: underline;
+    }
+    
+    .btn {
+      display: block;
+      width: 100%;
+      padding: var(--spacing-md);
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1, 1) translate(-50%, -50%);
+      transform-origin: 50% 50%;
+    }
+    
+    .btn:focus:not(:active)::after {
+      animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+      0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+      }
+      20% {
+        transform: scale(25, 25);
+        opacity: 0.3;
+      }
+      100% {
+        opacity: 0;
+        transform: scale(40, 40);
+      }
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .btn-primary:hover {
+      background: var(--secondary);
+      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+    }
+    
+    .btn-google {
+      background: white;
+      color: #757575;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .btn-google:hover {
+      background: #f1f3f4;
+    }
+    
+    .btn-google img {
+      width: 18px;
+      height: 18px;
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: var(--spacing-lg) 0;
+      color: var(--text-secondary);
+    }
+    
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+    
+    .divider span {
+      padding: 0 var(--spacing-sm);
+      font-size: 0.875rem;
+    }
+    
+    .register-link {
+      text-align: center;
+      margin-top: var(--spacing-lg);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .register-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color var(--transition-speed) ease;
+    }
+    
+    .register-link a:hover {
+      color: var(--secondary);
+      text-decoration: underline;
+    }
+    
+    .theme-toggle {
+      position: absolute;
+      top: var(--spacing-md);
+      right: var(--spacing-md);
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 1.25rem;
+      z-index: 10;
+    }
+    
+    .alert {
+      padding: var(--spacing-md);
+      border-radius: 6px;
+      margin-bottom: var(--spacing-lg);
+      display: none;
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from {
+        transform: translateY(-10px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .alert-danger {
+      background: rgba(230, 57, 70, 0.1);
+      border-left: 4px solid var(--danger);
+      color: var(--danger);
+    }
+    
+    .alert-success {
+      background: rgba(76, 201, 240, 0.1);
+      border-left: 4px solid var(--success);
+      color: var(--success);
+    }
+    
+    @media (max-width: 480px) {
+      .login-container {
+        box-shadow: none;
+      }
+      
+      .login-header {
+        padding: var(--spacing-lg);
+      }
+      
+      .login-body {
+        padding: var(--spacing-lg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle">
+    <i class="fas fa-moon"></i>
+  </button>
+  
+  <div class="login-container">
+    <div class="login-header">
+      <div class="login-logo">
+        <i class="fas fa-wallet"></i> FinanControl
+      </div>
+      <div class="login-subtitle">Sistema de Gerenciamento Financeiro</div>
+    </div>
+    
+    <div class="login-body">
+      <div class="login-tabs">
+        <div class="login-tab active" data-tab="login">Login</div>
+        <div class="login-tab" data-tab="register">Cadastro</div>
+      </div>
+      
+      <div class="alert alert-danger" id="errorAlert"></div>
+      <div class="alert alert-success" id="successAlert"></div>
+      
+      <!-- Formulário de Login -->
+      <form class="login-form active" id="loginForm">
+        <div class="form-group">
+          <i class="fas fa-envelope form-icon"></i>
+          <input type="email" class="form-control" id="loginEmail" placeholder="Email" required>
+          <label for="loginEmail" class="form-label">Email</label>
+        </div>
+        
+        <div class="form-group">
+          <i class="fas fa-lock form-icon"></i>
+          <input type="password" class="form-control" id="loginPassword" placeholder="Senha" required>
+          <label for="loginPassword" class="form-label">Senha</label>
+        </div>
+        
+        <div class="forgot-password">
+          <a href="#" id="forgotPasswordLink">Esqueceu a senha?</a>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Entrar</button>
+        
+        <div class="divider">
+          <span>ou</span>
+        </div>
+        
+        <button type="button" class="btn btn-google" id="googleLoginBtn">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+          Entrar com Google
+        </button>
+      </form>
+      
+      <!-- Formulário de Cadastro -->
+      <form class="login-form" id="registerForm">
+        <div class="form-group">
+          <i class="fas fa-user form-icon"></i>
+          <input type="text" class="form-control" id="registerName" placeholder="Nome completo" required>
+          <label for="registerName" class="form-label">Nome completo</label>
+        </div>
+        
+        <div class="form-group">
+          <i class="fas fa-envelope form-icon"></i>
+          <input type="email" class="form-control" id="registerEmail" placeholder="Email" required>
+          <label for="registerEmail" class="form-label">Email</label>
+        </div>
+        
+        <div class="form-group">
+          <i class="fas fa-lock form-icon"></i>
+          <input type="password" class="form-control" id="registerPassword" placeholder="Senha" required>
+          <label for="registerPassword" class="form-label">Senha</label>
+        </div>
+        
+        <div class="form-group">
+          <i class="fas fa-lock form-icon"></i>
+          <input type="password" class="form-control" id="registerConfirmPassword" placeholder="Confirmar senha" required>
+          <label for="registerConfirmPassword" class="form-label">Confirmar senha</label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Cadastrar</button>
+      </form>
+      
+      <!-- Formulário de Recuperação de Senha -->
+      <form class="login-form" id="forgotPasswordForm">
+        <div class="form-group">
+          <i class="fas fa-envelope form-icon"></i>
+          <input type="email" class="form-control" id="resetEmail" placeholder="Email" required>
+          <label for="resetEmail" class="form-label">Email</label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Recuperar Senha</button>
+        
+        <div class="register-link">
+          <a href="#" id="backToLoginLink">Voltar para o login</a>
+        </div>
+      </form>
+      
+      <div class="register-link" id="loginRegisterLink">
+        Não tem uma conta? <a href="#" id="switchToRegisterLink">Cadastre-se</a>
+      </div>
+      
+      <div class="register-link" id="registerLoginLink" style="display: none;">
+        Já tem uma conta? <a href="#" id="switchToLoginLink">Faça login</a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
+  
+  <script>
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
+      authDomain: "controlegasto-df3f1.firebaseapp.com",
+      databaseURL: "https://controlegasto-df3f1-default-rtdb.firebaseio.com",
+      projectId: "controlegasto-df3f1",
+      storageBucket: "controlegasto-df3f1.firebasestorage.app",
+      messagingSenderId: "1034936676414",
+      appId: "1:1034936676414:web:61c67ce39c3ab71a07a16f",
+      measurementId: "G-PTN43GZHGR"
+    };
+    
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    // Elementos DOM
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    const loginTab = document.querySelector('.login-tab[data-tab="login"]');
+    const registerTab = document.querySelector('.login-tab[data-tab="register"]');
+    const switchToRegisterLink = document.getElementById('switchToRegisterLink');
+    const switchToLoginLink = document.getElementById('switchToLoginLink');
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const backToLoginLink = document.getElementById('backToLoginLink');
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+    const loginRegisterLink = document.getElementById('loginRegisterLink');
+    const registerLoginLink = document.getElementById('registerLoginLink');
+    const errorAlert = document.getElementById('errorAlert');
+    const successAlert = document.getElementById('successAlert');
+    const themeToggle = document.getElementById('themeToggle');
+    
+    // Alternar entre formulários
+    function showForm(formId) {
+      document.querySelectorAll('.login-form').forEach(form => {
+        form.classList.remove('active');
+      });
+      document.getElementById(formId).classList.add('active');
+      
+      if (formId === 'loginForm') {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginRegisterLink.style.display = 'block';
+        registerLoginLink.style.display = 'none';
+      } else if (formId === 'registerForm') {
+        loginTab.classList.remove('active');
+        registerTab.classList.add('active');
+        loginRegisterLink.style.display = 'none';
+        registerLoginLink.style.display = 'block';
+      } else if (formId === 'forgotPasswordForm') {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginRegisterLink.style.display = 'none';
+        registerLoginLink.style.display = 'none';
+      }
+    }
+    
+    // Mostrar mensagem de erro
+    function showError(message) {
+      errorAlert.textContent = message;
+      errorAlert.style.display = 'block';
+      successAlert.style.display = 'none';
+      
+      setTimeout(() => {
+        errorAlert.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Mostrar mensagem de sucesso
+    function showSuccess(message) {
+      successAlert.textContent = message;
+      successAlert.style.display = 'block';
+      errorAlert.style.display = 'none';
+      
+      setTimeout(() => {
+        successAlert.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Login com email e senha
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          // Login bem-sucedido, redirecionar para a página principal
+          window.location.href = 'index.html';
+        })
+        .catch((error) => {
+          // Tratar erros de login
+          let errorMessage = 'Erro ao fazer login. Tente novamente.';
+          
+          if (error.code === 'auth/user-not-found') {
+            errorMessage = 'Usuário não encontrado. Verifique seu email.';
+          } else if (error.code === 'auth/wrong-password') {
+            errorMessage = 'Senha incorreta. Tente novamente.';
+          } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Email inválido. Verifique o formato.';
+          } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
+          }
+          
+          showError(errorMessage);
+        });
+    });
+    
+    // Cadastro de novo usuário
+    registerForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById('registerName').value;
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      const confirmPassword = document.getElementById('registerConfirmPassword').value;
+      
+      // Verificar se as senhas coincidem
+      if (password !== confirmPassword) {
+        showError('As senhas não coincidem. Tente novamente.');
+        return;
+      }
+      
+      // Verificar força da senha
+      if (password.length < 6) {
+        showError('A senha deve ter pelo menos 6 caracteres.');
+        return;
+      }
+      
+      auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          // Cadastro bem-sucedido
+          const user = userCredential.user;
+          
+          // Atualizar perfil do usuário com o nome
+          return user.updateProfile({
+            displayName: name
+          }).then(() => {
+            // Criar registro do usuário no banco de dados
+            return db.ref('users/' + user.uid).set({
+              name: name,
+              email: email,
+              createdAt: new Date().toISOString()
+            });
+          }).then(() => {
+            showSuccess('Cadastro realizado com sucesso!');
+            
+            // Redirecionar para a página principal após 2 segundos
+            setTimeout(() => {
+              window.location.href = 'index.html';
+            }, 2000);
+          });
+        })
+        .catch((error) => {
+          // Tratar erros de cadastro
+          let errorMessage = 'Erro ao criar conta. Tente novamente.';
+          
+          if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'Este email já está em uso. Tente outro email.';
+          } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Email inválido. Verifique o formato.';
+          } else if (error.code === 'auth/weak-password') {
+            errorMessage = 'Senha muito fraca. Use uma senha mais forte.';
+          }
+          
+          showError(errorMessage);
+        });
+    });
+    
+    // Recuperação de senha
+    forgotPasswordForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('resetEmail').value;
+      
+      auth.sendPasswordResetEmail(email)
+        .then(() => {
+          showSuccess('Email de recuperação enviado. Verifique sua caixa de entrada.');
+          
+          // Voltar para o formulário de login após 3 segundos
+          setTimeout(() => {
+            showForm('loginForm');
+          }, 3000);
+        })
+        .catch((error) => {
+          // Tratar erros de recuperação de senha
+          let errorMessage = 'Erro ao enviar email de recuperação. Tente novamente.';
+          
+          if (error.code === 'auth/user-not-found') {
+            errorMessage = 'Não há usuário registrado com este email.';
+          } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Email inválido. Verifique o formato.';
+          }
+          
+          showError(errorMessage);
+        });
+    });
+    
+    // Login com Google
+    googleLoginBtn.addEventListener('click', () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      
+      auth.signInWithPopup(provider)
+        .then((result) => {
+          // Verificar se é um novo usuário
+          const isNewUser = result.additionalUserInfo.isNewUser;
+          const user = result.user;
+          
+          if (isNewUser) {
+            // Criar registro do usuário no banco de dados
+            return db.ref('users/' + user.uid).set({
+              name: user.displayName,
+              email: user.email,
+              photoURL: user.photoURL,
+              createdAt: new Date().toISOString()
+            }).then(() => {
+              window.location.href = 'index.html';
+            });
+          } else {
+            window.location.href = 'index.html';
+          }
+        })
+        .catch((error) => {
+          showError('Erro ao fazer login com Google. Tente novamente.');
+          console.error(error);
+        });
+    });
+    
+    // Verificar se o usuário já está logado
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        // Usuário já está logado, redirecionar para a página principal
+        window.location.href = 'index.html';
+      }
+    });
+    
+    // Event listeners para navegação entre formulários
+    loginTab.addEventListener('click', () => showForm('loginForm'));
+    registerTab.addEventListener('click', () => showForm('registerForm'));
+    switchToRegisterLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showForm('registerForm');
+    });
+    switchToLoginLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showForm('loginForm');
+    });
+    forgotPasswordLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showForm('forgotPasswordForm');
+    });
+    backToLoginLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showForm('loginForm');
+    });
+    
+    // Alternar tema claro/escuro
+    themeToggle.addEventListener('click', () => {
+      const isDarkMode = document.body.classList.toggle('dark-mode');
+      
+      if (isDarkMode) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+        themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        localStorage.setItem('theme', 'light');
+      }
+    });
+    
+    // Carregar tema salvo
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('theme');
+      
+      if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.body.classList.add('dark-mode');
+        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+      }
+    });
+  </script>
+</body>
+</html>
