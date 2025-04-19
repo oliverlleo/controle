@@ -29,11 +29,34 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// Importar módulos de autenticação do Firebase
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+const auth = getAuth();
+const googleProvider = new GoogleAuthProvider();
+
 // Mapa global de categorias
 window.novo_categoriasMap = {};
 
 // Inicialização do sistema
 document.addEventListener('DOMContentLoaded', () => {
+  // Monitorar estado de autenticação
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      // Usuário logado: iniciar sistema
+      inicializarSistema();
+    } else {
+      // Usuário deslogado: redirecionar para tela de login
+      // Comentado por enquanto para não interromper o desenvolvimento
+      // window.location.href = 'login.html';
+      inicializarSistema(); // Remover esta linha quando o login estiver implementado
+    }
+  });
+});
+
+/**
+ * Inicializa o sistema após autenticação
+ */
+function inicializarSistema() {
   // Carregar categorias
   db.ref("categorias").once("value").then(snapshot => {
     snapshot.forEach(child => {
@@ -59,7 +82,38 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Inicializar gráficos
   inicializarGraficos();
-});
+  
+  // Restaurar inicialização de componentes que foi removida
+  updateCategoriaSelect();
+  updateCartaoSelect();
+  loadDespesasNaoPagasSelect();
+  loadCategorias();
+  loadCartoes();
+  loadCategoriasFiltro();
+  preencherDashboardAno();
+  document.getElementById("dashboardMonth").value = new Date().getMonth();
+  atualizarDashboard();
+  updateDespesasMesTitle();
+  carregarPainelDespesasMes();
+  
+  // Adicionar listeners que foram removidos
+  document.getElementById("dashboardMonth").addEventListener("change", carregarPainelDespesasMes);
+  document.getElementById("dashboardYear").addEventListener("change", carregarPainelDespesasMes);
+  
+  // Adicionar listeners para filtros de despesas
+  const btnFiltrarDespesas = document.querySelector('#despesasSection button.btn-primary[onclick="filtrarTodasDespesas()"]');
+  if (btnFiltrarDespesas) {
+    btnFiltrarDespesas.addEventListener('click', filtrarDespesas);
+  }
+  
+  const mesFiltro = document.getElementById('mesFiltro');
+  const anoFiltro = document.getElementById('anoFiltro');
+  const filtroDescricao = document.getElementById('filtroDescricao');
+  
+  if (mesFiltro) mesFiltro.addEventListener('input', filtrarDespesas);
+  if (anoFiltro) anoFiltro.addEventListener('input', filtrarDespesas);
+  if (filtroDescricao) filtroDescricao.addEventListener('input', filtrarDespesas);
+}
 
 /**
  * Configura o DateRangePicker para seleção de períodos
@@ -292,6 +346,7 @@ function showSection(sectionId) {
   } else if (sectionId === 'rendaSection') {
     loadRendas();
   } else if (sectionId === 'previsaoSection') {
+    // Chamar novo_calcularPrevisoes ao entrar na seção de previsões
     novo_calcularPrevisoes();
   } else if (sectionId === 'alertasSection') {
     verificarContasProximasVencimento();
@@ -557,24 +612,27 @@ function atualizarGrafico() {
     snapshot.forEach(child => {
       let despesa = child.val();
       
-      // Função para processar uma despesa
+      // Função para processar uma despesa e adicionar ao total da categoria
       const processarDespesa = (valor, data, categoria) => {
-        const dt = new Date(data);
+        const dataVencimento = new Date(data);
         
-        if (dt.getMonth() === dashboardMonth && dt.getFullYear() === dashboardYear) {
+        // Verificar se é do mês selecionado
+        if (dataVencimento.getMonth() === dashboardMonth && dataVencimento.getFullYear() === dashboardYear) {
+          // Inicializar categoria se não existir
           if (!despesasPorCategoria[categoria]) {
             despesasPorCategoria[categoria] = 0;
           }
           
-          despesasPorCategoria[categoria] += parseFloat(valor) || 0;
+          // Adicionar valor ao total da categoria
+          despesasPorCategoria[categoria] += parseFloat(valor);
         }
       };
       
-      // Processar despesas à vista
+      // Verificar despesas à vista
       if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
         processarDespesa(despesa.valor, despesa.dataCompra, despesa.categoria);
       } 
-      // Processar parcelas de cartão
+      // Verificar parcelas de cartão
       else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
         despesa.parcelas.forEach(parcela => {
           if (parcela.vencimento) {
@@ -588,37 +646,38 @@ function atualizarGrafico() {
     const categorias = [];
     const valores = [];
     
-    Object.entries(despesasPorCategoria).forEach(([categoriaId, valor]) => {
-      const nomeCategoria = window.novo_categoriasMap[categoriaId] || 'Categoria';
-      categorias.push(nomeCategoria);
-      valores.push(valor);
-    });
-    
-    // Atualizar gráfico
-    window.graficoDespesas.updateOptions({
-      xaxis: {
-        categories: categorias
-      }
-    });
-    
-    window.graficoDespesas.updateSeries([{
-      name: 'Despesas',
-      data: valores
-    }]);
-    
-    // Atualizar gráfico de categorias se estiver na seção de relatórios
-    if (document.getElementById('relatorioSection').style.display !== 'none' && window.graficoCategoriasPie) {
-      window.graficoCategoriasPie.updateOptions({
-        labels: categorias
+    // Obter nomes das categorias
+    db.ref("categorias").once("value").then(snapshotCategorias => {
+      const categoriasMap = {};
+      
+      snapshotCategorias.forEach(child => {
+        categoriasMap[child.key] = child.val().nome;
       });
       
-      window.graficoCategoriasPie.updateSeries(valores);
-    }
+      // Processar dados para o gráfico
+      Object.entries(despesasPorCategoria).forEach(([categoriaId, valor]) => {
+        const nomeCategoria = categoriasMap[categoriaId] || 'Sem categoria';
+        categorias.push(nomeCategoria);
+        valores.push(valor);
+      });
+      
+      // Atualizar gráfico
+      window.graficoDespesas.updateOptions({
+        xaxis: {
+          categories: categorias
+        }
+      });
+      
+      window.graficoDespesas.updateSeries([{
+        name: 'Despesas',
+        data: valores
+      }]);
+    });
   });
 }
 
 /**
- * Atualiza o indicador de próximos vencimentos
+ * Atualiza o contador de próximos vencimentos
  */
 function updateProximosVencimentos() {
   const hoje = new Date();
@@ -626,103 +685,85 @@ function updateProximosVencimentos() {
   
   db.ref("despesas").once("value").then(snapshot => {
     snapshot.forEach(child => {
-      let despesa = child.val();
+      const despesa = child.val();
       
+      // Verificar despesas à vista não pagas
       if (despesa.formaPagamento === "avista" && !despesa.pago && despesa.dataCompra) {
-        let dataCompra = new Date(despesa.dataCompra);
+        const dataVencimento = new Date(despesa.dataCompra);
         
-        if (dataCompra >= hoje) {
-          if (proximoVencimento === null || dataCompra < proximoVencimento) {
-            proximoVencimento = dataCompra;
-          }
+        if (dataVencimento >= hoje && (!proximoVencimento || dataVencimento < proximoVencimento)) {
+          proximoVencimento = dataVencimento;
         }
-      } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+      } 
+      // Verificar parcelas de cartão não pagas
+      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
         despesa.parcelas.forEach(parcela => {
-          if (!parcela.pago) {
-            let venc = new Date(parcela.vencimento);
+          if (!parcela.pago && parcela.vencimento) {
+            const dataVencimento = new Date(parcela.vencimento);
             
-            if (venc >= hoje) {
-              if (proximoVencimento === null || venc < proximoVencimento) {
-                proximoVencimento = venc;
-              }
+            if (dataVencimento >= hoje && (!proximoVencimento || dataVencimento < proximoVencimento)) {
+              proximoVencimento = dataVencimento;
             }
           }
         });
       }
     });
     
+    // Atualizar contador
     if (proximoVencimento) {
-      const diffTime = proximoVencimento - hoje;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      document.getElementById("proximosVencimentos").innerText = diffDays;
+      const diffDias = Math.ceil((proximoVencimento - hoje) / (1000 * 60 * 60 * 24));
+      document.getElementById("proximosVencimentos").innerText = diffDias;
     } else {
-      document.getElementById("proximosVencimentos").innerText = 0;
+      document.getElementById("proximosVencimentos").innerText = "0";
     }
   });
 }
 
 /**
- * Carrega todas as despesas para a seção de despesas
+ * Carrega todas as despesas na seção de despesas
  */
 function carregarTodasDespesas() {
   const todasDespesasBody = document.getElementById('todasDespesasBody');
   if (!todasDespesasBody) return;
   
   db.ref("despesas").once("value").then(snapshot => {
-    let todasDespesas = [];
+    let despesas = [];
     
     snapshot.forEach(child => {
-      let despesa = child.val();
-      
-      if (despesa.formaPagamento === "avista") {
-        todasDespesas.push({
-          id: child.key,
-          descricao: despesa.descricao,
-          valor: parseFloat(despesa.valor) || 0,
-          data: new Date(despesa.dataCompra),
-          categoria: despesa.categoria,
-          pago: despesa.pago,
-          tipo: 'avista'
-        });
-      } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-        despesa.parcelas.forEach((parcela, index) => {
-          todasDespesas.push({
-            id: `${child.key}|${index}`,
-            descricao: `${despesa.descricao} - Parcela ${index + 1}`,
-            valor: parseFloat(parcela.valor) || 0,
-            data: new Date(parcela.vencimento),
-            categoria: despesa.categoria,
-            pago: parcela.pago,
-            tipo: 'cartao'
-          });
-        });
-      }
+      const despesa = child.val();
+      despesa.id = child.key;
+      despesas.push(despesa);
     });
     
     // Ordenar por data (mais recentes primeiro)
-    todasDespesas.sort((a, b) => b.data - a.data);
+    despesas.sort((a, b) => {
+      const dataA = new Date(a.dataCompra || '2000-01-01');
+      const dataB = new Date(b.dataCompra || '2000-01-01');
+      return dataB - dataA;
+    });
     
     // Gerar HTML
     let html = '';
     
-    todasDespesas.forEach(despesa => {
-      const dataFormatada = despesa.data.toLocaleDateString('pt-BR');
-      const nomeCategoria = window.novo_categoriasMap[despesa.categoria] || 'Categoria';
-      const statusClass = despesa.pago ? 'text-success' : 'text-danger';
-      const statusText = despesa.pago ? 'Pago' : 'Pendente';
+    despesas.forEach(despesa => {
+      const dataFormatada = despesa.dataCompra ? new Date(despesa.dataCompra).toLocaleDateString('pt-BR') : '-';
+      const categoria = window.novo_categoriasMap[despesa.categoria] || 'Sem categoria';
+      const status = despesa.pago ? 'Pago' : 'Pendente';
+      const statusClass = despesa.pago ? 'text-success' : 'text-warning';
       
       html += `
         <tr>
           <td>${despesa.descricao}</td>
-          <td>R$ ${despesa.valor.toFixed(2)}</td>
+          <td>R$ ${parseFloat(despesa.valor).toFixed(2)}</td>
           <td>${dataFormatada}</td>
-          <td>${nomeCategoria}</td>
-          <td class="${statusClass}">${statusText}</td>
+          <td>${categoria}</td>
+          <td class="${statusClass}">${status}</td>
           <td>
-            <button class="btn btn-sm ${despesa.pago ? 'btn-outline' : 'btn-success'}" 
-                    onclick="alterarStatusDespesa('${despesa.id}', ${!despesa.pago})" 
-                    ${despesa.pago ? 'disabled' : ''}>
-              <i class="fas ${despesa.pago ? 'fa-check' : 'fa-money-bill-wave'}"></i>
+            <button class="btn btn-sm btn-outline" onclick="editarDespesa('${despesa.id}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="excluirDespesa('${despesa.id}')">
+              <i class="fas fa-trash"></i>
             </button>
           </td>
         </tr>
@@ -734,93 +775,58 @@ function carregarTodasDespesas() {
 }
 
 /**
- * Altera o status de pagamento de uma despesa
- */
-function alterarStatusDespesa(id, pago) {
-  // Verificar se é uma parcela de cartão
-  if (id.includes('|')) {
-    const [despesaId, parcelaIndex] = id.split('|');
-    
-    db.ref(`despesas/${despesaId}/parcelas/${parcelaIndex}`).update({
-      pago: pago,
-      dataPagamento: pago ? new Date().toISOString().split('T')[0] : null
-    }).then(() => {
-      exibirToast(`Parcela ${pago ? 'paga' : 'marcada como não paga'} com sucesso!`, 'success');
-      carregarTodasDespesas();
-      atualizarDashboard();
-    }).catch(error => {
-      console.error("Erro ao alterar status da parcela:", error);
-      exibirToast('Erro ao alterar status da parcela. Tente novamente.', 'danger');
-    });
-  } else {
-    // Despesa à vista
-    db.ref(`despesas/${id}`).update({
-      pago: pago,
-      dataPagamento: pago ? new Date().toISOString().split('T')[0] : null
-    }).then(() => {
-      exibirToast(`Despesa ${pago ? 'paga' : 'marcada como não paga'} com sucesso!`, 'success');
-      carregarTodasDespesas();
-      atualizarDashboard();
-    }).catch(error => {
-      console.error("Erro ao alterar status da despesa:", error);
-      exibirToast('Erro ao alterar status da despesa. Tente novamente.', 'danger');
-    });
-  }
-}
-
-/**
- * Filtra despesas no modal de pagamento
+ * Filtra despesas com base nos critérios informados
  */
 function filtrarDespesas() {
-  const despesaSearch = document.getElementById('despesaSearch').value.toLowerCase();
-  const mesFiltro = document.getElementById('mesFiltro').value.toUpperCase();
-  const anoFiltro = document.getElementById('anoFiltro').value;
-  const despesaSelect = document.getElementById('despesaSelect');
-  
-  if (!despesaSelect) return;
+  const mesFiltro = document.getElementById('mesFiltro')?.value.toUpperCase() || '';
+  const anoFiltro = document.getElementById('anoFiltro')?.value || '';
+  const descricaoFiltro = document.getElementById('despesaSearch')?.value.toLowerCase() || '';
   
   db.ref("despesas").once("value").then(snapshot => {
-    let despesasFiltradas = [];
+    let despesasNaoPagas = [];
     
     snapshot.forEach(child => {
-      let despesa = child.val();
+      const despesa = child.val();
       
-      if (despesa.formaPagamento === "avista" && !despesa.pago && despesa.dataCompra) {
+      // Verificar despesas à vista não pagas
+      if (despesa.formaPagamento === "avista" && !despesa.pago) {
         const dataCompra = new Date(despesa.dataCompra);
         const mesStr = obterNomeMes(dataCompra.getMonth()).substring(0, 3).toUpperCase();
         const anoStr = dataCompra.getFullYear().toString();
         
-        if (
-          despesa.descricao.toLowerCase().includes(despesaSearch) &&
-          (mesFiltro === '' || mesStr.includes(mesFiltro)) &&
-          (anoFiltro === '' || anoStr.includes(anoFiltro))
-        ) {
-          despesasFiltradas.push({
+        // Aplicar filtros
+        if ((mesFiltro === '' || mesStr.includes(mesFiltro)) &&
+            (anoFiltro === '' || anoStr.includes(anoFiltro)) &&
+            (descricaoFiltro === '' || despesa.descricao.toLowerCase().includes(descricaoFiltro))) {
+          
+          despesasNaoPagas.push({
             id: child.key,
             descricao: despesa.descricao,
             valor: parseFloat(despesa.valor) || 0,
             data: dataCompra,
-            tipo: 'avista'
+            categoria: despesa.categoria
           });
         }
-      } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+      } 
+      // Verificar parcelas de cartão não pagas
+      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
         despesa.parcelas.forEach((parcela, index) => {
-          if (!parcela.pago && parcela.vencimento) {
+          if (!parcela.pago) {
             const dataVencimento = new Date(parcela.vencimento);
             const mesStr = obterNomeMes(dataVencimento.getMonth()).substring(0, 3).toUpperCase();
             const anoStr = dataVencimento.getFullYear().toString();
             
-            if (
-              despesa.descricao.toLowerCase().includes(despesaSearch) &&
-              (mesFiltro === '' || mesStr.includes(mesFiltro)) &&
-              (anoFiltro === '' || anoStr.includes(anoFiltro))
-            ) {
-              despesasFiltradas.push({
+            // Aplicar filtros
+            if ((mesFiltro === '' || mesStr.includes(mesFiltro)) &&
+                (anoFiltro === '' || anoStr.includes(anoFiltro)) &&
+                (descricaoFiltro === '' || despesa.descricao.toLowerCase().includes(descricaoFiltro))) {
+              
+              despesasNaoPagas.push({
                 id: `${child.key}|${index}`,
-                descricao: `${despesa.descricao} - Parcela ${index + 1} de ${despesa.parcelas.length}`,
+                descricao: `${despesa.descricao} - Parcela ${index + 1}`,
                 valor: parseFloat(parcela.valor) || 0,
                 data: dataVencimento,
-                tipo: 'cartao'
+                categoria: despesa.categoria
               });
             }
           }
@@ -829,311 +835,281 @@ function filtrarDespesas() {
     });
     
     // Ordenar por data
-    despesasFiltradas.sort((a, b) => a.data - b.data);
+    despesasNaoPagas.sort((a, b) => a.data - b.data);
     
-    // Limpar e preencher select
-    despesaSelect.innerHTML = '';
+    // Atualizar select de despesas não pagas
+    const despesaSelect = document.getElementById('despesaSelect');
+    if (despesaSelect) {
+      despesaSelect.innerHTML = '<option value="">Selecione a Despesa</option>';
+      
+      despesasNaoPagas.forEach(despesa => {
+        const dataFormatada = despesa.data.toLocaleDateString('pt-BR');
+        const option = document.createElement('option');
+        option.value = despesa.id;
+        option.text = `${despesa.descricao} - R$ ${despesa.valor.toFixed(2)} (${dataFormatada})`;
+        despesaSelect.appendChild(option);
+      });
+    }
+  });
+}
+
+/**
+ * Carrega as categorias para o filtro de despesas
+ */
+function loadCategoriasFiltro() {
+  const categoriaFiltro = document.getElementById('categoriaFiltro');
+  if (!categoriaFiltro) return;
+  
+  db.ref("categorias").once("value").then(snapshot => {
+    categoriaFiltro.innerHTML = '<option value="">Todas as Categorias</option>';
     
-    despesasFiltradas.forEach(despesa => {
-      const dataFormatada = despesa.data.toISOString().split('T')[0];
+    snapshot.forEach(child => {
+      const categoria = child.val();
+      const option = document.createElement('option');
+      option.value = child.key;
+      option.text = categoria.nome;
+      categoriaFiltro.appendChild(option);
+    });
+  });
+}
+
+/**
+ * Atualiza o select de categorias
+ */
+function updateCategoriaSelect() {
+  const categoriaDespesa = document.getElementById('categoriaDespesa');
+  if (!categoriaDespesa) return;
+  
+  db.ref("categorias").once("value").then(snapshot => {
+    categoriaDespesa.innerHTML = '<option value="">Selecione a Categoria</option>';
+    
+    snapshot.forEach(child => {
+      const categoria = child.val();
+      const option = document.createElement('option');
+      option.value = child.key;
+      option.text = categoria.nome;
+      categoriaDespesa.appendChild(option);
+    });
+  });
+}
+
+/**
+ * Atualiza o select de cartões
+ */
+function updateCartaoSelect() {
+  const cartaoDespesa = document.getElementById('cartaoDespesa');
+  if (!cartaoDespesa) return;
+  
+  db.ref("cartoes").once("value").then(snapshot => {
+    cartaoDespesa.innerHTML = '<option value="">Selecione o Cartão</option>';
+    
+    snapshot.forEach(child => {
+      const cartao = child.val();
+      const option = document.createElement('option');
+      option.value = child.key;
+      option.text = cartao.nome;
+      cartaoDespesa.appendChild(option);
+    });
+  });
+}
+
+/**
+ * Carrega as despesas não pagas para o select
+ */
+function loadDespesasNaoPagasSelect() {
+  const despesaSelect = document.getElementById('despesaSelect');
+  if (!despesaSelect) return;
+  
+  db.ref("despesas").once("value").then(snapshot => {
+    let despesasNaoPagas = [];
+    
+    snapshot.forEach(child => {
+      const despesa = child.val();
+      
+      // Verificar despesas à vista não pagas
+      if (despesa.formaPagamento === "avista" && !despesa.pago) {
+        despesasNaoPagas.push({
+          id: child.key,
+          descricao: despesa.descricao,
+          valor: parseFloat(despesa.valor) || 0,
+          data: new Date(despesa.dataCompra)
+        });
+      } 
+      // Verificar parcelas de cartão não pagas
+      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+        despesa.parcelas.forEach((parcela, index) => {
+          if (!parcela.pago) {
+            despesasNaoPagas.push({
+              id: `${child.key}|${index}`,
+              descricao: `${despesa.descricao} - Parcela ${index + 1}`,
+              valor: parseFloat(parcela.valor) || 0,
+              data: new Date(parcela.vencimento)
+            });
+          }
+        });
+      }
+    });
+    
+    // Ordenar por data
+    despesasNaoPagas.sort((a, b) => a.data - b.data);
+    
+    // Atualizar select
+    despesaSelect.innerHTML = '<option value="">Selecione a Despesa</option>';
+    
+    despesasNaoPagas.forEach(despesa => {
+      const dataFormatada = despesa.data.toLocaleDateString('pt-BR');
       const option = document.createElement('option');
       option.value = despesa.id;
-      option.text = `${despesa.descricao} - R$ ${despesa.valor.toFixed(2)} - ${dataFormatada}`;
+      option.text = `${despesa.descricao} - R$ ${despesa.valor.toFixed(2)} (${dataFormatada})`;
       despesaSelect.appendChild(option);
     });
   });
 }
 
 /**
- * Paga a despesa selecionada no modal de pagamento
+ * Carrega as categorias
  */
-function pagarDespesaSelecionada() {
-  const despesaSelect = document.getElementById('despesaSelect');
+function loadCategorias() {
+  const categoriasLista = document.getElementById('categoriasListaPrincipal');
+  if (!categoriasLista) return;
   
-  if (!despesaSelect || despesaSelect.selectedIndex === -1) {
-    exibirToast('Selecione uma despesa para pagar.', 'warning');
-    return;
-  }
-  
-  const despesaId = despesaSelect.value;
-  
-  // Verificar se é uma parcela de cartão
-  if (despesaId.includes('|')) {
-    const [id, parcelaIndex] = despesaId.split('|');
+  db.ref("categorias").once("value").then(snapshot => {
+    let html = '<div class="table-container"><table><thead><tr>' +
+               '<th>Nome</th><th>Descrição</th><th>Ações</th>' +
+               '</tr></thead><tbody>';
     
-    db.ref(`despesas/${id}/parcelas/${parcelaIndex}`).update({
-      pago: true,
-      dataPagamento: new Date().toISOString().split('T')[0]
-    }).then(() => {
-      exibirToast('Parcela paga com sucesso!', 'success');
-      filtrarDespesas();
-      atualizarDashboard();
-      fecharModal('pagarDespesaModal');
-    }).catch(error => {
-      console.error("Erro ao pagar parcela:", error);
-      exibirToast('Erro ao pagar parcela. Tente novamente.', 'danger');
-    });
-  } else {
-    // Despesa à vista
-    db.ref(`despesas/${despesaId}`).update({
-      pago: true,
-      dataPagamento: new Date().toISOString().split('T')[0]
-    }).then(() => {
-      exibirToast('Despesa paga com sucesso!', 'success');
-      filtrarDespesas();
-      atualizarDashboard();
-      fecharModal('pagarDespesaModal');
-    }).catch(error => {
-      console.error("Erro ao pagar despesa:", error);
-      exibirToast('Erro ao pagar despesa. Tente novamente.', 'danger');
-    });
-  }
-}
-
-/**
- * Renderiza o calendário de despesas
- */
-function renderCalendar() {
-  const calendarGrid = document.getElementById('calendarGrid');
-  const calendarMonthYear = document.getElementById('calendarMonthYear');
-  
-  if (!calendarGrid || !calendarMonthYear) return;
-  
-  // Atualizar título do mês/ano
-  calendarMonthYear.innerText = `${obterNomeMes(currentCalendarMonth)} ${currentCalendarYear}`;
-  
-  // Obter primeiro dia do mês e último dia do mês
-  const firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1);
-  const lastDay = new Date(currentCalendarYear, currentCalendarMonth + 1, 0);
-  
-  // Obter dia da semana do primeiro dia (0 = Domingo, 6 = Sábado)
-  const firstDayOfWeek = firstDay.getDay();
-  
-  // Limpar grid
-  calendarGrid.innerHTML = '';
-  
-  // Adicionar cabeçalhos dos dias da semana
-  const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  
-  diasSemana.forEach(dia => {
-    const dayHeader = document.createElement('div');
-    dayHeader.className = 'calendar-day-header';
-    dayHeader.textContent = dia;
-    calendarGrid.appendChild(dayHeader);
-  });
-  
-  // Adicionar dias vazios antes do primeiro dia do mês
-  for (let i = 0; i < firstDayOfWeek; i++) {
-    const emptyDay = document.createElement('div');
-    emptyDay.className = 'calendar-day';
-    calendarGrid.appendChild(emptyDay);
-  }
-  
-  // Obter despesas do mês
-  db.ref("despesas").once("value").then(snapshot => {
-    let despesasPorDia = {};
-    
-    // Processar despesas
     snapshot.forEach(child => {
-      let despesa = child.val();
+      const categoria = child.val();
       
-      // Função para processar uma despesa
-      const processarDespesa = (valor, data, pago) => {
-        const dataVencimento = new Date(data);
-        
-        if (
-          dataVencimento.getMonth() === currentCalendarMonth && 
-          dataVencimento.getFullYear() === currentCalendarYear
-        ) {
-          const dia = dataVencimento.getDate();
-          
-          if (!despesasPorDia[dia]) {
-            despesasPorDia[dia] = {
-              total: 0,
-              pagas: 0,
-              pendentes: 0
-            };
-          }
-          
-          despesasPorDia[dia].total += parseFloat(valor) || 0;
-          
-          if (pago) {
-            despesasPorDia[dia].pagas += parseFloat(valor) || 0;
-          } else {
-            despesasPorDia[dia].pendentes += parseFloat(valor) || 0;
-          }
-        }
-      };
-      
-      // Processar despesas à vista
-      if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
-        processarDespesa(despesa.valor, despesa.dataCompra, despesa.pago);
-      } 
-      // Processar parcelas de cartão
-      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-        despesa.parcelas.forEach(parcela => {
-          if (parcela.vencimento) {
-            processarDespesa(parcela.valor, parcela.vencimento, parcela.pago);
-          }
-        });
-      }
+      html += `
+        <tr>
+          <td>${categoria.nome}</td>
+          <td>${categoria.descricao || '-'}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="editarCategoria('${child.key}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="excluirCategoria('${child.key}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
     });
     
-    // Adicionar dias do mês
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      const day = document.createElement('div');
-      day.className = 'calendar-day';
-      day.textContent = i;
-      
-      // Verificar se há despesas neste dia
-      if (despesasPorDia[i]) {
-        day.classList.add('has-events');
-        
-        // Adicionar informações de despesas como atributos de dados
-        day.dataset.total = despesasPorDia[i].total.toFixed(2);
-        day.dataset.pagas = despesasPorDia[i].pagas.toFixed(2);
-        day.dataset.pendentes = despesasPorDia[i].pendentes.toFixed(2);
-        
-        // Adicionar evento de clique para mostrar detalhes
-        day.addEventListener('click', function() {
-          document.getElementById('despesasDia').innerText = `R$ ${this.dataset.total}`;
-          
-          // Destacar dia selecionado
-          document.querySelectorAll('.calendar-day.active').forEach(el => {
-            el.classList.remove('active');
-          });
-          this.classList.add('active');
-        });
-      }
-      
-      calendarGrid.appendChild(day);
-    }
-    
-    // Atualizar saldo disponível
-    db.ref("pessoas").once("value").then(snapshot => {
-      let saldo = 0;
-      
-      snapshot.forEach(child => {
-        let pessoa = child.val();
-        saldo += parseFloat(pessoa.saldoInicial) || 0;
-        
-        if (pessoa.pagamentos) {
-          pessoa.pagamentos.forEach(pag => {
-            saldo += parseFloat(pag.valor) || 0;
-          });
-        }
-      });
-      
-      // Subtrair despesas pagas
-      db.ref("despesas").once("value").then(snapshot => {
-        snapshot.forEach(child => {
-          let despesa = child.val();
-          
-          if (despesa.pago) {
-            if (despesa.formaPagamento === "avista") {
-              saldo -= parseFloat(despesa.valor) || 0;
-            } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-              despesa.parcelas.forEach(parcela => {
-                if (parcela.pago) {
-                  saldo -= parseFloat(parcela.valor) || 0;
-                }
-              });
-            }
-          }
-        });
-        
-        // Atualizar saldo no calendário
-        document.getElementById('saldoDisponivel').innerText = `R$ ${saldo.toFixed(2)}`;
-      });
-    });
+    html += '</tbody></table></div>';
+    categoriasLista.innerHTML = html;
   });
 }
 
 /**
- * Avança para o próximo mês no calendário
+ * Carrega os cartões
  */
-function nextMonth() {
-  currentCalendarMonth++;
+function loadCartoes() {
+  const cartoesLista = document.getElementById('cartoesListaPrincipal');
+  if (!cartoesLista) return;
   
-  if (currentCalendarMonth > 11) {
-    currentCalendarMonth = 0;
-    currentCalendarYear++;
-  }
-  
-  renderCalendar();
-}
-
-/**
- * Volta para o mês anterior no calendário
- */
-function prevMonth() {
-  currentCalendarMonth--;
-  
-  if (currentCalendarMonth < 0) {
-    currentCalendarMonth = 11;
-    currentCalendarYear--;
-  }
-  
-  renderCalendar();
-}
-
-/**
- * Alterna a visibilidade do seletor de mês/ano no calendário
- */
-function toggleMonthYearSelect() {
-  const monthYearSelect = document.getElementById('monthYearSelect');
-  
-  if (monthYearSelect.style.display === 'none' || !monthYearSelect.style.display) {
-    monthYearSelect.style.display = 'flex';
+  db.ref("cartoes").once("value").then(snapshot => {
+    let html = '<div class="table-container"><table><thead><tr>' +
+               '<th>Nome</th><th>Limite</th><th>Dia de Fechamento</th><th>Dia de Vencimento</th><th>Ações</th>' +
+               '</tr></thead><tbody>';
     
-    // Atualizar seletores com valores atuais
-    document.getElementById('selectMonth').value = currentCalendarMonth;
-    document.getElementById('selectYear').value = currentCalendarYear;
-  } else {
-    monthYearSelect.style.display = 'none';
+    snapshot.forEach(child => {
+      const cartao = child.val();
+      
+      html += `
+        <tr>
+          <td>${cartao.nome}</td>
+          <td>R$ ${parseFloat(cartao.limite).toFixed(2)}</td>
+          <td>${cartao.diaFechamento}</td>
+          <td>${cartao.diaVencimento}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="editarCartao('${child.key}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="excluirCartao('${child.key}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
     
-    // Atualizar calendário com novos valores
-    currentCalendarMonth = parseInt(document.getElementById('selectMonth').value);
-    currentCalendarYear = parseInt(document.getElementById('selectYear').value);
-    renderCalendar();
-  }
+    html += '</tbody></table></div>';
+    cartoesLista.innerHTML = html;
+  });
 }
 
 /**
- * Avança para o próximo mês no dashboard
+ * Carrega as rendas
  */
-function nextDashboardMonth() {
-  const dashboardMonth = document.getElementById('dashboardMonth');
-  const dashboardYear = document.getElementById('dashboardYear');
+function loadRendas() {
+  const rendasLista = document.getElementById('usuariosListaPrincipal');
+  if (!rendasLista) return;
   
-  let mes = parseInt(dashboardMonth.value);
-  let ano = parseInt(dashboardYear.value);
-  
-  mes++;
-  
-  if (mes > 11) {
-    mes = 0;
-    ano++;
-  }
-  
-  dashboardMonth.value = mes;
-  dashboardYear.value = ano;
-  
-  atualizarDashboard();
+  db.ref("pessoas").once("value").then(snapshot => {
+    let html = '<div class="table-container"><table><thead><tr>' +
+               '<th>Nome</th><th>Salário Líquido</th><th>Saldo Inicial</th><th>Ações</th>' +
+               '</tr></thead><tbody>';
+    
+    snapshot.forEach(child => {
+      const pessoa = child.val();
+      
+      html += `
+        <tr>
+          <td>${pessoa.nome}</td>
+          <td>R$ ${parseFloat(pessoa.salarioLiquido || 0).toFixed(2)}</td>
+          <td>R$ ${parseFloat(pessoa.saldoInicial || 0).toFixed(2)}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="editarPessoa('${child.key}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="excluirPessoa('${child.key}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+    
+    html += '</tbody></table></div>';
+    rendasLista.innerHTML = html;
+  });
 }
 
 /**
- * Volta para o mês anterior no dashboard
+ * Atualiza o título das despesas do mês
+ */
+function updateDespesasMesTitle() {
+  const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
+  const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
+  
+  document.getElementById("despesasMesTitle").innerText = 
+    obterNomeMes(dashboardMonth) + ' de ' + dashboardYear;
+}
+
+/**
+ * Carrega o painel de despesas do mês
+ */
+function carregarPainelDespesasMes() {
+  const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
+  const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
+  
+  updateDespesasMesTitle();
+  atualizarListaDespesasMes(dashboardMonth, dashboardYear);
+}
+
+/**
+ * Alterna para o mês anterior no dashboard
  */
 function prevDashboardMonth() {
-  const dashboardMonth = document.getElementById('dashboardMonth');
-  const dashboardYear = document.getElementById('dashboardYear');
+  const dashboardMonth = document.getElementById("dashboardMonth");
+  const dashboardYear = document.getElementById("dashboardYear");
   
   let mes = parseInt(dashboardMonth.value);
   let ano = parseInt(dashboardYear.value);
   
   mes--;
-  
   if (mes < 0) {
     mes = 11;
     ano--;
@@ -1146,80 +1122,104 @@ function prevDashboardMonth() {
 }
 
 /**
- * Carrega o relatório mensal
+ * Alterna para o próximo mês no dashboard
  */
-function loadRelatorioMensal() {
-  const relatorioContainer = document.getElementById('relatorioMensalContainer');
-  if (!relatorioContainer) return;
+function nextDashboardMonth() {
+  const dashboardMonth = document.getElementById("dashboardMonth");
+  const dashboardYear = document.getElementById("dashboardYear");
   
-  // Definir período padrão se não estiver definido
-  if (!rangeStart || !rangeEnd) {
-    const hoje = new Date();
-    rangeStart = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    rangeEnd = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-    
-    // Atualizar campo de data
-    $('#dataRange').val(
-      rangeStart.toLocaleDateString('pt-BR') + ' - ' + 
-      rangeEnd.toLocaleDateString('pt-BR')
-    );
+  let mes = parseInt(dashboardMonth.value);
+  let ano = parseInt(dashboardYear.value);
+  
+  mes++;
+  if (mes > 11) {
+    mes = 0;
+    ano++;
   }
   
-  // Obter despesas no período
+  dashboardMonth.value = mes;
+  dashboardYear.value = ano;
+  
+  atualizarDashboard();
+}
+
+/**
+ * Renderiza o calendário de despesas
+ */
+function renderCalendar() {
+  const calendarGrid = document.getElementById('calendarGrid');
+  if (!calendarGrid) return;
+  
+  const selectMonth = document.getElementById('selectMonth');
+  const selectYear = document.getElementById('selectYear');
+  
+  if (!selectMonth || !selectYear) return;
+  
+  const mes = parseInt(selectMonth.value);
+  const ano = parseInt(selectYear.value);
+  
+  // Obter o primeiro dia do mês
+  const primeiroDia = new Date(ano, mes, 1);
+  // Obter o último dia do mês
+  const ultimoDia = new Date(ano, mes + 1, 0);
+  
+  // Obter o dia da semana do primeiro dia (0 = Domingo, 1 = Segunda, etc.)
+  const primeiroDiaSemana = primeiroDia.getDay();
+  
+  // Criar tabela do calendário
+  let html = '<table class="calendar-table">';
+  html += '<thead><tr>';
+  html += '<th class="calendar-day-header">Dom</th>';
+  html += '<th class="calendar-day-header">Seg</th>';
+  html += '<th class="calendar-day-header">Ter</th>';
+  html += '<th class="calendar-day-header">Qua</th>';
+  html += '<th class="calendar-day-header">Qui</th>';
+  html += '<th class="calendar-day-header">Sex</th>';
+  html += '<th class="calendar-day-header">Sáb</th>';
+  html += '</tr></thead>';
+  html += '<tbody>';
+  
+  // Obter despesas do mês
   db.ref("despesas").once("value").then(snapshot => {
-    let despesasPeriodo = [];
-    let totalPeriodo = 0;
-    let despesasPorCategoria = {};
+    let despesasPorDia = {};
     
     snapshot.forEach(child => {
-      let despesa = child.val();
+      const despesa = child.val();
       
-      // Função para processar uma despesa
-      const processarDespesa = (id, descricao, valor, data, categoria, pago) => {
+      // Função para processar uma despesa e adicionar ao dia
+      const processarDespesa = (descricao, valor, data, pago) => {
         const dataVencimento = new Date(data);
         
-        if (dataVencimento >= rangeStart && dataVencimento <= rangeEnd) {
-          despesasPeriodo.push({
-            id,
-            descricao,
-            valor: parseFloat(valor) || 0,
-            data: dataVencimento,
-            categoria,
-            pago
-          });
+        // Verificar se é do mês e ano selecionados
+        if (dataVencimento.getMonth() === mes && dataVencimento.getFullYear() === ano) {
+          const dia = dataVencimento.getDate();
           
-          totalPeriodo += parseFloat(valor) || 0;
-          
-          // Adicionar à categoria
-          if (!despesasPorCategoria[categoria]) {
-            despesasPorCategoria[categoria] = 0;
+          // Inicializar array para o dia se não existir
+          if (!despesasPorDia[dia]) {
+            despesasPorDia[dia] = [];
           }
           
-          despesasPorCategoria[categoria] += parseFloat(valor) || 0;
+          // Adicionar despesa ao dia
+          despesasPorDia[dia].push({
+            descricao,
+            valor,
+            pago
+          });
         }
       };
       
-      // Processar despesas à vista
+      // Verificar despesas à vista
       if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
-        processarDespesa(
-          child.key,
-          despesa.descricao,
-          despesa.valor,
-          despesa.dataCompra,
-          despesa.categoria,
-          despesa.pago
-        );
+        processarDespesa(despesa.descricao, despesa.valor, despesa.dataCompra, despesa.pago);
       } 
-      // Processar parcelas de cartão
+      // Verificar parcelas de cartão
       else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
         despesa.parcelas.forEach((parcela, index) => {
           if (parcela.vencimento) {
             processarDespesa(
-              `${child.key}|${index}`,
               `${despesa.descricao} - Parcela ${index + 1}`,
               parcela.valor,
               parcela.vencimento,
-              despesa.categoria,
               parcela.pago
             );
           }
@@ -1227,501 +1227,78 @@ function loadRelatorioMensal() {
       }
     });
     
-    // Ordenar por data
-    despesasPeriodo.sort((a, b) => a.data - b.data);
+    // Criar linhas do calendário
+    let dia = 1;
+    let totalDias = ultimoDia.getDate();
     
-    // Gerar HTML
-    let html = `
-      <div class="mb-3">
-        <h3>Resumo do Período</h3>
-        <p>Total de despesas: <strong>R$ ${totalPeriodo.toFixed(2)}</strong></p>
-      </div>
+    // Criar 6 linhas (máximo possível para um mês)
+    for (let i = 0; i < 6; i++) {
+      html += '<tr>';
       
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Descrição</th>
-              <th>Valor</th>
-              <th>Data</th>
-              <th>Categoria</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-    
-    despesasPeriodo.forEach(despesa => {
-      const dataFormatada = despesa.data.toLocaleDateString('pt-BR');
-      const nomeCategoria = window.novo_categoriasMap[despesa.categoria] || 'Categoria';
-      const statusClass = despesa.pago ? 'text-success' : 'text-danger';
-      const statusText = despesa.pago ? 'Pago' : 'Pendente';
-      
-      html += `
-        <tr>
-          <td>${despesa.descricao}</td>
-          <td>R$ ${despesa.valor.toFixed(2)}</td>
-          <td>${dataFormatada}</td>
-          <td>${nomeCategoria}</td>
-          <td class="${statusClass}">${statusText}</td>
-        </tr>
-      `;
-    });
-    
-    html += `
-          </tbody>
-        </table>
-      </div>
-    `;
-    
-    relatorioContainer.innerHTML = html;
-    
-    // Atualizar gráfico de categorias
-    if (window.graficoCategoriasPie) {
-      const categorias = [];
-      const valores = [];
-      
-      Object.entries(despesasPorCategoria).forEach(([categoriaId, valor]) => {
-        const nomeCategoria = window.novo_categoriasMap[categoriaId] || 'Categoria';
-        categorias.push(nomeCategoria);
-        valores.push(valor);
-      });
-      
-      window.graficoCategoriasPie.updateOptions({
-        labels: categorias
-      });
-      
-      window.graficoCategoriasPie.updateSeries(valores);
-    }
-  });
-}
-
-/**
- * Carrega as categorias
- */
-function loadCategorias() {
-  const categoriasLista = document.getElementById('categoriasLista');
-  const categoriasListaPrincipal = document.getElementById('categoriasListaPrincipal');
-  
-  // Função para gerar HTML da lista de categorias
-  const gerarListaCategorias = (container) => {
-    if (!container) return;
-    
-    db.ref("categorias").once("value").then(snapshot => {
-      let html = '<div class="table-container"><table><thead><tr>' +
-                '<th>Nome</th><th>Ações</th>' +
-                '</tr></thead><tbody>';
-      
-      snapshot.forEach(child => {
-        const categoria = child.val();
-        
-        html += `
-          <tr>
-            <td>${categoria.nome}</td>
-            <td>
-              <button class="btn btn-sm btn-danger" onclick="excluirCategoria('${child.key}')">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-      
-      html += '</tbody></table></div>';
-      
-      container.innerHTML = html;
-    });
-  };
-  
-  // Carregar para ambos os containers se existirem
-  if (categoriasLista) gerarListaCategorias(categoriasLista);
-  if (categoriasListaPrincipal) gerarListaCategorias(categoriasListaPrincipal);
-}
-
-/**
- * Salva uma nova categoria
- */
-function salvarCategoria() {
-  const categoriaNome = document.getElementById('categoriaNome').value.trim();
-  
-  if (!categoriaNome) {
-    exibirToast('Digite o nome da categoria.', 'warning');
-    return;
-  }
-  
-  const novaCategoria = {
-    nome: categoriaNome
-  };
-  
-  db.ref("categorias").push(novaCategoria).then(() => {
-    exibirToast('Categoria salva com sucesso!', 'success');
-    document.getElementById('categoriaNome').value = '';
-    loadCategorias();
-    
-    // Atualizar mapa de categorias
-    db.ref("categorias").once("value").then(snapshot => {
-      window.novo_categoriasMap = {};
-      snapshot.forEach(child => {
-        window.novo_categoriasMap[child.key] = child.val().nome;
-      });
-    });
-  }).catch(error => {
-    console.error("Erro ao salvar categoria:", error);
-    exibirToast('Erro ao salvar categoria. Tente novamente.', 'danger');
-  });
-}
-
-/**
- * Exclui uma categoria
- */
-function excluirCategoria(categoriaId) {
-  if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
-  
-  db.ref(`categorias/${categoriaId}`).remove().then(() => {
-    exibirToast('Categoria excluída com sucesso!', 'success');
-    loadCategorias();
-    
-    // Atualizar mapa de categorias
-    db.ref("categorias").once("value").then(snapshot => {
-      window.novo_categoriasMap = {};
-      snapshot.forEach(child => {
-        window.novo_categoriasMap[child.key] = child.val().nome;
-      });
-    });
-  }).catch(error => {
-    console.error("Erro ao excluir categoria:", error);
-    exibirToast('Erro ao excluir categoria. Tente novamente.', 'danger');
-  });
-}
-
-/**
- * Carrega os cartões
- */
-function loadCartoes() {
-  const cartoesLista = document.getElementById('cartoesLista');
-  const cartoesListaPrincipal = document.getElementById('cartoesListaPrincipal');
-  const cartaoDespesa = document.getElementById('cartaoDespesa');
-  
-  // Função para gerar HTML da lista de cartões
-  const gerarListaCartoes = (container) => {
-    if (!container) return;
-    
-    db.ref("cartoes").once("value").then(snapshot => {
-      let html = '<div class="table-container"><table><thead><tr>' +
-                '<th>Nome</th><th>Dia da Fatura</th><th>Dia do Fechamento</th><th>Limite</th><th>Ações</th>' +
-                '</tr></thead><tbody>';
-      
-      snapshot.forEach(child => {
-        const cartao = child.val();
-        
-        html += `
-          <tr>
-            <td>${cartao.nome}</td>
-            <td>${cartao.diaFatura}</td>
-            <td>${cartao.diaFechamento}</td>
-            <td>R$ ${parseFloat(cartao.limite).toFixed(2)}</td>
-            <td>
-              <button class="btn btn-sm btn-danger" onclick="excluirCartao('${child.key}')">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-      
-      html += '</tbody></table></div>';
-      
-      container.innerHTML = html;
-    });
-  };
-  
-  // Carregar para ambos os containers se existirem
-  if (cartoesLista) gerarListaCartoes(cartoesLista);
-  if (cartoesListaPrincipal) gerarListaCartoes(cartoesListaPrincipal);
-  
-  // Preencher select de cartões no formulário de despesas
-  if (cartaoDespesa) {
-    cartaoDespesa.innerHTML = '<option value="">Selecione o Cartão</option>';
-    
-    db.ref("cartoes").once("value").then(snapshot => {
-      snapshot.forEach(child => {
-        const cartao = child.val();
-        const option = document.createElement('option');
-        option.value = child.key;
-        option.text = cartao.nome;
-        cartaoDespesa.appendChild(option);
-      });
-    });
-  }
-}
-
-/**
- * Salva um novo cartão
- */
-function salvarCartao() {
-  const nomeCartao = document.getElementById('nomeCartao').value.trim();
-  const diaFatura = document.getElementById('diaFatura').value;
-  const diaFechamento = document.getElementById('diaFechamento').value;
-  const limiteCartao = document.getElementById('limiteCartao').value;
-  
-  if (!nomeCartao) {
-    exibirToast('Digite o nome do cartão.', 'warning');
-    return;
-  }
-  
-  if (!diaFatura || isNaN(diaFatura) || diaFatura < 1 || diaFatura > 31) {
-    exibirToast('Digite um dia de fatura válido (1-31).', 'warning');
-    return;
-  }
-  
-  if (!diaFechamento || isNaN(diaFechamento) || diaFechamento < 1 || diaFechamento > 31) {
-    exibirToast('Digite um dia de fechamento válido (1-31).', 'warning');
-    return;
-  }
-  
-  if (!limiteCartao || isNaN(limiteCartao) || limiteCartao <= 0) {
-    exibirToast('Digite um limite válido.', 'warning');
-    return;
-  }
-  
-  const novoCartao = {
-    nome: nomeCartao,
-    diaFatura: parseInt(diaFatura),
-    diaFechamento: parseInt(diaFechamento),
-    limite: parseFloat(limiteCartao)
-  };
-  
-  db.ref("cartoes").push(novoCartao).then(() => {
-    exibirToast('Cartão salvo com sucesso!', 'success');
-    document.getElementById('nomeCartao').value = '';
-    document.getElementById('diaFatura').value = '';
-    document.getElementById('diaFechamento').value = '';
-    document.getElementById('limiteCartao').value = '';
-    loadCartoes();
-  }).catch(error => {
-    console.error("Erro ao salvar cartão:", error);
-    exibirToast('Erro ao salvar cartão. Tente novamente.', 'danger');
-  });
-}
-
-/**
- * Exclui um cartão
- */
-function excluirCartao(cartaoId) {
-  if (!confirm('Tem certeza que deseja excluir este cartão?')) return;
-  
-  db.ref(`cartoes/${cartaoId}`).remove().then(() => {
-    exibirToast('Cartão excluído com sucesso!', 'success');
-    loadCartoes();
-  }).catch(error => {
-    console.error("Erro ao excluir cartão:", error);
-    exibirToast('Erro ao excluir cartão. Tente novamente.', 'danger');
-  });
-}
-
-/**
- * Alterna a visibilidade do formulário de parcelamento
- */
-function toggleParcelamento() {
-  const formaPagamento = document.getElementById('formaPagamento').value;
-  const parcelamentoDiv = document.getElementById('parcelamentoDiv');
-  
-  if (formaPagamento === 'cartao') {
-    parcelamentoDiv.style.display = 'block';
-  } else {
-    parcelamentoDiv.style.display = 'none';
-  }
-}
-
-/**
- * Salva uma nova despesa
- */
-function salvarDespesa() {
-  const descricao = document.getElementById('despesaDescricao').value.trim();
-  const valor = document.getElementById('despesaValor').value;
-  const dataCompra = document.getElementById('dataCompra').value;
-  const categoria = document.getElementById('categoriaDespesa').value;
-  const formaPagamento = document.getElementById('formaPagamento').value;
-  
-  // Validações básicas
-  if (!descricao) {
-    exibirToast('Digite a descrição da despesa.', 'warning');
-    return;
-  }
-  
-  if (!valor || isNaN(valor) || valor <= 0) {
-    exibirToast('Digite um valor válido.', 'warning');
-    return;
-  }
-  
-  if (!dataCompra) {
-    exibirToast('Selecione a data da compra.', 'warning');
-    return;
-  }
-  
-  if (!categoria) {
-    exibirToast('Selecione uma categoria.', 'warning');
-    return;
-  }
-  
-  // Objeto base da despesa
-  const novaDespesa = {
-    descricao,
-    valor: parseFloat(valor),
-    dataCompra,
-    categoria,
-    formaPagamento,
-    pago: false
-  };
-  
-  // Verificar se é parcelado
-  if (formaPagamento === 'cartao') {
-    const cartaoDespesa = document.getElementById('cartaoDespesa').value;
-    const numParcelas = document.getElementById('numParcelasDespesa').value;
-    
-    if (!cartaoDespesa) {
-      exibirToast('Selecione um cartão.', 'warning');
-      return;
-    }
-    
-    if (!numParcelas || isNaN(numParcelas) || numParcelas < 1) {
-      exibirToast('Digite um número de parcelas válido.', 'warning');
-      return;
-    }
-    
-    novaDespesa.cartao = cartaoDespesa;
-    
-    // Obter informações do cartão para calcular vencimentos
-    db.ref(`cartoes/${cartaoDespesa}`).once("value").then(snapshot => {
-      const cartao = snapshot.val();
-      
-      if (!cartao) {
-        exibirToast('Cartão não encontrado.', 'danger');
-        return;
-      }
-      
-      // Calcular parcelas
-      const valorParcela = parseFloat(valor) / parseInt(numParcelas);
-      const parcelas = [];
-      
-      // Data da compra
-      const dataCompraObj = new Date(dataCompra);
-      
-      // Calcular vencimentos
-      for (let i = 0; i < parseInt(numParcelas); i++) {
-        // Calcular mês de vencimento
-        let mesVencimento = dataCompraObj.getMonth() + i + 1; // +1 porque a primeira parcela vence no mês seguinte
-        let anoVencimento = dataCompraObj.getFullYear();
-        
-        // Ajustar ano se necessário
-        while (mesVencimento > 11) {
-          mesVencimento -= 12;
-          anoVencimento++;
+      // Criar 7 colunas (dias da semana)
+      for (let j = 0; j < 7; j++) {
+        // Verificar se estamos em um dia válido do mês
+        if ((i === 0 && j < primeiroDiaSemana) || dia > totalDias) {
+          html += '<td class="calendar-cell"></td>';
+        } else {
+          // Verificar se há despesas para este dia
+          const despesasDoDia = despesasPorDia[dia] || [];
+          const totalDespesas = despesasDoDia.length;
+          const totalValor = despesasDoDia.reduce((total, d) => total + parseFloat(d.valor), 0);
+          
+          // Verificar se há despesas não pagas
+          const temDespesasNaoPagas = despesasDoDia.some(d => !d.pago);
+          
+          // Definir classe para destacar dias com despesas
+          let classeDestaque = '';
+          if (totalDespesas > 0) {
+            classeDestaque = temDespesasNaoPagas ? 'calendar-day-with-unpaid' : 'calendar-day-with-paid';
+          }
+          
+          html += `<td class="calendar-cell ${classeDestaque}">`;
+          html += `<div class="calendar-day">${dia}</div>`;
+          
+          if (totalDespesas > 0) {
+            html += `<div class="calendar-day-info">`;
+            html += `<span class="calendar-day-count">${totalDespesas} despesa(s)</span>`;
+            html += `<span class="calendar-day-total">R$ ${totalValor.toFixed(2)}</span>`;
+            html += `</div>`;
+          }
+          
+          html += '</td>';
+          dia++;
         }
-        
-        // Criar data de vencimento
-        const dataVencimento = new Date(anoVencimento, mesVencimento, cartao.diaFatura);
-        
-        parcelas.push({
-          valor: valorParcela,
-          vencimento: dataVencimento.toISOString().split('T')[0],
-          pago: false
-        });
       }
       
-      novaDespesa.parcelas = parcelas;
+      html += '</tr>';
       
-      // Salvar despesa
-      db.ref("despesas").push(novaDespesa).then(() => {
-        exibirToast('Despesa salva com sucesso!', 'success');
-        
-        // Limpar formulário
-        document.getElementById('despesaDescricao').value = '';
-        document.getElementById('despesaValor').value = '';
-        document.getElementById('dataCompra').value = '';
-        document.getElementById('categoriaDespesa').value = '';
-        document.getElementById('formaPagamento').value = 'avista';
-        document.getElementById('cartaoDespesa').value = '';
-        document.getElementById('numParcelasDespesa').value = '';
-        
-        toggleParcelamento();
-        fecharModal('cadastroDespesaModal');
-        atualizarDashboard();
-      }).catch(error => {
-        console.error("Erro ao salvar despesa:", error);
-        exibirToast('Erro ao salvar despesa. Tente novamente.', 'danger');
-      });
-    });
-  } else {
-    // Despesa à vista
-    db.ref("despesas").push(novaDespesa).then(() => {
-      exibirToast('Despesa salva com sucesso!', 'success');
-      
-      // Limpar formulário
-      document.getElementById('despesaDescricao').value = '';
-      document.getElementById('despesaValor').value = '';
-      document.getElementById('dataCompra').value = '';
-      document.getElementById('categoriaDespesa').value = '';
-      
-      fecharModal('cadastroDespesaModal');
-      atualizarDashboard();
-    }).catch(error => {
-      console.error("Erro ao salvar despesa:", error);
-      exibirToast('Erro ao salvar despesa. Tente novamente.', 'danger');
-    });
-  }
-}
-
-/**
- * Carrega as rendas cadastradas
- */
-function loadRendas() {
-  const usuariosListaPrincipal = document.getElementById('usuariosListaPrincipal');
-  if (!usuariosListaPrincipal) return;
-  
-  db.ref("pessoas").once("value").then(snapshot => {
-    let html = '<div class="table-container"><table><thead><tr>' +
-              '<th>Nome</th><th>Parentesco</th><th>Saldo Inicial</th><th>Salário</th><th>Ações</th>' +
-              '</tr></thead><tbody>';
+      // Se já passamos do último dia, não precisamos de mais linhas
+      if (dia > totalDias) break;
+    }
     
-    snapshot.forEach(child => {
-      const pessoa = child.val();
-      
-      html += `
-        <tr>
-          <td>${pessoa.nome}</td>
-          <td>${pessoa.parentesco}</td>
-          <td>R$ ${parseFloat(pessoa.saldoInicial).toFixed(2)}</td>
-          <td>R$ ${pessoa.salarioLiquido ? parseFloat(pessoa.salarioLiquido).toFixed(2) : '0.00'}</td>
-          <td>
-            <button class="btn btn-sm btn-danger" onclick="excluirRenda('${child.key}')">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-      `;
-    });
-    
-    html += '</tbody></table></div>';
-    
-    usuariosListaPrincipal.innerHTML = html;
+    html += '</tbody></table>';
+    calendarGrid.innerHTML = html;
   });
 }
 
 /**
- * Exclui uma renda
+ * Exibe uma notificação toast
  */
-function excluirRenda(rendaId) {
-  if (!confirm('Tem certeza que deseja excluir esta renda?')) return;
-  
-  db.ref(`pessoas/${rendaId}`).remove().then(() => {
-    exibirToast('Renda excluída com sucesso!', 'success');
-    loadRendas();
-    atualizarDashboard();
-  }).catch(error => {
-    console.error("Erro ao excluir renda:", error);
-    exibirToast('Erro ao excluir renda. Tente novamente.', 'danger');
-  });
+function exibirToast(mensagem, tipo = 'primary') {
+  // Usar apenas Toastify para exibir notificação
+  Toastify({
+    text: mensagem,
+    duration: 5000,
+    close: true,
+    gravity: "bottom",
+    position: "right",
+    backgroundColor: tipo === 'success' ? 'var(--success)' : 
+                     tipo === 'danger' ? 'var(--danger)' : 
+                     tipo === 'warning' ? 'var(--warning)' : 
+                     'var(--primary)',
+    stopOnFocus: true,
+    className: `toast-${tipo}`
+  }).showToast();
 }
 
 /**
@@ -1734,4 +1311,42 @@ function obterNomeMes(indice) {
   ];
   
   return meses[indice] || '';
+}
+
+/**
+ * Alterna a visibilidade do div de parcelamento
+ */
+function toggleParcelamento() {
+  const formaPagamento = document.getElementById('formaPagamento').value;
+  const parcelamentoDiv = document.getElementById('parcelamentoDiv');
+  
+  if (formaPagamento === 'cartao') {
+    parcelamentoDiv.classList.remove('hidden');
+  } else {
+    parcelamentoDiv.classList.add('hidden');
+  }
+}
+
+/**
+ * Filtra todas as despesas na seção de despesas
+ */
+function filtrarTodasDespesas() {
+  const filtroDescricao = document.getElementById('filtroDescricao')?.value.toLowerCase() || '';
+  
+  const todasDespesasBody = document.getElementById('todasDespesasBody');
+  if (!todasDespesasBody) return;
+  
+  // Obter todas as linhas da tabela
+  const linhas = todasDespesasBody.querySelectorAll('tr');
+  
+  // Filtrar linhas
+  linhas.forEach(linha => {
+    const descricao = linha.querySelector('td:first-child').textContent.toLowerCase();
+    
+    if (filtroDescricao === '' || descricao.includes(filtroDescricao)) {
+      linha.style.display = '';
+    } else {
+      linha.style.display = 'none';
+    }
+  });
 }

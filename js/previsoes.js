@@ -13,6 +13,9 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Inicializar gráficos vazios
   inicializarGraficoPrevisao();
+  
+  // Calcular previsões ao inicializar
+  novo_calcularPrevisoes();
 });
 
 /**

@@ -225,7 +225,7 @@ function atualizarSecaoAlertas(contasProximas) {
   }
   
   // Adicionar ao conteúdo existente (não substituir completamente)
-  listaAlertas.innerHTML = html + (listaAlertas.innerHTML.includes('Limites Excedidos') ? listaAlertas.innerHTML.split('<h3 class="mb-3">Limites Excedidos</h3>')[1] : '');
+  listaAlertas.innerHTML = html + (listaAlertas.innerHTML.includes('Limites Excedidos') ? listaAlertas.innerHTML.split('<h3 class="mb-3 mt-4">Limites Excedidos</h3>')[1] : '');
 }
 
 /**
@@ -407,37 +407,6 @@ function exibirToast(mensagem, tipo = 'primary') {
     stopOnFocus: true,
     className: `toast-${tipo}`
   }).showToast();
-  
-  // Adicionar também ao container de toasts para persistência
-  const toastContainer = document.getElementById('toastContainer');
-  if (toastContainer) {
-    const toastElement = document.createElement('div');
-    toastElement.className = `toast toast-${tipo}`;
-    
-    const icone = tipo === 'success' ? 'check-circle' : 
-                 tipo === 'danger' ? 'exclamation-circle' : 
-                 tipo === 'warning' ? 'exclamation-triangle' : 
-                 'info-circle';
-    
-    toastElement.innerHTML = `
-      <div class="toast-icon">
-        <i class="fas fa-${icone}"></i>
-      </div>
-      <div class="toast-content">
-        <div class="toast-message">${mensagem}</div>
-      </div>
-      <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
-    `;
-    
-    toastContainer.appendChild(toastElement);
-    
-    // Remover automaticamente após 5 segundos
-    setTimeout(() => {
-      if (toastElement.parentElement) {
-        toastElement.remove();
-      }
-    }, 5000);
-  }
 }
 
 /**
