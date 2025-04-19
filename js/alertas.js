@@ -489,56 +489,5 @@ function novo_verificarDespesasVencidas() {
             valor: parseFloat(despesa.valor) || 0
           });
         }
-      } 
-      // Verificar parcelas de cartão
-      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-        despesa.parcelas.forEach((parcela, index) => {
-          if (!parcela.pago) {
-            let venc = new Date(parcela.vencimento);
-            
-            if (venc < hoje) {
-              despesasVencidas.push({
-                descricao: `${despesa.descricao} - Parcela ${index+1}`,
-                data: venc,
-                valor: parseFloat(parcela.valor) || 0
-              });
-            }
-          }
-        });
       }
-    });
-    
-    // Exibir alertas para despesas vencidas
-    if (despesasVencidas.length > 0) {
-      // Limitar a 3 alertas para não sobrecarregar a interface
-      const alertasExibir = despesasVencidas.slice(0, 3);
-      
-      alertasExibir.forEach(despesa => {
-        const diffDays = Math.ceil((hoje - despesa.data) / (1000 * 60 * 60 * 24));
-        const mensagem = `${despesa.descricao} venceu há ${diffDays} dias (R$ ${despesa.valor.toFixed(2)})`;
-        
-        novo_mostrarAlerta(mensagem);
-      });
-      
-      // Se houver mais despesas, mostrar alerta genérico
-      if (despesasVencidas.length > 3) {
-        novo_mostrarAlerta(`Você tem ${despesasVencidas.length} despesas vencidas no total.`);
-      }
-    }
-  });
-}
-
-/**
- * Mostra um alerta na interface
- * @param {string} mensagem - Mensagem do alerta
- */
-function novo_mostrarAlerta(mensagem) {
-  exibirToast(mensagem, "warning");
-}
-
-// Exportar funções
-window.novo_verificarAlertas = novo_verificarAlertas;
-window.novo_carregarLimites = novo_carregarLimites;
-window.novo_salvarLimites = novo_salvarLimites;
-window.novo_verificarDespesasVencidas = novo_verificarDespesasVencidas;
-window.novo_mostrarAlerta = novo_mostrarAlerta;
+(Content truncated due to size limit. Use line ranges to read in chunks)
