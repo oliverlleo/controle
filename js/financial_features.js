@@ -1,76 +1,84 @@
-/**
- * Novas Funcionalidades Financeiras para o Sistema de Gestão
- * 
- * Este arquivo contém as novas funcionalidades financeiras implementadas:
- * 1. Sistema de Metas Financeiras
- * 2. Orçamento Mensal por Categoria
- * 3. Análise de Tendências e Previsões
- * 4. Fluxo de Caixa
- * 5. Comparativo de Gastos
- * 6. Sistema de Notificações Personalizáveis
- */
+// Funcionalidades Financeiras Avançadas
+'use strict';
 
-// Referência ao banco de dados Firebase
-const db = firebase.database();
+// ==================== SISTEMA DE METAS FINANCEIRAS ====================
 
-/**
- * ===============================================
- * 1. SISTEMA DE METAS FINANCEIRAS
- * ===============================================
- */
-
-// Carregar metas financeiras do usuário
+// Carregar metas financeiras
 function loadFinancialGoals() {
   const userId = firebase.auth().currentUser.uid;
   const goalsContainer = document.getElementById('goalsContainer');
-  goalsContainer.innerHTML = '';
+  
+  goalsContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i><p>Carregando metas...</p></div>';
   
   db.ref(`users/${userId}/goals`).once('value').then(snapshot => {
     if (!snapshot.exists()) {
-      goalsContainer.innerHTML = '<p class="text-center">Você ainda não tem metas cadastradas. Crie sua primeira meta!</p>';
+      goalsContainer.innerHTML = '<div class="card grid-col-2"><div class="card-body text-center"><p>Você ainda não tem metas cadastradas.</p><button class="btn btn-primary" onclick="abrirModal(\'goalModal\')"><i class="fas fa-plus"></i> Criar Meta</button></div></div>';
       return;
     }
+    
+    goalsContainer.innerHTML = '';
     
     snapshot.forEach(childSnapshot => {
       const goal = childSnapshot.val();
       const goalId = childSnapshot.key;
       const progress = calculateGoalProgress(goal);
       
+      let statusClass = 'primary';
+      if (progress >= 100) {
+        statusClass = 'success';
+      } else if (isGoalNearDeadline(goal)) {
+        statusClass = 'warning';
+      }
+      
+      const daysLeft = calculateDaysLeft(goal.targetDate);
+      const daysLeftText = daysLeft > 0 
+        ? `${daysLeft} dias restantes` 
+        : daysLeft === 0 
+          ? 'Vence hoje!' 
+          : `Venceu há ${Math.abs(daysLeft)} dias`;
+      
       const goalCard = document.createElement('div');
-      goalCard.className = 'card hover-lift mb-4';
+      goalCard.className = 'card';
       goalCard.innerHTML = `
         <div class="card-header">
           <div class="card-title">${goal.name}</div>
-          <div class="dropdown">
-            <button class="btn btn-icon"><i class="fas fa-ellipsis-v"></i></button>
-            <div class="dropdown-content">
-              <a href="#" onclick="editGoal('${goalId}')"><i class="fas fa-edit"></i> Editar</a>
-              <a href="#" onclick="deleteGoal('${goalId}')"><i class="fas fa-trash"></i> Excluir</a>
-              <a href="#" onclick="addGoalContribution('${goalId}')"><i class="fas fa-plus"></i> Adicionar</a>
-            </div>
+          <div>
+            <button class="btn btn-icon" onclick="openEditGoalModal('${goalId}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-icon" onclick="deleteGoal('${goalId}')">
+              <i class="fas fa-trash"></i>
+            </button>
           </div>
         </div>
         <div class="card-body">
           <div class="d-flex justify-content-between mb-2">
-            <div>Meta: R$ ${parseFloat(goal.targetAmount).toFixed(2)}</div>
-            <div>Atual: R$ ${parseFloat(goal.currentAmount).toFixed(2)}</div>
+            <div><strong>Meta:</strong> R$ ${parseFloat(goal.targetAmount).toFixed(2)}</div>
+            <div><strong>Atual:</strong> R$ ${parseFloat(goal.currentAmount).toFixed(2)}</div>
           </div>
-          <div class="progress mb-3">
-            <div class="progress-bar progress-bar-primary" style="width: ${progress}%"></div>
+          <div class="progress mb-2">
+            <div class="progress-bar progress-bar-${statusClass}" style="width: ${progress}%"></div>
+          </div>
+          <div class="d-flex justify-content-between mb-3">
+            <div>${progress}% concluído</div>
+            <div class="text-${statusClass === 'warning' ? 'warning' : statusClass === 'success' ? 'success' : 'secondary'}">${daysLeftText}</div>
           </div>
           <div class="d-flex justify-content-between">
-            <div>${progress}% concluído</div>
-            <div>Prazo: ${new Date(goal.targetDate).toLocaleDateString()}</div>
+            <button class="btn btn-primary" onclick="openContributionModal('${goalId}')">
+              <i class="fas fa-plus"></i> Adicionar Contribuição
+            </button>
+            <button class="btn btn-secondary" onclick="viewGoalHistory('${goalId}')">
+              <i class="fas fa-history"></i> Histórico
+            </button>
           </div>
-          ${getRemainingTimeText(goal.targetDate)}
         </div>
       `;
       
       goalsContainer.appendChild(goalCard);
     });
   }).catch(error => {
-    console.error("Erro ao carregar metas:", error);
-    showToast("Erro ao carregar metas. Tente novamente.", "danger");
+    console.error('Erro ao carregar metas:', error);
+    goalsContainer.innerHTML = '<div class="card grid-col-2"><div class="card-body text-center"><p>Erro ao carregar metas. Tente novamente.</p></div></div>';
   });
 }
 
@@ -78,144 +86,78 @@ function loadFinancialGoals() {
 function calculateGoalProgress(goal) {
   const current = parseFloat(goal.currentAmount) || 0;
   const target = parseFloat(goal.targetAmount) || 1; // Evitar divisão por zero
-  const progress = Math.min(Math.round((current / target) * 100), 100);
-  return progress;
+  return Math.min(Math.round((current / target) * 100), 100);
 }
 
-// Obter texto de tempo restante
-function getRemainingTimeText(targetDate) {
+// Verificar se a meta está próxima do prazo
+function isGoalNearDeadline(goal) {
+  const targetDate = new Date(goal.targetDate);
   const today = new Date();
-  const target = new Date(targetDate);
-  const diffTime = target - today;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
   
-  let statusClass = 'text-success';
-  let statusIcon = 'fa-check-circle';
-  
-  if (diffDays < 0) {
-    statusClass = 'text-danger';
-    statusIcon = 'fa-exclamation-circle';
-    return `<div class="${statusClass} mt-2"><i class="fas ${statusIcon}"></i> Meta vencida há ${Math.abs(diffDays)} dias</div>`;
-  } else if (diffDays <= 7) {
-    statusClass = 'text-warning';
-    statusIcon = 'fa-exclamation-triangle';
-  }
-  
-  return `<div class="${statusClass} mt-2"><i class="fas ${statusIcon}"></i> ${diffDays} dias restantes</div>`;
+  // Considera próximo do prazo se faltam menos de 30 dias e o progresso é menor que 80%
+  return daysLeft <= 30 && daysLeft > 0 && calculateGoalProgress(goal) < 80;
 }
 
-// Salvar nova meta financeira
+// Calcular dias restantes
+function calculateDaysLeft(targetDateStr) {
+  const targetDate = new Date(targetDateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  targetDate.setHours(0, 0, 0, 0);
+  
+  return Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+}
+
+// Salvar meta financeira
 function saveFinancialGoal() {
   const userId = firebase.auth().currentUser.uid;
-  const goalName = document.getElementById('goalName').value;
-  const goalAmount = parseFloat(document.getElementById('goalAmount').value);
-  const goalDate = document.getElementById('goalDate').value;
-  const goalCategory = document.getElementById('goalCategory').value;
-  const goalInitialAmount = parseFloat(document.getElementById('goalInitialAmount').value) || 0;
+  const name = document.getElementById('goalName').value.trim();
+  const targetAmount = parseFloat(document.getElementById('goalAmount').value);
+  const targetDate = document.getElementById('goalDate').value;
+  const category = document.getElementById('goalCategory').value;
+  const initialAmount = parseFloat(document.getElementById('goalInitialAmount').value) || 0;
   
-  if (!goalName || !goalAmount || !goalDate) {
-    showToast("Preencha todos os campos obrigatórios.", "warning");
+  if (!name || isNaN(targetAmount) || !targetDate) {
+    showToast('Preencha todos os campos obrigatórios.', 'warning');
     return;
   }
   
   const goalData = {
-    name: goalName,
-    targetAmount: goalAmount,
-    targetDate: goalDate,
-    category: goalCategory,
-    currentAmount: goalInitialAmount,
+    name: name,
+    targetAmount: targetAmount,
+    targetDate: targetDate,
+    category: category,
+    currentAmount: initialAmount,
     createdAt: new Date().toISOString(),
-    history: [{
-      date: new Date().toISOString(),
-      amount: goalInitialAmount,
-      description: "Valor inicial"
-    }]
+    contributions: initialAmount > 0 ? {
+      [Date.now()]: {
+        amount: initialAmount,
+        date: new Date().toISOString(),
+        description: 'Valor inicial'
+      }
+    } : null
   };
   
-  const goalRef = db.ref(`users/${userId}/goals`).push();
+  const newGoalRef = db.ref(`users/${userId}/goals`).push();
   
-  goalRef.set(goalData)
+  newGoalRef.set(goalData)
     .then(() => {
-      showToast("Meta criada com sucesso!", "success");
-      document.getElementById('goalForm').reset();
+      showToast('Meta criada com sucesso!', 'success');
       fecharModal('goalModal');
       loadFinancialGoals();
+      
+      // Limpar formulário
+      document.getElementById('goalForm').reset();
     })
     .catch(error => {
-      console.error("Erro ao salvar meta:", error);
-      showToast("Erro ao salvar meta. Tente novamente.", "danger");
+      console.error('Erro ao salvar meta:', error);
+      showToast('Erro ao salvar meta. Tente novamente.', 'danger');
     });
 }
 
-// Adicionar contribuição a uma meta
-function addGoalContribution(goalId) {
-  const userId = firebase.auth().currentUser.uid;
-  
-  // Abrir modal de contribuição
-  document.getElementById('contributionGoalId').value = goalId;
-  abrirModal('contributionModal');
-  
-  // Carregar informações da meta
-  db.ref(`users/${userId}/goals/${goalId}`).once('value').then(snapshot => {
-    const goal = snapshot.val();
-    document.getElementById('contributionGoalName').textContent = goal.name;
-    document.getElementById('contributionCurrentAmount').textContent = `R$ ${parseFloat(goal.currentAmount).toFixed(2)}`;
-    document.getElementById('contributionTargetAmount').textContent = `R$ ${parseFloat(goal.targetAmount).toFixed(2)}`;
-  });
-}
-
-// Salvar contribuição
-function saveContribution() {
-  const userId = firebase.auth().currentUser.uid;
-  const goalId = document.getElementById('contributionGoalId').value;
-  const amount = parseFloat(document.getElementById('contributionAmount').value);
-  const description = document.getElementById('contributionDescription').value || "Contribuição";
-  
-  if (!amount || amount <= 0) {
-    showToast("Informe um valor válido para a contribuição.", "warning");
-    return;
-  }
-  
-  const goalRef = db.ref(`users/${userId}/goals/${goalId}`);
-  
-  goalRef.once('value').then(snapshot => {
-    const goal = snapshot.val();
-    const newAmount = parseFloat(goal.currentAmount) + amount;
-    
-    // Atualizar valor atual
-    goalRef.update({
-      currentAmount: newAmount
-    });
-    
-    // Adicionar ao histórico
-    const historyRef = goalRef.child('history');
-    historyRef.push({
-      date: new Date().toISOString(),
-      amount: amount,
-      description: description
-    });
-    
-    showToast("Contribuição adicionada com sucesso!", "success");
-    fecharModal('contributionModal');
-    loadFinancialGoals();
-    
-    // Verificar se a meta foi atingida
-    if (newAmount >= parseFloat(goal.targetAmount)) {
-      showToast(`Parabéns! Você atingiu sua meta "${goal.name}"!`, "success", 5000);
-      
-      // Adicionar notificação
-      addNotification({
-        type: 'goal_completed',
-        title: 'Meta atingida!',
-        message: `Você atingiu sua meta "${goal.name}"!`,
-        date: new Date().toISOString()
-      });
-    }
-  });
-}
-
-// Editar meta
-function editGoal(goalId) {
+// Abrir modal de edição de meta
+function openEditGoalModal(goalId) {
   const userId = firebase.auth().currentUser.uid;
   
   db.ref(`users/${userId}/goals/${goalId}`).once('value').then(snapshot => {
@@ -235,189 +177,282 @@ function editGoal(goalId) {
 function updateGoal() {
   const userId = firebase.auth().currentUser.uid;
   const goalId = document.getElementById('editGoalId').value;
-  const goalName = document.getElementById('editGoalName').value;
-  const goalAmount = parseFloat(document.getElementById('editGoalAmount').value);
-  const goalDate = document.getElementById('editGoalDate').value;
-  const goalCategory = document.getElementById('editGoalCategory').value;
+  const name = document.getElementById('editGoalName').value.trim();
+  const targetAmount = parseFloat(document.getElementById('editGoalAmount').value);
+  const targetDate = document.getElementById('editGoalDate').value;
+  const category = document.getElementById('editGoalCategory').value;
   
-  if (!goalName || !goalAmount || !goalDate) {
-    showToast("Preencha todos os campos obrigatórios.", "warning");
+  if (!name || isNaN(targetAmount) || !targetDate) {
+    showToast('Preencha todos os campos obrigatórios.', 'warning');
     return;
   }
   
   const updates = {
-    name: goalName,
-    targetAmount: goalAmount,
-    targetDate: goalDate,
-    category: goalCategory
+    name: name,
+    targetAmount: targetAmount,
+    targetDate: targetDate,
+    category: category,
+    updatedAt: new Date().toISOString()
   };
   
   db.ref(`users/${userId}/goals/${goalId}`).update(updates)
     .then(() => {
-      showToast("Meta atualizada com sucesso!", "success");
+      showToast('Meta atualizada com sucesso!', 'success');
       fecharModal('editGoalModal');
       loadFinancialGoals();
     })
     .catch(error => {
-      console.error("Erro ao atualizar meta:", error);
-      showToast("Erro ao atualizar meta. Tente novamente.", "danger");
+      console.error('Erro ao atualizar meta:', error);
+      showToast('Erro ao atualizar meta. Tente novamente.', 'danger');
     });
 }
 
 // Excluir meta
 function deleteGoal(goalId) {
-  if (confirm("Tem certeza que deseja excluir esta meta?")) {
-    const userId = firebase.auth().currentUser.uid;
+  if (!confirm('Tem certeza que deseja excluir esta meta?')) {
+    return;
+  }
+  
+  const userId = firebase.auth().currentUser.uid;
+  
+  db.ref(`users/${userId}/goals/${goalId}`).remove()
+    .then(() => {
+      showToast('Meta excluída com sucesso!', 'success');
+      loadFinancialGoals();
+    })
+    .catch(error => {
+      console.error('Erro ao excluir meta:', error);
+      showToast('Erro ao excluir meta. Tente novamente.', 'danger');
+    });
+}
+
+// Abrir modal de contribuição
+function openContributionModal(goalId) {
+  const userId = firebase.auth().currentUser.uid;
+  
+  db.ref(`users/${userId}/goals/${goalId}`).once('value').then(snapshot => {
+    const goal = snapshot.val();
     
-    db.ref(`users/${userId}/goals/${goalId}`).remove()
+    document.getElementById('contributionGoalId').value = goalId;
+    document.getElementById('contributionGoalName').textContent = goal.name;
+    document.getElementById('contributionCurrentAmount').textContent = `R$ ${parseFloat(goal.currentAmount).toFixed(2)}`;
+    document.getElementById('contributionTargetAmount').textContent = `R$ ${parseFloat(goal.targetAmount).toFixed(2)}`;
+    document.getElementById('contributionAmount').value = '';
+    document.getElementById('contributionDescription').value = '';
+    
+    abrirModal('contributionModal');
+  });
+}
+
+// Salvar contribuição
+function saveContribution() {
+  const userId = firebase.auth().currentUser.uid;
+  const goalId = document.getElementById('contributionGoalId').value;
+  const amount = parseFloat(document.getElementById('contributionAmount').value);
+  const description = document.getElementById('contributionDescription').value.trim() || 'Contribuição';
+  
+  if (isNaN(amount) || amount <= 0) {
+    showToast('Informe um valor válido para a contribuição.', 'warning');
+    return;
+  }
+  
+  // Obter valor atual da meta
+  db.ref(`users/${userId}/goals/${goalId}`).once('value').then(snapshot => {
+    const goal = snapshot.val();
+    const currentAmount = parseFloat(goal.currentAmount) || 0;
+    const newAmount = currentAmount + amount;
+    
+    // Adicionar contribuição ao histórico
+    const contributionData = {
+      amount: amount,
+      date: new Date().toISOString(),
+      description: description
+    };
+    
+    const updates = {};
+    updates[`users/${userId}/goals/${goalId}/currentAmount`] = newAmount;
+    updates[`users/${userId}/goals/${goalId}/contributions/${Date.now()}`] = contributionData;
+    
+    db.ref().update(updates)
       .then(() => {
-        showToast("Meta excluída com sucesso!", "success");
+        showToast('Contribuição adicionada com sucesso!', 'success');
+        fecharModal('contributionModal');
         loadFinancialGoals();
       })
       .catch(error => {
-        console.error("Erro ao excluir meta:", error);
-        showToast("Erro ao excluir meta. Tente novamente.", "danger");
+        console.error('Erro ao adicionar contribuição:', error);
+        showToast('Erro ao adicionar contribuição. Tente novamente.', 'danger');
       });
-  }
+  });
 }
 
-/**
- * ===============================================
- * 2. ORÇAMENTO MENSAL POR CATEGORIA
- * ===============================================
- */
+// Ver histórico de contribuições
+function viewGoalHistory(goalId) {
+  const userId = firebase.auth().currentUser.uid;
+  
+  db.ref(`users/${userId}/goals/${goalId}`).once('value').then(snapshot => {
+    const goal = snapshot.val();
+    
+    if (!goal.contributions) {
+      showToast('Esta meta ainda não possui contribuições.', 'info');
+      return;
+    }
+    
+    let historyHTML = `<h3>Histórico de Contribuições - ${goal.name}</h3>`;
+    historyHTML += '<table class="table"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th></tr></thead><tbody>';
+    
+    const contributions = [];
+    for (const key in goal.contributions) {
+      contributions.push({
+        id: key,
+        ...goal.contributions[key]
+      });
+    }
+    
+    // Ordenar contribuições por data (mais recentes primeiro)
+    contributions.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    contributions.forEach(contribution => {
+      const date = new Date(contribution.date).toLocaleDateString();
+      historyHTML += `
+        <tr>
+          <td>${date}</td>
+          <td>${contribution.description}</td>
+          <td>R$ ${parseFloat(contribution.amount).toFixed(2)}</td>
+        </tr>
+      `;
+    });
+    
+    historyHTML += '</tbody></table>';
+    
+    // Criar modal dinâmico para exibir o histórico
+    const historyModal = document.createElement('div');
+    historyModal.className = 'modal';
+    historyModal.id = 'historyModal';
+    historyModal.innerHTML = `
+      <div class="modal-content">
+        <span class="close" onclick="document.getElementById('historyModal').remove()">&times;</span>
+        ${historyHTML}
+      </div>
+    `;
+    
+    document.body.appendChild(historyModal);
+    historyModal.style.display = 'flex';
+  });
+}
+
+// ==================== SISTEMA DE ORÇAMENTO MENSAL ====================
 
 // Carregar orçamentos
 function loadBudgets() {
   const userId = firebase.auth().currentUser.uid;
   const budgetContainer = document.getElementById('budgetContainer');
-  budgetContainer.innerHTML = '';
+  
+  budgetContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i><p>Carregando orçamentos...</p></div>';
   
   // Obter mês e ano atual para filtro
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   
-  // Carregar categorias para o formulário de orçamento
-  loadCategoriesForBudget();
-  
-  // Carregar orçamentos do mês atual
-  db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}`).once('value').then(snapshot => {
-    if (!snapshot.exists()) {
-      budgetContainer.innerHTML = '<p class="text-center">Você ainda não definiu orçamentos para este mês. Defina seu primeiro orçamento!</p>';
-      return;
-    }
+  // Carregar categorias primeiro
+  db.ref('categorias').once('value').then(categoriesSnapshot => {
+    const categories = {};
+    categoriesSnapshot.forEach(child => {
+      categories[child.key] = child.val().nome;
+    });
     
-    // Obter despesas do mês para calcular o progresso
-    getMonthlyExpensesByCategory(currentYear, currentMonth).then(expenses => {
-      snapshot.forEach(childSnapshot => {
-        const budget = childSnapshot.val();
-        const categoryId = childSnapshot.key;
-        const categoryName = window.novo_categoriasMap[categoryId] || categoryId;
-        const spent = expenses[categoryId] || 0;
-        const limit = parseFloat(budget.limit);
-        const progress = Math.min(Math.round((spent / limit) * 100), 100);
+    // Carregar orçamentos do mês atual
+    db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}`).once('value').then(snapshot => {
+      if (!snapshot.exists()) {
+        budgetContainer.innerHTML = '<div class="card grid-col-2"><div class="card-body text-center"><p>Você ainda não definiu orçamentos para este mês.</p><button class="btn btn-primary" onclick="abrirModal(\'budgetModal\')"><i class="fas fa-plus"></i> Definir Orçamento</button></div></div>';
+        return;
+      }
+      
+      // Obter despesas do mês para calcular o progresso
+      getMonthlyExpensesByCategory(currentYear, currentMonth).then(expenses => {
+        budgetContainer.innerHTML = '';
         
-        let statusClass = 'success';
-        if (progress >= 80 && progress < 100) {
-          statusClass = 'warning';
-        } else if (progress >= 100) {
-          statusClass = 'danger';
-        }
-        
-        const budgetCard = document.createElement('div');
-        budgetCard.className = 'card mb-3';
-        budgetCard.innerHTML = `
-          <div class="card-body">
-            <div class="d-flex justify-content-between mb-2">
+        snapshot.forEach(childSnapshot => {
+          const budget = childSnapshot.val();
+          const categoryId = childSnapshot.key;
+          const categoryName = categories[categoryId] || categoryId;
+          const spent = expenses[categoryId] || 0;
+          const limit = parseFloat(budget.limit);
+          const progress = Math.min(Math.round((spent / limit) * 100), 100);
+          
+          let statusClass = 'success';
+          if (progress >= 80 && progress < 100) {
+            statusClass = 'warning';
+          } else if (progress >= 100) {
+            statusClass = 'danger';
+          }
+          
+          const budgetCard = document.createElement('div');
+          budgetCard.className = 'card';
+          budgetCard.innerHTML = `
+            <div class="card-header">
               <div class="card-title">${categoryName}</div>
-              <div class="dropdown">
-                <button class="btn btn-icon"><i class="fas fa-ellipsis-v"></i></button>
-                <div class="dropdown-content">
-                  <a href="#" onclick="editBudget('${categoryId}', ${limit})"><i class="fas fa-edit"></i> Editar</a>
-                  <a href="#" onclick="deleteBudget('${categoryId}')"><i class="fas fa-trash"></i> Excluir</a>
+              <div>
+                <button class="btn btn-icon" onclick="openEditBudgetModal('${categoryId}', '${categoryName}', ${limit})">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-icon" onclick="deleteBudget('${categoryId}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between mb-2">
+                <div><strong>Limite:</strong> R$ ${limit.toFixed(2)}</div>
+                <div><strong>Gasto:</strong> R$ ${spent.toFixed(2)}</div>
+              </div>
+              <div class="progress mb-2">
+                <div class="progress-bar progress-bar-${statusClass}" style="width: ${progress}%"></div>
+              </div>
+              <div class="d-flex justify-content-between">
+                <div>${progress}% utilizado</div>
+                <div class="text-${statusClass === 'danger' ? 'danger' : statusClass === 'warning' ? 'warning' : 'success'}">
+                  ${progress >= 100 ? 'Limite excedido!' : progress >= 80 ? 'Próximo do limite!' : 'Dentro do limite'}
                 </div>
               </div>
             </div>
-            <div class="d-flex justify-content-between mb-2">
-              <div>Gasto: R$ ${spent.toFixed(2)}</div>
-              <div>Limite: R$ ${limit.toFixed(2)}</div>
-            </div>
-            <div class="progress mb-2">
-              <div class="progress-bar progress-bar-${statusClass}" style="width: ${progress}%"></div>
-            </div>
-            <div class="d-flex justify-content-between">
-              <div>${progress}% utilizado</div>
-              <div class="text-${statusClass}">
-                ${progress >= 100 ? '<i class="fas fa-exclamation-circle"></i> Limite excedido' : 
-                  progress >= 80 ? '<i class="fas fa-exclamation-triangle"></i> Próximo ao limite' : 
-                  '<i class="fas fa-check-circle"></i> Dentro do orçamento'}
-              </div>
-            </div>
+          `;
+          
+          budgetContainer.appendChild(budgetCard);
+        });
+        
+        // Adicionar botão para criar novo orçamento
+        const newBudgetCard = document.createElement('div');
+        newBudgetCard.className = 'card';
+        newBudgetCard.innerHTML = `
+          <div class="card-body text-center">
+            <button class="btn btn-primary" onclick="abrirModal('budgetModal')">
+              <i class="fas fa-plus"></i> Novo Orçamento
+            </button>
           </div>
         `;
         
-        budgetContainer.appendChild(budgetCard);
+        budgetContainer.appendChild(newBudgetCard);
       });
-    });
-  }).catch(error => {
-    console.error("Erro ao carregar orçamentos:", error);
-    showToast("Erro ao carregar orçamentos. Tente novamente.", "danger");
-  });
-}
-
-// Obter despesas mensais por categoria
-function getMonthlyExpensesByCategory(year, month) {
-  return new Promise((resolve, reject) => {
-    const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-    const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
-    
-    const expenses = {};
-    
-    db.ref("despesas").once("value").then(snapshot => {
-      snapshot.forEach(child => {
-        const despesa = child.val();
-        
-        // Despesas à vista
-        if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
-          const dataCompra = new Date(despesa.dataCompra);
-          if (dataCompra.getMonth() === month && dataCompra.getFullYear() === year) {
-            const categoria = despesa.categoria;
-            expenses[categoria] = (expenses[categoria] || 0) + parseFloat(despesa.valor || 0);
-          }
-        } 
-        // Despesas no cartão
-        else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-          despesa.parcelas.forEach(parcela => {
-            const dataVencimento = new Date(parcela.vencimento);
-            if (dataVencimento.getMonth() === month && dataVencimento.getFullYear() === year) {
-              const categoria = despesa.categoria;
-              expenses[categoria] = (expenses[categoria] || 0) + parseFloat(parcela.valor || 0);
-            }
-          });
-        }
-      });
-      
-      resolve(expenses);
     }).catch(error => {
-      console.error("Erro ao obter despesas:", error);
-      reject(error);
+      console.error('Erro ao carregar orçamentos:', error);
+      budgetContainer.innerHTML = '<div class="card grid-col-2"><div class="card-body text-center"><p>Erro ao carregar orçamentos. Tente novamente.</p></div></div>';
     });
   });
 }
 
-// Carregar categorias para o formulário de orçamento
+// Carregar categorias para o modal de orçamento
 function loadCategoriesForBudget() {
-  const budgetCategorySelect = document.getElementById('budgetCategory');
-  budgetCategorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
+  const budgetCategory = document.getElementById('budgetCategory');
+  budgetCategory.innerHTML = '<option value="">Selecione uma categoria</option>';
   
-  db.ref("categorias").once("value").then(snapshot => {
+  db.ref('categorias').once('value').then(snapshot => {
     snapshot.forEach(child => {
-      const categoria = child.val();
       const option = document.createElement('option');
       option.value = child.key;
-      option.textContent = categoria.nome;
-      budgetCategorySelect.appendChild(option);
+      option.textContent = child.val().nome;
+      budgetCategory.appendChild(option);
     });
   });
 }
@@ -428,8 +463,8 @@ function saveBudget() {
   const categoryId = document.getElementById('budgetCategory').value;
   const limit = parseFloat(document.getElementById('budgetLimit').value);
   
-  if (!categoryId || !limit) {
-    showToast("Selecione uma categoria e defina um limite.", "warning");
+  if (!categoryId || isNaN(limit) || limit <= 0) {
+    showToast('Selecione uma categoria e informe um limite válido.', 'warning');
     return;
   }
   
@@ -438,29 +473,32 @@ function saveBudget() {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   
-  const budgetRef = db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}/${categoryId}`);
-  
-  budgetRef.set({
+  const budgetData = {
     limit: limit,
     createdAt: new Date().toISOString()
-  })
+  };
+  
+  db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}/${categoryId}`).set(budgetData)
     .then(() => {
-      showToast("Orçamento definido com sucesso!", "success");
-      document.getElementById('budgetForm').reset();
+      showToast('Orçamento definido com sucesso!', 'success');
       fecharModal('budgetModal');
       loadBudgets();
+      
+      // Limpar formulário
+      document.getElementById('budgetCategory').value = '';
+      document.getElementById('budgetLimit').value = '';
     })
     .catch(error => {
-      console.error("Erro ao salvar orçamento:", error);
-      showToast("Erro ao salvar orçamento. Tente novamente.", "danger");
+      console.error('Erro ao salvar orçamento:', error);
+      showToast('Erro ao salvar orçamento. Tente novamente.', 'danger');
     });
 }
 
-// Editar orçamento
-function editBudget(categoryId, currentLimit) {
-  document.getElementById('editBudgetCategory').textContent = window.novo_categoriasMap[categoryId] || categoryId;
+// Abrir modal de edição de orçamento
+function openEditBudgetModal(categoryId, categoryName, limit) {
   document.getElementById('editBudgetCategoryId').value = categoryId;
-  document.getElementById('editBudgetLimit').value = currentLimit;
+  document.getElementById('editBudgetCategory').textContent = categoryName;
+  document.getElementById('editBudgetLimit').value = limit;
   
   abrirModal('editBudgetModal');
 }
@@ -471,8 +509,8 @@ function updateBudget() {
   const categoryId = document.getElementById('editBudgetCategoryId').value;
   const limit = parseFloat(document.getElementById('editBudgetLimit').value);
   
-  if (!limit) {
-    showToast("Defina um limite válido.", "warning");
+  if (isNaN(limit) || limit <= 0) {
+    showToast('Informe um limite válido.', 'warning');
     return;
   }
   
@@ -481,231 +519,267 @@ function updateBudget() {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   
-  db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}/${categoryId}`).update({
+  const updates = {
     limit: limit,
     updatedAt: new Date().toISOString()
-  })
+  };
+  
+  db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}/${categoryId}`).update(updates)
     .then(() => {
-      showToast("Orçamento atualizado com sucesso!", "success");
+      showToast('Orçamento atualizado com sucesso!', 'success');
       fecharModal('editBudgetModal');
       loadBudgets();
     })
     .catch(error => {
-      console.error("Erro ao atualizar orçamento:", error);
-      showToast("Erro ao atualizar orçamento. Tente novamente.", "danger");
+      console.error('Erro ao atualizar orçamento:', error);
+      showToast('Erro ao atualizar orçamento. Tente novamente.', 'danger');
     });
 }
 
 // Excluir orçamento
 function deleteBudget(categoryId) {
-  if (confirm("Tem certeza que deseja excluir este orçamento?")) {
-    const userId = firebase.auth().currentUser.uid;
-    
-    // Obter mês e ano atual
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth();
-    const currentYear = currentDate.getFullYear();
-    
-    db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}/${categoryId}`).remove()
-      .then(() => {
-        showToast("Orçamento excluído com sucesso!", "success");
-        loadBudgets();
-      })
-      .catch(error => {
-        console.error("Erro ao excluir orçamento:", error);
-        showToast("Erro ao excluir orçamento. Tente novamente.", "danger");
-      });
+  if (!confirm('Tem certeza que deseja excluir este orçamento?')) {
+    return;
   }
-}
-
-/**
- * ===============================================
- * 3. ANÁLISE DE TENDÊNCIAS E PREVISÕES
- * ===============================================
- */
-
-// Carregar análise de tendências
-function loadTrendsAnalysis() {
-  const trendsContainer = document.getElementById('trendsContainer');
-  trendsContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Carregando análise de tendências...</p></div>';
   
-  // Obter dados dos últimos 6 meses
-  getExpensesData(6).then(data => {
-    trendsContainer.innerHTML = '';
-    
-    // Criar container para o gráfico de tendências
-    const chartContainer = document.createElement('div');
-    chartContainer.className = 'chart-container mb-4';
-    chartContainer.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-title">Tendência de Gastos - Últimos 6 Meses</div>
-      </div>
-      <canvas id="trendChart" height="300"></canvas>
-    `;
-    trendsContainer.appendChild(chartContainer);
-    
-    // Criar gráfico de tendências
-    createTrendChart(data.monthlyTotals);
-    
-    // Criar container para o gráfico de categorias
-    const categoryChartContainer = document.createElement('div');
-    categoryChartContainer.className = 'chart-container mb-4';
-    categoryChartContainer.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-title">Gastos por Categoria - Últimos 6 Meses</div>
-      </div>
-      <canvas id="categoryTrendChart" height="300"></canvas>
-    `;
-    trendsContainer.appendChild(categoryChartContainer);
-    
-    // Criar gráfico de categorias
-    createCategoryTrendChart(data.categoryTotals);
-    
-    // Adicionar previsões
-    const predictions = calculatePredictions(data.monthlyTotals);
-    const predictionsContainer = document.createElement('div');
-    predictionsContainer.className = 'card mb-4';
-    predictionsContainer.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">Previsão de Gastos - Próximos 3 Meses</div>
-      </div>
-      <div class="card-body">
-        <div class="chart-container">
-          <canvas id="predictionChart" height="250"></canvas>
-        </div>
-      </div>
-    `;
-    trendsContainer.appendChild(predictionsContainer);
-    
-    // Criar gráfico de previsões
-    createPredictionChart(data.monthlyTotals, predictions);
-    
-    // Adicionar insights
-    const insights = generateInsights(data, predictions);
-    const insightsContainer = document.createElement('div');
-    insightsContainer.className = 'card';
-    insightsContainer.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">Insights Financeiros</div>
-      </div>
-      <div class="card-body">
-        <ul class="insights-list">
-          ${insights.map(insight => `
-            <li class="insight-item">
-              <i class="fas ${insight.icon} text-${insight.type}"></i>
-              <div>
-                <div class="insight-title">${insight.title}</div>
-                <div class="insight-description">${insight.description}</div>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
-    `;
-    trendsContainer.appendChild(insightsContainer);
-    
-  }).catch(error => {
-    console.error("Erro ao carregar análise de tendências:", error);
-    trendsContainer.innerHTML = '<div class="alert alert-danger">Erro ao carregar análise de tendências. Tente novamente mais tarde.</div>';
-  });
+  const userId = firebase.auth().currentUser.uid;
+  
+  // Obter mês e ano atual
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  
+  db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}/${categoryId}`).remove()
+    .then(() => {
+      showToast('Orçamento excluído com sucesso!', 'success');
+      loadBudgets();
+    })
+    .catch(error => {
+      console.error('Erro ao excluir orçamento:', error);
+      showToast('Erro ao excluir orçamento. Tente novamente.', 'danger');
+    });
 }
 
-// Obter dados de despesas para análise
-function getExpensesData(months) {
+// Obter despesas do mês por categoria
+function getMonthlyExpensesByCategory(year, month) {
   return new Promise((resolve, reject) => {
-    const today = new Date();
-    const monthlyTotals = [];
-    const categoryTotals = {};
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
     
-    // Inicializar arrays para os últimos meses
-    for (let i = months - 1; i >= 0; i--) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      monthlyTotals.push({
-        month: date.toLocaleString('pt-BR', { month: 'short' }),
-        year: date.getFullYear(),
-        total: 0,
-        date: date
-      });
-    }
+    const expenses = {};
     
-    db.ref("despesas").once("value").then(snapshot => {
+    db.ref('despesas').once('value').then(snapshot => {
       snapshot.forEach(child => {
         const despesa = child.val();
         
-        // Despesas à vista
-        if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
+        // Processar despesas à vista
+        if (despesa.formaPagamento === 'avista') {
           const dataCompra = new Date(despesa.dataCompra);
           
-          // Verificar se está dentro do período de análise
-          for (let i = 0; i < monthlyTotals.length; i++) {
-            const monthData = monthlyTotals[i];
-            if (dataCompra.getMonth() === monthData.date.getMonth() && 
-                dataCompra.getFullYear() === monthData.date.getFullYear()) {
-              
-              const valor = parseFloat(despesa.valor || 0);
-              monthData.total += valor;
-              
-              // Adicionar ao total da categoria
-              const categoria = despesa.categoria;
-              if (!categoryTotals[categoria]) {
-                categoryTotals[categoria] = Array(months).fill(0);
-              }
-              categoryTotals[categoria][i] += valor;
-              
-              break;
-            }
+          if (dataCompra >= startDate && dataCompra <= endDate) {
+            const categoria = despesa.categoria;
+            expenses[categoria] = (expenses[categoria] || 0) + parseFloat(despesa.valor);
           }
-        } 
-        // Despesas no cartão
-        else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+        }
+        // Processar despesas no cartão
+        else if (despesa.formaPagamento === 'cartao' && despesa.parcelas) {
           despesa.parcelas.forEach(parcela => {
             const dataVencimento = new Date(parcela.vencimento);
             
-            // Verificar se está dentro do período de análise
-            for (let i = 0; i < monthlyTotals.length; i++) {
-              const monthData = monthlyTotals[i];
-              if (dataVencimento.getMonth() === monthData.date.getMonth() && 
-                  dataVencimento.getFullYear() === monthData.date.getFullYear()) {
-                
-                const valor = parseFloat(parcela.valor || 0);
-                monthData.total += valor;
-                
-                // Adicionar ao total da categoria
-                const categoria = despesa.categoria;
-                if (!categoryTotals[categoria]) {
-                  categoryTotals[categoria] = Array(months).fill(0);
-                }
-                categoryTotals[categoria][i] += valor;
-                
-                break;
-              }
+            if (dataVencimento >= startDate && dataVencimento <= endDate) {
+              const categoria = despesa.categoria;
+              expenses[categoria] = (expenses[categoria] || 0) + parseFloat(parcela.valor);
             }
           });
         }
       });
       
-      resolve({
-        monthlyTotals: monthlyTotals,
-        categoryTotals: categoryTotals
-      });
+      resolve(expenses);
     }).catch(error => {
-      console.error("Erro ao obter dados de despesas:", error);
+      console.error('Erro ao obter despesas:', error);
+      reject(error);
+    });
+  });
+}
+
+// ==================== ANÁLISE DE TENDÊNCIAS E PREVISÕES ====================
+
+// Carregar análise de tendências
+function loadTrendsAnalysis() {
+  const userId = firebase.auth().currentUser.uid;
+  const trendsContainer = document.getElementById('trendsContainer');
+  
+  trendsContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i><p>Analisando dados...</p></div>';
+  
+  // Obter dados dos últimos 6 meses
+  const today = new Date();
+  const months = [];
+  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    months.push({
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      label: `${monthNames[d.getMonth()]}/${d.getFullYear().toString().substr(2)}`
+    });
+  }
+  
+  // Obter despesas por mês
+  const promises = months.map(m => getMonthlyExpenses(m.year, m.month));
+  
+  Promise.all(promises)
+    .then(results => {
+      const monthlyData = months.map((m, i) => ({
+        ...m,
+        expenses: results[i].total,
+        byCategory: results[i].byCategory
+      }));
+      
+      // Criar gráfico de tendências
+      createTrendsChart(monthlyData);
+      
+      // Calcular previsões para os próximos 3 meses
+      const predictions = calculatePredictions(monthlyData);
+      
+      // Criar insights baseados nos dados
+      const insights = generateInsights(monthlyData, predictions);
+      
+      // Exibir resultados
+      trendsContainer.innerHTML = '';
+      
+      // Gráfico de tendências
+      const chartCard = document.createElement('div');
+      chartCard.className = 'card grid-col-2';
+      chartCard.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Tendência de Gastos - Últimos 6 Meses</div>
+        </div>
+        <div class="card-body">
+          <canvas id="trendsChart" height="250"></canvas>
+        </div>
+      `;
+      trendsContainer.appendChild(chartCard);
+      
+      // Previsões
+      const predictionsCard = document.createElement('div');
+      predictionsCard.className = 'card';
+      predictionsCard.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Previsão para os Próximos 3 Meses</div>
+        </div>
+        <div class="card-body">
+          <canvas id="predictionsChart" height="250"></canvas>
+        </div>
+      `;
+      trendsContainer.appendChild(predictionsCard);
+      
+      // Insights
+      const insightsCard = document.createElement('div');
+      insightsCard.className = 'card grid-col-2';
+      insightsCard.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Insights Financeiros</div>
+        </div>
+        <div class="card-body">
+          <ul class="insights-list">
+            ${insights.map(insight => `
+              <li class="insight-item">
+                <i class="fas fa-lightbulb" style="color: var(--warning); font-size: 1.5rem;"></i>
+                <div>
+                  <div class="insight-title">${insight.title}</div>
+                  <div class="insight-description">${insight.description}</div>
+                </div>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+      trendsContainer.appendChild(insightsCard);
+      
+      // Categorias com maior crescimento
+      const growthCard = document.createElement('div');
+      growthCard.className = 'card';
+      growthCard.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Categorias com Maior Variação</div>
+        </div>
+        <div class="card-body">
+          <canvas id="categoryGrowthChart" height="250"></canvas>
+        </div>
+      `;
+      trendsContainer.appendChild(growthCard);
+      
+      // Inicializar gráficos
+      createPredictionsChart(monthlyData, predictions);
+      createCategoryGrowthChart(monthlyData);
+    })
+    .catch(error => {
+      console.error('Erro ao carregar análise de tendências:', error);
+      trendsContainer.innerHTML = '<div class="card grid-col-2"><div class="card-body text-center"><p>Erro ao carregar análise de tendências. Tente novamente.</p></div></div>';
+    });
+}
+
+// Obter despesas mensais
+function getMonthlyExpenses(year, month) {
+  return new Promise((resolve, reject) => {
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
+    
+    let total = 0;
+    const byCategory = {};
+    
+    db.ref('despesas').once('value').then(snapshot => {
+      snapshot.forEach(child => {
+        const despesa = child.val();
+        
+        // Processar despesas à vista
+        if (despesa.formaPagamento === 'avista') {
+          const dataCompra = new Date(despesa.dataCompra);
+          
+          if (dataCompra >= startDate && dataCompra <= endDate) {
+            const valor = parseFloat(despesa.valor);
+            const categoria = despesa.categoria;
+            
+            total += valor;
+            byCategory[categoria] = (byCategory[categoria] || 0) + valor;
+          }
+        }
+        // Processar despesas no cartão
+        else if (despesa.formaPagamento === 'cartao' && despesa.parcelas) {
+          despesa.parcelas.forEach(parcela => {
+            const dataVencimento = new Date(parcela.vencimento);
+            
+            if (dataVencimento >= startDate && dataVencimento <= endDate) {
+              const valor = parseFloat(parcela.valor);
+              const categoria = despesa.categoria;
+              
+              total += valor;
+              byCategory[categoria] = (byCategory[categoria] || 0) + valor;
+            }
+          });
+        }
+      });
+      
+      resolve({ total, byCategory });
+    }).catch(error => {
+      console.error('Erro ao obter despesas mensais:', error);
       reject(error);
     });
   });
 }
 
 // Criar gráfico de tendências
-function createTrendChart(data) {
-  const ctx = document.getElementById('trendChart').getContext('2d');
+function createTrendsChart(monthlyData) {
+  const ctx = document.getElementById('trendsChart').getContext('2d');
   
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: data.map(item => `${item.month}/${item.year}`),
+      labels: monthlyData.map(m => m.label),
       datasets: [{
-        label: 'Total de Gastos',
-        data: data.map(item => item.total),
+        label: 'Despesas Mensais',
+        data: monthlyData.map(m => m.expenses),
         backgroundColor: 'rgba(67, 97, 238, 0.2)',
         borderColor: 'rgba(67, 97, 238, 1)',
         borderWidth: 2,
@@ -732,84 +806,7 @@ function createTrendChart(data) {
           beginAtZero: true,
           ticks: {
             callback: function(value) {
-              return 'R$ ' + value.toFixed(2);
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-// Criar gráfico de tendências por categoria
-function createCategoryTrendChart(categoryData) {
-  const ctx = document.getElementById('categoryTrendChart').getContext('2d');
-  const months = Object.values(categoryData)[0].length;
-  const labels = [];
-  
-  // Criar labels para os meses
-  for (let i = months - 1; i >= 0; i--) {
-    const date = new Date();
-    date.setMonth(date.getMonth() - i);
-    labels.push(date.toLocaleString('pt-BR', { month: 'short' }) + '/' + date.getFullYear());
-  }
-  
-  // Cores para as categorias
-  const colors = [
-    'rgba(67, 97, 238, 1)',   // Azul
-    'rgba(76, 201, 240, 1)',  // Ciano
-    'rgba(247, 37, 133, 1)',  // Rosa
-    'rgba(58, 12, 163, 1)',   // Roxo
-    'rgba(114, 9, 183, 1)',   // Violeta
-    'rgba(72, 149, 239, 1)',  // Azul claro
-    'rgba(76, 175, 80, 1)'    // Verde
-  ];
-  
-  // Preparar datasets
-  const datasets = [];
-  let colorIndex = 0;
-  
-  for (const [categoryId, values] of Object.entries(categoryData)) {
-    const categoryName = window.novo_categoriasMap[categoryId] || categoryId;
-    
-    datasets.push({
-      label: categoryName,
-      data: values,
-      borderColor: colors[colorIndex % colors.length],
-      backgroundColor: colors[colorIndex % colors.length].replace('1)', '0.2)'),
-      borderWidth: 2,
-      tension: 0.3
-    });
-    
-    colorIndex++;
-  }
-  
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return `${context.dataset.label}: R$ ${context.raw.toFixed(2)}`;
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              return 'R$ ' + value.toFixed(2);
+              return `R$ ${value.toFixed(2)}`;
             }
           }
         }
@@ -819,37 +816,42 @@ function createCategoryTrendChart(categoryData) {
 }
 
 // Calcular previsões para os próximos meses
-function calculatePredictions(data) {
+function calculatePredictions(monthlyData) {
   // Usar regressão linear simples para prever os próximos 3 meses
-  const x = data.map((_, index) => index);
-  const y = data.map(item => item.total);
+  const x = [0, 1, 2, 3, 4, 5]; // Índices dos meses
+  const y = monthlyData.map(m => m.expenses); // Despesas mensais
   
-  // Calcular coeficientes da regressão linear (y = mx + b)
-  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  // Calcular médias
   const n = x.length;
+  const meanX = x.reduce((a, b) => a + b, 0) / n;
+  const meanY = y.reduce((a, b) => a + b, 0) / n;
+  
+  // Calcular coeficientes da regressão linear (y = a + bx)
+  let numerator = 0;
+  let denominator = 0;
   
   for (let i = 0; i < n; i++) {
-    sumX += x[i];
-    sumY += y[i];
-    sumXY += x[i] * y[i];
-    sumX2 += x[i] * x[i];
+    numerator += (x[i] - meanX) * (y[i] - meanY);
+    denominator += Math.pow(x[i] - meanX, 2);
   }
   
-  const m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-  const b = (sumY - m * sumX) / n;
+  const b = numerator / denominator;
+  const a = meanY - b * meanX;
   
-  // Calcular previsões para os próximos 3 meses
+  // Prever os próximos 3 meses
   const predictions = [];
+  const today = new Date();
+  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   
   for (let i = 1; i <= 3; i++) {
-    const nextMonth = new Date(data[data.length - 1].date);
-    nextMonth.setMonth(nextMonth.getMonth() + i);
+    const predictedValue = a + b * (5 + i);
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
     
     predictions.push({
-      month: nextMonth.toLocaleString('pt-BR', { month: 'short' }),
-      year: nextMonth.getFullYear(),
-      total: m * (n + i - 1) + b,
-      date: nextMonth
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      label: `${monthNames[d.getMonth()]}/${d.getFullYear().toString().substr(2)}`,
+      expenses: Math.max(0, predictedValue) // Evitar valores negativos
     });
   }
   
@@ -857,55 +859,29 @@ function calculatePredictions(data) {
 }
 
 // Criar gráfico de previsões
-function createPredictionChart(historicalData, predictions) {
-  const ctx = document.getElementById('predictionChart').getContext('2d');
+function createPredictionsChart(monthlyData, predictions) {
+  const ctx = document.getElementById('predictionsChart').getContext('2d');
   
-  // Combinar dados históricos e previsões
-  const labels = [
-    ...historicalData.map(item => `${item.month}/${item.year}`),
-    ...predictions.map(item => `${item.month}/${item.year}`)
-  ];
-  
-  const historicalValues = historicalData.map(item => item.total);
-  const predictionValues = predictions.map(item => item.total);
-  
-  // Criar array combinado com valores históricos e null para previsões
-  const historicalDataset = [
-    ...historicalValues,
-    ...Array(predictionValues.length).fill(null)
-  ];
-  
-  // Criar array combinado com null para histórico e valores de previsão
-  const predictionDataset = [
-    ...Array(historicalValues.length).fill(null),
-    ...predictionValues
-  ];
+  // Obter os últimos 3 meses de dados reais para comparação
+  const recentData = monthlyData.slice(-3);
   
   new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Dados Históricos',
-          data: historicalDataset,
-          borderColor: 'rgba(67, 97, 238, 1)',
-          backgroundColor: 'rgba(67, 97, 238, 0.2)',
-          borderWidth: 2,
-          tension: 0.3,
-          fill: true
-        },
-        {
-          label: 'Previsão',
-          data: predictionDataset,
-          borderColor: 'rgba(247, 37, 133, 1)',
-          backgroundColor: 'rgba(247, 37, 133, 0.2)',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          tension: 0.3,
-          fill: true
-        }
-      ]
+      labels: [...recentData.map(m => m.label), ...predictions.map(p => p.label)],
+      datasets: [{
+        label: 'Dados Reais',
+        data: [...recentData.map(m => m.expenses), ...Array(predictions.length).fill(null)],
+        backgroundColor: 'rgba(67, 97, 238, 0.7)',
+        borderColor: 'rgba(67, 97, 238, 1)',
+        borderWidth: 1
+      }, {
+        label: 'Previsão',
+        data: [...Array(recentData.length).fill(null), ...predictions.map(p => p.expenses)],
+        backgroundColor: 'rgba(247, 37, 133, 0.7)',
+        borderColor: 'rgba(247, 37, 133, 1)',
+        borderWidth: 1
+      }]
     },
     options: {
       responsive: true,
@@ -916,8 +892,10 @@ function createPredictionChart(historicalData, predictions) {
         tooltip: {
           callbacks: {
             label: function(context) {
-              if (context.raw === null) return '';
-              return `${context.dataset.label}: R$ ${context.raw.toFixed(2)}`;
+              if (context.raw !== null) {
+                return `${context.dataset.label}: R$ ${context.raw.toFixed(2)}`;
+              }
+              return '';
             }
           }
         }
@@ -927,7 +905,7 @@ function createPredictionChart(historicalData, predictions) {
           beginAtZero: true,
           ticks: {
             callback: function(value) {
-              return 'R$ ' + value.toFixed(2);
+              return `R$ ${value.toFixed(2)}`;
             }
           }
         }
@@ -936,417 +914,431 @@ function createPredictionChart(historicalData, predictions) {
   });
 }
 
+// Criar gráfico de crescimento por categoria
+function createCategoryGrowthChart(monthlyData) {
+  // Obter categorias
+  db.ref('categorias').once('value').then(snapshot => {
+    const categories = {};
+    snapshot.forEach(child => {
+      categories[child.key] = child.val().nome;
+    });
+    
+    // Calcular variação percentual por categoria
+    const categoryGrowth = {};
+    
+    // Comparar primeiro e último mês
+    const firstMonth = monthlyData[0];
+    const lastMonth = monthlyData[monthlyData.length - 1];
+    
+    // Combinar todas as categorias de ambos os meses
+    const allCategories = new Set([
+      ...Object.keys(firstMonth.byCategory || {}),
+      ...Object.keys(lastMonth.byCategory || {})
+    ]);
+    
+    allCategories.forEach(categoryId => {
+      const firstValue = firstMonth.byCategory[categoryId] || 0;
+      const lastValue = lastMonth.byCategory[categoryId] || 0;
+      
+      // Calcular variação percentual
+      let growthPercent = 0;
+      
+      if (firstValue > 0) {
+        growthPercent = ((lastValue - firstValue) / firstValue) * 100;
+      } else if (lastValue > 0) {
+        growthPercent = 100; // Novo gasto (crescimento de 100%)
+      }
+      
+      categoryGrowth[categoryId] = {
+        name: categories[categoryId] || categoryId,
+        growth: growthPercent,
+        firstValue: firstValue,
+        lastValue: lastValue
+      };
+    });
+    
+    // Ordenar categorias por variação (maior para menor)
+    const sortedCategories = Object.entries(categoryGrowth)
+      .sort((a, b) => Math.abs(b[1].growth) - Math.abs(a[1].growth))
+      .slice(0, 5); // Pegar as 5 categorias com maior variação
+    
+    // Criar gráfico
+    const ctx = document.getElementById('categoryGrowthChart').getContext('2d');
+    
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sortedCategories.map(c => c[1].name),
+        datasets: [{
+          label: 'Variação (%)',
+          data: sortedCategories.map(c => c[1].growth),
+          backgroundColor: sortedCategories.map(c => c[1].growth >= 0 ? 'rgba(230, 57, 70, 0.7)' : 'rgba(76, 201, 240, 0.7)'),
+          borderColor: sortedCategories.map(c => c[1].growth >= 0 ? 'rgba(230, 57, 70, 1)' : 'rgba(76, 201, 240, 1)'),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const categoryId = sortedCategories[context.dataIndex][0];
+                const data = categoryGrowth[categoryId];
+                return [
+                  `Variação: ${context.raw.toFixed(1)}%`,
+                  `Inicial: R$ ${data.firstValue.toFixed(2)}`,
+                  `Atual: R$ ${data.lastValue.toFixed(2)}`
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return `${value}%`;
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+}
+
 // Gerar insights baseados nos dados
-function generateInsights(data, predictions) {
+function generateInsights(monthlyData, predictions) {
   const insights = [];
-  const monthlyTotals = data.monthlyTotals;
-  const categoryTotals = data.categoryTotals;
   
-  // Insight 1: Tendência geral de gastos
-  const firstMonth = monthlyTotals[0].total;
-  const lastMonth = monthlyTotals[monthlyTotals.length - 1].total;
-  const percentChange = ((lastMonth - firstMonth) / firstMonth) * 100;
+  // Insight 1: Tendência geral
+  const firstMonth = monthlyData[0].expenses;
+  const lastMonth = monthlyData[monthlyData.length - 1].expenses;
+  const trend = ((lastMonth - firstMonth) / firstMonth) * 100;
   
-  if (percentChange > 10) {
+  if (trend > 10) {
     insights.push({
       title: 'Aumento nos gastos',
-      description: `Seus gastos aumentaram ${percentChange.toFixed(1)}% nos últimos ${monthlyTotals.length} meses.`,
-      icon: 'fa-arrow-trend-up',
-      type: 'warning'
+      description: `Seus gastos aumentaram ${trend.toFixed(1)}% nos últimos 6 meses. Considere revisar seu orçamento e identificar áreas para redução.`
     });
-  } else if (percentChange < -10) {
+  } else if (trend < -10) {
     insights.push({
       title: 'Redução nos gastos',
-      description: `Seus gastos diminuíram ${Math.abs(percentChange).toFixed(1)}% nos últimos ${monthlyTotals.length} meses.`,
-      icon: 'fa-arrow-trend-down',
-      type: 'success'
+      description: `Parabéns! Seus gastos diminuíram ${Math.abs(trend).toFixed(1)}% nos últimos 6 meses. Continue com o bom trabalho de controle financeiro.`
     });
   } else {
     insights.push({
       title: 'Gastos estáveis',
-      description: `Seus gastos se mantiveram estáveis nos últimos ${monthlyTotals.length} meses.`,
-      icon: 'fa-equals',
-      type: 'primary'
+      description: `Seus gastos se mantiveram relativamente estáveis nos últimos 6 meses, com variação de ${trend.toFixed(1)}%.`
     });
   }
   
-  // Insight 2: Categoria com maior crescimento
-  let maxGrowthCategory = null;
-  let maxGrowthPercent = 0;
+  // Insight 2: Previsão
+  const lastActual = monthlyData[monthlyData.length - 1].expenses;
+  const nextPredicted = predictions[0].expenses;
+  const predictionChange = ((nextPredicted - lastActual) / lastActual) * 100;
   
-  for (const [categoryId, values] of Object.entries(categoryTotals)) {
-    if (values[0] > 0) {
-      const growth = ((values[values.length - 1] - values[0]) / values[0]) * 100;
-      if (growth > maxGrowthPercent) {
-        maxGrowthPercent = growth;
-        maxGrowthCategory = categoryId;
-      }
-    }
-  }
-  
-  if (maxGrowthCategory && maxGrowthPercent > 20) {
-    const categoryName = window.novo_categoriasMap[maxGrowthCategory] || maxGrowthCategory;
-    insights.push({
-      title: 'Categoria em crescimento',
-      description: `Seus gastos com ${categoryName} aumentaram ${maxGrowthPercent.toFixed(1)}%.`,
-      icon: 'fa-chart-line',
-      type: 'warning'
-    });
-  }
-  
-  // Insight 3: Previsão para o próximo mês
-  const lastMonthTotal = monthlyTotals[monthlyTotals.length - 1].total;
-  const nextMonthPrediction = predictions[0].total;
-  const predictionChange = ((nextMonthPrediction - lastMonthTotal) / lastMonthTotal) * 100;
-  
-  if (predictionChange > 10) {
+  if (predictionChange > 5) {
     insights.push({
       title: 'Previsão de aumento',
-      description: `Prevemos um aumento de ${predictionChange.toFixed(1)}% nos seus gastos para o próximo mês.`,
-      icon: 'fa-chart-line',
-      type: 'warning'
+      description: `Prevemos um aumento de ${predictionChange.toFixed(1)}% em seus gastos para o próximo mês. Considere planejar com antecedência para evitar surpresas.`
     });
-  } else if (predictionChange < -10) {
+  } else if (predictionChange < -5) {
     insights.push({
       title: 'Previsão de redução',
-      description: `Prevemos uma redução de ${Math.abs(predictionChange).toFixed(1)}% nos seus gastos para o próximo mês.`,
-      icon: 'fa-chart-line',
-      type: 'success'
+      description: `Prevemos uma redução de ${Math.abs(predictionChange).toFixed(1)}% em seus gastos para o próximo mês. Aproveite para aumentar sua poupança.`
     });
   } else {
     insights.push({
       title: 'Previsão estável',
-      description: `Prevemos que seus gastos se manterão estáveis no próximo mês.`,
-      icon: 'fa-chart-line',
-      type: 'primary'
+      description: `Prevemos que seus gastos se manterão estáveis no próximo mês, com variação de ${predictionChange.toFixed(1)}%.`
     });
   }
   
-  // Insight 4: Categoria com maior gasto
-  let maxSpendCategory = null;
-  let maxSpendValue = 0;
+  // Insight 3: Meses com maiores gastos
+  const sortedMonths = [...monthlyData].sort((a, b) => b.expenses - a.expenses);
+  const highestMonth = sortedMonths[0];
   
-  for (const [categoryId, values] of Object.entries(categoryTotals)) {
-    const totalSpend = values.reduce((sum, value) => sum + value, 0);
-    if (totalSpend > maxSpendValue) {
-      maxSpendValue = totalSpend;
-      maxSpendCategory = categoryId;
+  insights.push({
+    title: 'Mês com maior gasto',
+    description: `${highestMonth.label} foi o mês com maior gasto (R$ ${highestMonth.expenses.toFixed(2)}). Verifique o que aconteceu neste período para entender melhor seus padrões de gastos.`
+  });
+  
+  // Insight 4: Sazonalidade
+  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const currentMonth = new Date().getMonth();
+  const upcomingHolidays = [];
+  
+  // Verificar feriados/eventos nos próximos 3 meses
+  for (let i = 0; i < 3; i++) {
+    const month = (currentMonth + i) % 12;
+    
+    if (month === 11) { // Dezembro
+      upcomingHolidays.push('Natal e Ano Novo');
+    } else if (month === 1) { // Fevereiro
+      upcomingHolidays.push('Carnaval');
+    } else if (month === 5) { // Junho
+      upcomingHolidays.push('Festas Juninas');
+    } else if (month === 9) { // Outubro
+      upcomingHolidays.push('Dia das Crianças');
+    } else if (month === 10) { // Novembro
+      upcomingHolidays.push('Black Friday');
     }
   }
   
-  if (maxSpendCategory) {
-    const categoryName = window.novo_categoriasMap[maxSpendCategory] || maxSpendCategory;
-    const totalExpenses = monthlyTotals.reduce((sum, month) => sum + month.total, 0);
-    const percentOfTotal = (maxSpendValue / totalExpenses) * 100;
-    
+  if (upcomingHolidays.length > 0) {
     insights.push({
-      title: 'Maior categoria de gastos',
-      description: `${categoryName} representa ${percentOfTotal.toFixed(1)}% dos seus gastos totais.`,
-      icon: 'fa-wallet',
-      type: 'primary'
+      title: 'Eventos sazonais próximos',
+      description: `Fique atento aos próximos eventos: ${upcomingHolidays.join(', ')}. Planeje seus gastos com antecedência para evitar endividamento.`
     });
   }
   
   return insights;
 }
 
-/**
- * ===============================================
- * 4. FLUXO DE CAIXA
- * ===============================================
- */
+// ==================== FLUXO DE CAIXA ====================
 
 // Carregar fluxo de caixa
 function loadCashFlow() {
+  const userId = firebase.auth().currentUser.uid;
   const cashFlowContainer = document.getElementById('cashFlowContainer');
-  cashFlowContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Carregando fluxo de caixa...</p></div>';
   
-  // Obter mês e ano atual
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
+  cashFlowContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i><p>Carregando fluxo de caixa...</p></div>';
   
-  // Obter dados do mês atual
-  getCashFlowData(currentYear, currentMonth).then(data => {
-    cashFlowContainer.innerHTML = '';
-    
-    // Criar container para o resumo
-    const summaryContainer = document.createElement('div');
-    summaryContainer.className = 'grid mb-4';
-    
-    // Calcular saldo final
-    const finalBalance = data.totalIncome - data.totalExpenses;
-    const balanceClass = finalBalance >= 0 ? 'success' : 'danger';
-    
-    summaryContainer.innerHTML = `
-      <div class="stat-card-enhanced">
-        <div class="stat-card-icon-enhanced">
-          <i class="fas fa-money-bill-wave"></i>
-        </div>
-        <div class="stat-card-title-enhanced">Receitas</div>
-        <div class="stat-card-value-enhanced text-success">R$ ${data.totalIncome.toFixed(2)}</div>
-      </div>
-      
-      <div class="stat-card-enhanced">
-        <div class="stat-card-icon-enhanced">
-          <i class="fas fa-credit-card"></i>
-        </div>
-        <div class="stat-card-title-enhanced">Despesas</div>
-        <div class="stat-card-value-enhanced text-danger">R$ ${data.totalExpenses.toFixed(2)}</div>
-      </div>
-      
-      <div class="stat-card-enhanced ${balanceClass}">
-        <div class="stat-card-icon-enhanced">
-          <i class="fas fa-wallet"></i>
-        </div>
-        <div class="stat-card-title-enhanced">Saldo</div>
-        <div class="stat-card-value-enhanced text-${balanceClass}">R$ ${finalBalance.toFixed(2)}</div>
-      </div>
-    `;
-    
-    cashFlowContainer.appendChild(summaryContainer);
-    
-    // Criar container para o gráfico
-    const chartContainer = document.createElement('div');
-    chartContainer.className = 'chart-container mb-4';
-    chartContainer.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-title">Fluxo de Caixa - ${currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</div>
-      </div>
-      <canvas id="cashFlowChart" height="300"></canvas>
-    `;
-    cashFlowContainer.appendChild(chartContainer);
-    
-    // Criar gráfico de fluxo de caixa
-    createCashFlowChart(data);
-    
-    // Criar tabela de transações
-    const transactionsContainer = document.createElement('div');
-    transactionsContainer.className = 'card';
-    transactionsContainer.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">Transações do Mês</div>
-      </div>
-      <div class="card-body">
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Descrição</th>
-                <th>Categoria</th>
-                <th>Tipo</th>
-                <th>Valor</th>
-              </tr>
-            </thead>
-            <tbody id="transactionsTableBody">
-              ${data.transactions.map(transaction => `
-                <tr>
-                  <td>${new Date(transaction.date).toLocaleDateString()}</td>
-                  <td>${transaction.description}</td>
-                  <td>${transaction.category}</td>
-                  <td>
-                    <span class="badge badge-${transaction.type === 'income' ? 'success' : 'danger'}">
-                      ${transaction.type === 'income' ? 'Receita' : 'Despesa'}
-                    </span>
-                  </td>
-                  <td class="text-${transaction.type === 'income' ? 'success' : 'danger'}">
-                    R$ ${parseFloat(transaction.amount).toFixed(2)}
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-    cashFlowContainer.appendChild(transactionsContainer);
-    
-  }).catch(error => {
-    console.error("Erro ao carregar fluxo de caixa:", error);
-    cashFlowContainer.innerHTML = '<div class="alert alert-danger">Erro ao carregar fluxo de caixa. Tente novamente mais tarde.</div>';
-  });
-}
-
-// Obter dados de fluxo de caixa
-function getCashFlowData(year, month) {
-  return new Promise((resolve, reject) => {
-    const startDate = new Date(year, month, 1);
-    const endDate = new Date(year, month + 1, 0);
-    
-    let totalIncome = 0;
-    let totalExpenses = 0;
-    const transactions = [];
-    const dailyData = {};
-    
-    // Inicializar dados diários
-    for (let day = 1; day <= endDate.getDate(); day++) {
-      dailyData[day] = {
-        income: 0,
-        expenses: 0
-      };
-    }
-    
-    // Obter receitas
-    db.ref("pessoas").once("value").then(snapshot => {
-      snapshot.forEach(child => {
-        const pessoa = child.val();
-        
-        // Adicionar saldo inicial como transação
-        if (pessoa.saldoInicial) {
-          const saldoInicial = parseFloat(pessoa.saldoInicial);
-          totalIncome += saldoInicial;
-          
-          transactions.push({
-            date: startDate.toISOString(),
-            description: "Saldo Inicial",
-            category: "Saldo",
-            type: "income",
-            amount: saldoInicial
-          });
-          
-          dailyData[1].income += saldoInicial;
-        }
-        
-        // Adicionar pagamentos
-        if (pessoa.pagamentos) {
-          pessoa.pagamentos.forEach(pag => {
-            const pagamentoDia = parseInt(pag.dia);
-            const pagamentoValor = parseFloat(pag.valor);
-            
-            if (pagamentoDia <= endDate.getDate()) {
-              totalIncome += pagamentoValor;
-              
-              const pagamentoDate = new Date(year, month, pagamentoDia);
-              
-              transactions.push({
-                date: pagamentoDate.toISOString(),
-                description: `Pagamento - ${pessoa.nome}`,
-                category: "Renda",
-                type: "income",
-                amount: pagamentoValor
-              });
-              
-              dailyData[pagamentoDia].income += pagamentoValor;
-            }
-          });
-        }
-      });
-      
-      // Obter despesas
-      return db.ref("despesas").once("value");
-    }).then(snapshot => {
+  // Obter mês e ano selecionados
+  const selectedMonth = parseInt(document.getElementById('cashFlowMonth').value);
+  const selectedYear = parseInt(document.getElementById('cashFlowYear').value);
+  
+  // Obter dados do mês
+  const startDate = new Date(selectedYear, selectedMonth, 1);
+  const endDate = new Date(selectedYear, selectedMonth + 1, 0);
+  const daysInMonth = endDate.getDate();
+  
+  // Inicializar array de dias
+  const dailyData = [];
+  for (let i = 1; i <= daysInMonth; i++) {
+    dailyData.push({
+      day: i,
+      date: new Date(selectedYear, selectedMonth, i),
+      income: 0,
+      expenses: 0,
+      balance: 0
+    });
+  }
+  
+  // Obter despesas
+  const expensesPromise = new Promise((resolve, reject) => {
+    db.ref('despesas').once('value').then(snapshot => {
       snapshot.forEach(child => {
         const despesa = child.val();
         
-        // Despesas à vista
-        if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
+        // Processar despesas à vista
+        if (despesa.formaPagamento === 'avista') {
           const dataCompra = new Date(despesa.dataCompra);
           
-          if (dataCompra.getMonth() === month && dataCompra.getFullYear() === year) {
+          if (dataCompra >= startDate && dataCompra <= endDate) {
+            const day = dataCompra.getDate() - 1; // Índice 0-based
             const valor = parseFloat(despesa.valor);
-            totalExpenses += valor;
             
-            const categoryName = window.novo_categoriasMap[despesa.categoria] || despesa.categoria;
-            
-            transactions.push({
-              date: despesa.dataCompra,
-              description: despesa.descricao,
-              category: categoryName,
-              type: "expense",
-              amount: valor
-            });
-            
-            const day = dataCompra.getDate();
             dailyData[day].expenses += valor;
           }
-        } 
-        // Despesas no cartão
-        else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+        }
+        // Processar despesas no cartão
+        else if (despesa.formaPagamento === 'cartao' && despesa.parcelas) {
           despesa.parcelas.forEach(parcela => {
             const dataVencimento = new Date(parcela.vencimento);
             
-            if (dataVencimento.getMonth() === month && dataVencimento.getFullYear() === year) {
+            if (dataVencimento >= startDate && dataVencimento <= endDate) {
+              const day = dataVencimento.getDate() - 1; // Índice 0-based
               const valor = parseFloat(parcela.valor);
-              totalExpenses += valor;
               
-              const categoryName = window.novo_categoriasMap[despesa.categoria] || despesa.categoria;
-              
-              transactions.push({
-                date: parcela.vencimento,
-                description: `${despesa.descricao} - Parcela`,
-                category: categoryName,
-                type: "expense",
-                amount: valor
-              });
-              
-              const day = dataVencimento.getDate();
               dailyData[day].expenses += valor;
             }
           });
         }
       });
       
-      // Ordenar transações por data
-      transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
-      
-      resolve({
-        totalIncome,
-        totalExpenses,
-        transactions,
-        dailyData
-      });
+      resolve();
     }).catch(error => {
-      console.error("Erro ao obter dados de fluxo de caixa:", error);
+      console.error('Erro ao obter despesas:', error);
       reject(error);
     });
   });
+  
+  // Obter receitas
+  const incomePromise = new Promise((resolve, reject) => {
+    db.ref('usuarios').once('value').then(snapshot => {
+      snapshot.forEach(child => {
+        const usuario = child.val();
+        
+        if (usuario.pagamentos) {
+          usuario.pagamentos.forEach(pagamento => {
+            const dia = parseInt(pagamento.dia);
+            const valor = parseFloat(pagamento.valor);
+            
+            if (dia >= 1 && dia <= daysInMonth) {
+              dailyData[dia - 1].income += valor;
+            }
+          });
+        }
+      });
+      
+      resolve();
+    }).catch(error => {
+      console.error('Erro ao obter receitas:', error);
+      reject(error);
+    });
+  });
+  
+  // Processar dados após obter despesas e receitas
+  Promise.all([expensesPromise, incomePromise])
+    .then(() => {
+      // Calcular saldo acumulado
+      let cumulativeBalance = 0;
+      dailyData.forEach(day => {
+        day.balance = day.income - day.expenses;
+        cumulativeBalance += day.balance;
+        day.cumulativeBalance = cumulativeBalance;
+      });
+      
+      // Calcular totais
+      const totalIncome = dailyData.reduce((sum, day) => sum + day.income, 0);
+      const totalExpenses = dailyData.reduce((sum, day) => sum + day.expenses, 0);
+      const netBalance = totalIncome - totalExpenses;
+      
+      // Criar cards de resumo
+      cashFlowContainer.innerHTML = '';
+      
+      const summaryGrid = document.createElement('div');
+      summaryGrid.className = 'grid mb-4';
+      summaryGrid.innerHTML = `
+        <div class="stat-card-enhanced success">
+          <div class="stat-card-icon-enhanced">
+            <i class="fas fa-arrow-up"></i>
+          </div>
+          <div class="stat-card-title-enhanced">Receitas</div>
+          <div class="stat-card-value-enhanced">R$ ${totalIncome.toFixed(2)}</div>
+        </div>
+        
+        <div class="stat-card-enhanced warning">
+          <div class="stat-card-icon-enhanced">
+            <i class="fas fa-arrow-down"></i>
+          </div>
+          <div class="stat-card-title-enhanced">Despesas</div>
+          <div class="stat-card-value-enhanced">R$ ${totalExpenses.toFixed(2)}</div>
+        </div>
+        
+        <div class="stat-card-enhanced ${netBalance >= 0 ? 'success' : 'danger'}">
+          <div class="stat-card-icon-enhanced">
+            <i class="fas fa-balance-scale"></i>
+          </div>
+          <div class="stat-card-title-enhanced">Saldo</div>
+          <div class="stat-card-value-enhanced">R$ ${netBalance.toFixed(2)}</div>
+          <div class="stat-card-trend-enhanced">
+            ${netBalance >= 0 ? 'Positivo' : 'Negativo'}
+          </div>
+        </div>
+      `;
+      
+      cashFlowContainer.appendChild(summaryGrid);
+      
+      // Criar gráfico de fluxo de caixa
+      const chartCard = document.createElement('div');
+      chartCard.className = 'card grid-col-2';
+      chartCard.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Fluxo de Caixa Diário</div>
+        </div>
+        <div class="card-body">
+          <canvas id="cashFlowChart" height="250"></canvas>
+        </div>
+      `;
+      
+      cashFlowContainer.appendChild(chartCard);
+      
+      // Criar tabela de transações
+      const tableCard = document.createElement('div');
+      tableCard.className = 'card';
+      tableCard.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Transações Diárias</div>
+        </div>
+        <div class="card-body">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Receitas</th>
+                  <th>Despesas</th>
+                  <th>Saldo do Dia</th>
+                  <th>Saldo Acumulado</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${dailyData.map(day => `
+                  <tr>
+                    <td>${day.day.toString().padStart(2, '0')}/${(selectedMonth + 1).toString().padStart(2, '0')}/${selectedYear}</td>
+                    <td class="text-success">${day.income > 0 ? `R$ ${day.income.toFixed(2)}` : '-'}</td>
+                    <td class="text-danger">${day.expenses > 0 ? `R$ ${day.expenses.toFixed(2)}` : '-'}</td>
+                    <td class="${day.balance >= 0 ? 'text-success' : 'text-danger'}">R$ ${day.balance.toFixed(2)}</td>
+                    <td class="${day.cumulativeBalance >= 0 ? 'text-success' : 'text-danger'}">R$ ${day.cumulativeBalance.toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      
+      cashFlowContainer.appendChild(tableCard);
+      
+      // Inicializar gráfico
+      createCashFlowChart(dailyData);
+    })
+    .catch(error => {
+      console.error('Erro ao carregar fluxo de caixa:', error);
+      cashFlowContainer.innerHTML = '<div class="card grid-col-2"><div class="card-body text-center"><p>Erro ao carregar fluxo de caixa. Tente novamente.</p></div></div>';
+    });
 }
 
 // Criar gráfico de fluxo de caixa
-function createCashFlowChart(data) {
+function createCashFlowChart(dailyData) {
   const ctx = document.getElementById('cashFlowChart').getContext('2d');
-  
-  // Preparar dados para o gráfico
-  const days = Object.keys(data.dailyData).sort((a, b) => parseInt(a) - parseInt(b));
-  const incomeData = days.map(day => data.dailyData[day].income);
-  const expenseData = days.map(day => data.dailyData[day].expenses);
-  
-  // Calcular saldo acumulado
-  let cumulativeBalance = 0;
-  const balanceData = days.map(day => {
-    cumulativeBalance += data.dailyData[day].income - data.dailyData[day].expenses;
-    return cumulativeBalance;
-  });
   
   new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: days,
+      labels: dailyData.map(d => d.day),
       datasets: [
         {
           label: 'Receitas',
-          data: incomeData,
-          backgroundColor: 'rgba(76, 201, 240, 0.6)',
+          data: dailyData.map(d => d.income),
+          backgroundColor: 'rgba(76, 201, 240, 0.7)',
           borderColor: 'rgba(76, 201, 240, 1)',
           borderWidth: 1
         },
         {
           label: 'Despesas',
-          data: expenseData,
-          backgroundColor: 'rgba(247, 37, 133, 0.6)',
+          data: dailyData.map(d => -d.expenses), // Valores negativos para visualização
+          backgroundColor: 'rgba(247, 37, 133, 0.7)',
           borderColor: 'rgba(247, 37, 133, 1)',
           borderWidth: 1
         },
         {
           label: 'Saldo Acumulado',
-          data: balanceData,
+          data: dailyData.map(d => d.cumulativeBalance),
           type: 'line',
-          backgroundColor: 'rgba(67, 97, 238, 0.2)',
-          borderColor: 'rgba(67, 97, 238, 1)',
-          borderWidth: 2,
           fill: false,
-          tension: 0.4,
+          borderColor: 'rgba(67, 97, 238, 1)',
+          tension: 0.1,
+          borderWidth: 2,
+          pointRadius: 3,
           yAxisID: 'y1'
         }
       ]
@@ -1360,34 +1352,46 @@ function createCashFlowChart(data) {
         tooltip: {
           callbacks: {
             label: function(context) {
-              return `${context.dataset.label}: R$ ${context.raw.toFixed(2)}`;
+              const value = Math.abs(context.raw);
+              if (context.dataset.label === 'Receitas') {
+                return `Receitas: R$ ${value.toFixed(2)}`;
+              } else if (context.dataset.label === 'Despesas') {
+                return `Despesas: R$ ${value.toFixed(2)}`;
+              } else {
+                return `Saldo Acumulado: R$ ${context.raw.toFixed(2)}`;
+              }
             }
           }
         }
       },
       scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Dia do Mês'
+          }
+        },
         y: {
           beginAtZero: true,
           title: {
             display: true,
-            text: 'Valores Diários (R$)'
+            text: 'Receitas e Despesas (R$)'
           },
           ticks: {
             callback: function(value) {
-              return 'R$ ' + value.toFixed(2);
+              return `R$ ${Math.abs(value).toFixed(2)}`;
             }
           }
         },
         y1: {
           position: 'right',
-          beginAtZero: true,
           title: {
             display: true,
             text: 'Saldo Acumulado (R$)'
           },
           ticks: {
             callback: function(value) {
-              return 'R$ ' + value.toFixed(2);
+              return `R$ ${value.toFixed(2)}`;
             }
           },
           grid: {
@@ -1399,295 +1403,217 @@ function createCashFlowChart(data) {
   });
 }
 
-/**
- * ===============================================
- * 5. COMPARATIVO DE GASTOS
- * ===============================================
- */
+// ==================== COMPARATIVO DE GASTOS ====================
 
 // Carregar comparativo de gastos
 function loadExpenseComparison() {
+  const userId = firebase.auth().currentUser.uid;
   const comparisonContainer = document.getElementById('comparisonContainer');
-  comparisonContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Carregando comparativo de gastos...</p></div>';
   
-  // Obter dados dos últimos 2 meses para comparação
-  getComparisonData().then(data => {
-    comparisonContainer.innerHTML = '';
-    
-    // Criar container para o gráfico de comparação total
-    const totalChartContainer = document.createElement('div');
-    totalChartContainer.className = 'chart-container mb-4';
-    totalChartContainer.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-title">Comparativo de Gastos Totais</div>
-      </div>
-      <canvas id="totalComparisonChart" height="300"></canvas>
-    `;
-    comparisonContainer.appendChild(totalChartContainer);
-    
-    // Criar gráfico de comparação total
-    createTotalComparisonChart(data);
-    
-    // Criar container para o gráfico de comparação por categoria
-    const categoryChartContainer = document.createElement('div');
-    categoryChartContainer.className = 'chart-container mb-4';
-    categoryChartContainer.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-title">Comparativo por Categoria</div>
-      </div>
-      <canvas id="categoryComparisonChart" height="400"></canvas>
-    `;
-    comparisonContainer.appendChild(categoryChartContainer);
-    
-    // Criar gráfico de comparação por categoria
-    createCategoryComparisonChart(data);
-    
-    // Criar tabela de variação
-    const variationContainer = document.createElement('div');
-    variationContainer.className = 'card';
-    variationContainer.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">Variação de Gastos</div>
-      </div>
-      <div class="card-body">
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Categoria</th>
-                <th>${data.previousMonth.label}</th>
-                <th>${data.currentMonth.label}</th>
-                <th>Variação</th>
-                <th>Variação %</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${Object.entries(data.categories).map(([categoryId, category]) => {
-                const previousValue = category.values[0] || 0;
-                const currentValue = category.values[1] || 0;
-                const variation = currentValue - previousValue;
-                const percentVariation = previousValue ? (variation / previousValue) * 100 : 0;
-                const variationClass = variation > 0 ? 'danger' : variation < 0 ? 'success' : 'primary';
-                
-                return `
-                  <tr>
-                    <td>${category.name}</td>
-                    <td>R$ ${previousValue.toFixed(2)}</td>
-                    <td>R$ ${currentValue.toFixed(2)}</td>
-                    <td class="text-${variationClass}">
-                      ${variation > 0 ? '+' : ''}${variation.toFixed(2)}
-                    </td>
-                    <td class="text-${variationClass}">
-                      ${variation > 0 ? '+' : ''}${percentVariation.toFixed(2)}%
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
-              <tr class="font-weight-bold">
-                <td>Total</td>
-                <td>R$ ${data.previousMonth.total.toFixed(2)}</td>
-                <td>R$ ${data.currentMonth.total.toFixed(2)}</td>
-                <td class="text-${data.totalVariation > 0 ? 'danger' : data.totalVariation < 0 ? 'success' : 'primary'}">
-                  ${data.totalVariation > 0 ? '+' : ''}${data.totalVariation.toFixed(2)}
-                </td>
-                <td class="text-${data.totalVariation > 0 ? 'danger' : data.totalVariation < 0 ? 'success' : 'primary'}">
-                  ${data.totalVariation > 0 ? '+' : ''}${data.percentVariation.toFixed(2)}%
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-    comparisonContainer.appendChild(variationContainer);
-    
-  }).catch(error => {
-    console.error("Erro ao carregar comparativo de gastos:", error);
-    comparisonContainer.innerHTML = '<div class="alert alert-danger">Erro ao carregar comparativo de gastos. Tente novamente mais tarde.</div>';
-  });
-}
-
-// Obter dados para comparação
-function getComparisonData() {
-  return new Promise((resolve, reject) => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const currentYear = today.getFullYear();
-    const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-    
-    const currentMonthLabel = new Date(currentYear, currentMonth, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-    const previousMonthLabel = new Date(previousYear, previousMonth, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-    
-    const categories = {};
-    let currentMonthTotal = 0;
-    let previousMonthTotal = 0;
-    
-    db.ref("despesas").once("value").then(snapshot => {
-      snapshot.forEach(child => {
-        const despesa = child.val();
+  comparisonContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i><p>Carregando comparativo...</p></div>';
+  
+  // Obter mês atual e mês anterior
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  
+  let previousMonth = currentMonth - 1;
+  let previousYear = currentYear;
+  
+  if (previousMonth < 0) {
+    previousMonth = 11;
+    previousYear--;
+  }
+  
+  // Obter despesas dos dois meses
+  const currentMonthPromise = getMonthlyExpenses(currentYear, currentMonth);
+  const previousMonthPromise = getMonthlyExpenses(previousYear, previousMonth);
+  
+  Promise.all([currentMonthPromise, previousMonthPromise])
+    .then(([currentData, previousData]) => {
+      // Obter categorias
+      db.ref('categorias').once('value').then(snapshot => {
+        const categories = {};
+        snapshot.forEach(child => {
+          categories[child.key] = child.val().nome;
+        });
         
-        // Despesas à vista
-        if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
-          const dataCompra = new Date(despesa.dataCompra);
-          const month = dataCompra.getMonth();
-          const year = dataCompra.getFullYear();
+        // Combinar todas as categorias de ambos os meses
+        const allCategories = new Set([
+          ...Object.keys(currentData.byCategory || {}),
+          ...Object.keys(previousData.byCategory || {})
+        ]);
+        
+        // Calcular variações
+        const comparisonData = [];
+        
+        allCategories.forEach(categoryId => {
+          const currentValue = currentData.byCategory[categoryId] || 0;
+          const previousValue = previousData.byCategory[categoryId] || 0;
           
-          if ((month === currentMonth && year === currentYear) || 
-              (month === previousMonth && year === previousYear)) {
-            
-            const valor = parseFloat(despesa.valor || 0);
-            const categoria = despesa.categoria;
-            const categoryName = window.novo_categoriasMap[categoria] || categoria;
-            
-            if (!categories[categoria]) {
-              categories[categoria] = {
-                name: categoryName,
-                values: [0, 0] // [previousMonth, currentMonth]
-              };
-            }
-            
-            if (month === previousMonth && year === previousYear) {
-              categories[categoria].values[0] += valor;
-              previousMonthTotal += valor;
-            } else {
-              categories[categoria].values[1] += valor;
-              currentMonthTotal += valor;
-            }
+          // Calcular variação absoluta e percentual
+          const absoluteChange = currentValue - previousValue;
+          let percentChange = 0;
+          
+          if (previousValue > 0) {
+            percentChange = (absoluteChange / previousValue) * 100;
+          } else if (currentValue > 0) {
+            percentChange = 100; // Novo gasto (crescimento de 100%)
           }
-        } 
-        // Despesas no cartão
-        else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-          despesa.parcelas.forEach(parcela => {
-            const dataVencimento = new Date(parcela.vencimento);
-            const month = dataVencimento.getMonth();
-            const year = dataVencimento.getFullYear();
-            
-            if ((month === currentMonth && year === currentYear) || 
-                (month === previousMonth && year === previousYear)) {
-              
-              const valor = parseFloat(parcela.valor || 0);
-              const categoria = despesa.categoria;
-              const categoryName = window.novo_categoriasMap[categoria] || categoria;
-              
-              if (!categories[categoria]) {
-                categories[categoria] = {
-                  name: categoryName,
-                  values: [0, 0] // [previousMonth, currentMonth]
-                };
-              }
-              
-              if (month === previousMonth && year === previousYear) {
-                categories[categoria].values[0] += valor;
-                previousMonthTotal += valor;
-              } else {
-                categories[categoria].values[1] += valor;
-                currentMonthTotal += valor;
-              }
-            }
+          
+          comparisonData.push({
+            categoryId: categoryId,
+            categoryName: categories[categoryId] || categoryId,
+            currentValue: currentValue,
+            previousValue: previousValue,
+            absoluteChange: absoluteChange,
+            percentChange: percentChange
           });
-        }
+        });
+        
+        // Ordenar por variação absoluta (maior para menor)
+        comparisonData.sort((a, b) => Math.abs(b.absoluteChange) - Math.abs(a.absoluteChange));
+        
+        // Calcular totais
+        const currentTotal = currentData.total;
+        const previousTotal = previousData.total;
+        const totalChange = currentTotal - previousTotal;
+        const totalPercentChange = previousTotal > 0 ? (totalChange / previousTotal) * 100 : 0;
+        
+        // Criar cards de resumo
+        comparisonContainer.innerHTML = '';
+        
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        
+        const summaryGrid = document.createElement('div');
+        summaryGrid.className = 'grid mb-4';
+        summaryGrid.innerHTML = `
+          <div class="stat-card-enhanced">
+            <div class="stat-card-icon-enhanced">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-card-title-enhanced">Mês Anterior</div>
+            <div class="stat-card-value-enhanced">R$ ${previousTotal.toFixed(2)}</div>
+            <div class="stat-card-trend-enhanced">
+              ${monthNames[previousMonth]} ${previousYear}
+            </div>
+          </div>
+          
+          <div class="stat-card-enhanced">
+            <div class="stat-card-icon-enhanced">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-card-title-enhanced">Mês Atual</div>
+            <div class="stat-card-value-enhanced">R$ ${currentTotal.toFixed(2)}</div>
+            <div class="stat-card-trend-enhanced">
+              ${monthNames[currentMonth]} ${currentYear}
+            </div>
+          </div>
+          
+          <div class="stat-card-enhanced ${totalChange <= 0 ? 'success' : 'warning'}">
+            <div class="stat-card-icon-enhanced">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-card-title-enhanced">Variação</div>
+            <div class="stat-card-value-enhanced">R$ ${Math.abs(totalChange).toFixed(2)}</div>
+            <div class="stat-card-trend-enhanced">
+              <i class="fas fa-arrow-${totalChange <= 0 ? 'down' : 'up'} trend-${totalChange <= 0 ? 'up' : 'down'}"></i>
+              ${Math.abs(totalPercentChange).toFixed(1)}% ${totalChange <= 0 ? 'redução' : 'aumento'}
+            </div>
+          </div>
+        `;
+        
+        comparisonContainer.appendChild(summaryGrid);
+        
+        // Criar gráfico de comparação
+        const chartCard = document.createElement('div');
+        chartCard.className = 'card grid-col-2';
+        chartCard.innerHTML = `
+          <div class="card-header">
+            <div class="card-title">Comparativo por Categoria</div>
+          </div>
+          <div class="card-body">
+            <canvas id="comparisonChart" height="250"></canvas>
+          </div>
+        `;
+        
+        comparisonContainer.appendChild(chartCard);
+        
+        // Criar tabela de variações
+        const tableCard = document.createElement('div');
+        tableCard.className = 'card';
+        tableCard.innerHTML = `
+          <div class="card-header">
+            <div class="card-title">Variações por Categoria</div>
+          </div>
+          <div class="card-body">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Mês Anterior</th>
+                    <th>Mês Atual</th>
+                    <th>Variação</th>
+                    <th>%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${comparisonData.map(item => `
+                    <tr>
+                      <td>${item.categoryName}</td>
+                      <td>R$ ${item.previousValue.toFixed(2)}</td>
+                      <td>R$ ${item.currentValue.toFixed(2)}</td>
+                      <td class="${item.absoluteChange <= 0 ? 'text-success' : 'text-danger'}">
+                        ${item.absoluteChange <= 0 ? '-' : '+'}R$ ${Math.abs(item.absoluteChange).toFixed(2)}
+                      </td>
+                      <td class="${item.percentChange <= 0 ? 'text-success' : 'text-danger'}">
+                        ${item.percentChange <= 0 ? '' : '+'}${item.percentChange.toFixed(1)}%
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+        
+        comparisonContainer.appendChild(tableCard);
+        
+        // Inicializar gráfico
+        createComparisonChart(comparisonData, monthNames[previousMonth], monthNames[currentMonth]);
       });
-      
-      const totalVariation = currentMonthTotal - previousMonthTotal;
-      const percentVariation = previousMonthTotal ? (totalVariation / previousMonthTotal) * 100 : 0;
-      
-      resolve({
-        previousMonth: {
-          label: previousMonthLabel,
-          total: previousMonthTotal
-        },
-        currentMonth: {
-          label: currentMonthLabel,
-          total: currentMonthTotal
-        },
-        categories,
-        totalVariation,
-        percentVariation
-      });
-    }).catch(error => {
-      console.error("Erro ao obter dados para comparação:", error);
-      reject(error);
+    })
+    .catch(error => {
+      console.error('Erro ao carregar comparativo:', error);
+      comparisonContainer.innerHTML = '<div class="card grid-col-2"><div class="card-body text-center"><p>Erro ao carregar comparativo. Tente novamente.</p></div></div>';
     });
-  });
 }
 
-// Criar gráfico de comparação total
-function createTotalComparisonChart(data) {
-  const ctx = document.getElementById('totalComparisonChart').getContext('2d');
+// Criar gráfico de comparação
+function createComparisonChart(comparisonData, previousMonthName, currentMonthName) {
+  const ctx = document.getElementById('comparisonChart').getContext('2d');
+  
+  // Limitar a 8 categorias para melhor visualização
+  const chartData = comparisonData.slice(0, 8);
   
   new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: [data.previousMonth.label, data.currentMonth.label],
-      datasets: [{
-        label: 'Total de Gastos',
-        data: [data.previousMonth.total, data.currentMonth.total],
-        backgroundColor: [
-          'rgba(76, 201, 240, 0.6)',
-          'rgba(67, 97, 238, 0.6)'
-        ],
-        borderColor: [
-          'rgba(76, 201, 240, 1)',
-          'rgba(67, 97, 238, 1)'
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return `Total: R$ ${context.raw.toFixed(2)}`;
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              return 'R$ ' + value.toFixed(2);
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-// Criar gráfico de comparação por categoria
-function createCategoryComparisonChart(data) {
-  const ctx = document.getElementById('categoryComparisonChart').getContext('2d');
-  
-  // Preparar dados para o gráfico
-  const categories = Object.values(data.categories)
-    .sort((a, b) => (b.values[1] + b.values[0]) - (a.values[1] + a.values[0]))
-    .slice(0, 8); // Limitar a 8 categorias para melhor visualização
-  
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: categories.map(cat => cat.name),
+      labels: chartData.map(item => item.categoryName),
       datasets: [
         {
-          label: data.previousMonth.label,
-          data: categories.map(cat => cat.values[0]),
-          backgroundColor: 'rgba(76, 201, 240, 0.6)',
-          borderColor: 'rgba(76, 201, 240, 1)',
+          label: previousMonthName,
+          data: chartData.map(item => item.previousValue),
+          backgroundColor: 'rgba(67, 97, 238, 0.7)',
+          borderColor: 'rgba(67, 97, 238, 1)',
           borderWidth: 1
         },
         {
-          label: data.currentMonth.label,
-          data: categories.map(cat => cat.values[1]),
-          backgroundColor: 'rgba(67, 97, 238, 0.6)',
-          borderColor: 'rgba(67, 97, 238, 1)',
+          label: currentMonthName,
+          data: chartData.map(item => item.currentValue),
+          backgroundColor: 'rgba(247, 37, 133, 0.7)',
+          borderColor: 'rgba(247, 37, 133, 1)',
           borderWidth: 1
         }
       ]
@@ -1711,7 +1637,7 @@ function createCategoryComparisonChart(data) {
           beginAtZero: true,
           ticks: {
             callback: function(value) {
-              return 'R$ ' + value.toFixed(2);
+              return `R$ ${value.toFixed(2)}`;
             }
           }
         }
@@ -1720,100 +1646,443 @@ function createCategoryComparisonChart(data) {
   });
 }
 
-/**
- * ===============================================
- * 6. SISTEMA DE NOTIFICAÇÕES PERSONALIZÁVEIS
- * ===============================================
- */
+// ==================== SISTEMA DE NOTIFICAÇÕES ====================
 
 // Carregar notificações
 function loadNotifications() {
   const userId = firebase.auth().currentUser.uid;
   const notificationsContainer = document.getElementById('notificationsContainer');
-  notificationsContainer.innerHTML = '';
   
-  db.ref(`users/${userId}/notifications`).orderByChild('date').limitToLast(20).once('value').then(snapshot => {
-    if (!snapshot.exists()) {
-      notificationsContainer.innerHTML = '<p class="text-center">Você não tem notificações.</p>';
-      return;
-    }
+  notificationsContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i><p>Carregando notificações...</p></div>';
+  
+  // Verificar configurações de notificações
+  db.ref(`users/${userId}/settings/notifications`).once('value').then(snapshot => {
+    const settings = snapshot.val() || {
+      notifyBudget: true,
+      notifyDueDate: true,
+      notifyOverdue: true,
+      notifyGoals: true
+    };
     
+    // Atualizar checkboxes nas configurações
+    document.getElementById('notifyBudget').checked = settings.notifyBudget;
+    document.getElementById('notifyDueDate').checked = settings.notifyDueDate;
+    document.getElementById('notifyOverdue').checked = settings.notifyOverdue;
+    document.getElementById('notifyGoals').checked = settings.notifyGoals;
+    
+    // Gerar notificações
     const notifications = [];
-    snapshot.forEach(child => {
-      notifications.push({
-        id: child.key,
-        ...child.val()
-      });
-    });
     
-    // Ordenar notificações por data (mais recentes primeiro)
-    notifications.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Obter data atual
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    notifications.forEach(notification => {
-      const notificationCard = document.createElement('div');
-      notificationCard.className = `alert alert-${getNotificationTypeClass(notification.type)} mb-3`;
-      notificationCard.innerHTML = `
-        <div class="alert-icon">
-          <i class="fas ${getNotificationIcon(notification.type)}"></i>
-        </div>
-        <div class="alert-content">
-          <div class="alert-title">${notification.title}</div>
-          <div>${notification.message}</div>
-          <small>${formatNotificationDate(notification.date)}</small>
-        </div>
-        <div class="alert-close" onclick="markNotificationAsRead('${notification.id}')">
-          <i class="fas fa-times"></i>
-        </div>
-      `;
+    // Notificações de orçamento
+    if (settings.notifyBudget) {
+      const budgetPromise = checkBudgetNotifications(userId, today);
       
-      notificationsContainer.appendChild(notificationCard);
-    });
-  }).catch(error => {
-    console.error("Erro ao carregar notificações:", error);
-    notificationsContainer.innerHTML = '<div class="alert alert-danger">Erro ao carregar notificações. Tente novamente mais tarde.</div>';
+      // Notificações de vencimentos próximos
+      const dueDatePromise = settings.notifyDueDate ? checkDueDateNotifications(today) : Promise.resolve([]);
+      
+      // Notificações de despesas vencidas
+      const overduePromise = settings.notifyOverdue ? checkOverdueNotifications(today) : Promise.resolve([]);
+      
+      // Notificações de metas
+      const goalsPromise = settings.notifyGoals ? checkGoalNotifications(userId, today) : Promise.resolve([]);
+      
+      Promise.all([budgetPromise, dueDatePromise, overduePromise, goalsPromise])
+        .then(([budgetNotifications, dueDateNotifications, overdueNotifications, goalNotifications]) => {
+          const allNotifications = [
+            ...budgetNotifications,
+            ...dueDateNotifications,
+            ...overdueNotifications,
+            ...goalNotifications
+          ];
+          
+          // Ordenar por data (mais recentes primeiro)
+          allNotifications.sort((a, b) => new Date(b.date) - new Date(a.date));
+          
+          // Atualizar contador de notificações
+          updateNotificationCount(allNotifications.length);
+          
+          if (allNotifications.length === 0) {
+            notificationsContainer.innerHTML = '<div class="text-center"><p>Você não tem notificações no momento.</p></div>';
+            return;
+          }
+          
+          // Exibir notificações
+          notificationsContainer.innerHTML = '';
+          
+          allNotifications.forEach(notification => {
+            const notificationItem = document.createElement('div');
+            notificationItem.className = `notification-item ${notification.read ? 'read' : ''}`;
+            notificationItem.innerHTML = `
+              <div class="notification-icon ${notification.type}">
+                <i class="fas ${getNotificationIcon(notification.type)}"></i>
+              </div>
+              <div class="notification-content">
+                <div class="notification-title">${notification.title}</div>
+                <div class="notification-message">${notification.message}</div>
+                <div class="notification-date">${formatNotificationDate(notification.date)}</div>
+              </div>
+              <div class="notification-actions">
+                <button class="btn btn-icon" onclick="markNotificationAsRead('${notification.id}')">
+                  <i class="fas ${notification.read ? 'fa-envelope-open' : 'fa-envelope'}"></i>
+                </button>
+              </div>
+            `;
+            
+            notificationsContainer.appendChild(notificationItem);
+          });
+        })
+        .catch(error => {
+          console.error('Erro ao carregar notificações:', error);
+          notificationsContainer.innerHTML = '<div class="text-center"><p>Erro ao carregar notificações. Tente novamente.</p></div>';
+        });
+    }
   });
 }
 
-// Obter classe CSS para tipo de notificação
-function getNotificationTypeClass(type) {
-  switch (type) {
-    case 'warning':
-    case 'budget_alert':
-    case 'due_date':
-      return 'warning';
-    case 'success':
-    case 'goal_completed':
-      return 'success';
-    case 'danger':
-    case 'overdue':
-      return 'danger';
-    default:
-      return 'primary';
+// Verificar notificações de orçamento
+function checkBudgetNotifications(userId, today) {
+  return new Promise((resolve, reject) => {
+    const notifications = [];
+    
+    // Obter mês e ano atual
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    // Verificar orçamentos
+    db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}`).once('value').then(snapshot => {
+      if (!snapshot.exists()) {
+        resolve(notifications);
+        return;
+      }
+      
+      // Obter categorias
+      db.ref('categorias').once('value').then(categoriesSnapshot => {
+        const categories = {};
+        categoriesSnapshot.forEach(child => {
+          categories[child.key] = child.val().nome;
+        });
+        
+        // Obter despesas do mês
+        getMonthlyExpensesByCategory(currentYear, currentMonth).then(expenses => {
+          snapshot.forEach(childSnapshot => {
+            const budget = childSnapshot.val();
+            const categoryId = childSnapshot.key;
+            const categoryName = categories[categoryId] || categoryId;
+            const spent = expenses[categoryId] || 0;
+            const limit = parseFloat(budget.limit);
+            const progress = Math.round((spent / limit) * 100);
+            
+            // Verificar se o orçamento está próximo do limite ou excedido
+            if (progress >= 100) {
+              notifications.push({
+                id: `budget_exceeded_${categoryId}_${Date.now()}`,
+                type: 'warning',
+                title: 'Orçamento Excedido',
+                message: `Você excedeu o orçamento para ${categoryName}. Limite: R$ ${limit.toFixed(2)}, Gasto: R$ ${spent.toFixed(2)}.`,
+                date: new Date().toISOString(),
+                read: false
+              });
+            } else if (progress >= 80) {
+              notifications.push({
+                id: `budget_near_limit_${categoryId}_${Date.now()}`,
+                type: 'info',
+                title: 'Orçamento Próximo do Limite',
+                message: `Você está próximo de atingir o orçamento para ${categoryName} (${progress}%). Limite: R$ ${limit.toFixed(2)}, Gasto: R$ ${spent.toFixed(2)}.`,
+                date: new Date().toISOString(),
+                read: false
+              });
+            }
+          });
+          
+          resolve(notifications);
+        });
+      });
+    }).catch(error => {
+      console.error('Erro ao verificar notificações de orçamento:', error);
+      reject(error);
+    });
+  });
+}
+
+// Verificar notificações de vencimentos próximos
+function checkDueDateNotifications(today) {
+  return new Promise((resolve, reject) => {
+    const notifications = [];
+    
+    // Verificar despesas com vencimento nos próximos 3 dias
+    const threeDaysLater = new Date(today);
+    threeDaysLater.setDate(today.getDate() + 3);
+    
+    db.ref('despesas').once('value').then(snapshot => {
+      snapshot.forEach(child => {
+        const despesa = child.val();
+        
+        // Processar despesas à vista não pagas
+        if (despesa.formaPagamento === 'avista' && !despesa.pago) {
+          const dataCompra = new Date(despesa.dataCompra);
+          
+          if (dataCompra >= today && dataCompra <= threeDaysLater) {
+            const daysLeft = Math.ceil((dataCompra - today) / (1000 * 60 * 60 * 24));
+            
+            notifications.push({
+              id: `due_date_${child.key}_${Date.now()}`,
+              type: 'info',
+              title: 'Vencimento Próximo',
+              message: `A despesa "${despesa.descricao}" vence em ${daysLeft} dia(s). Valor: R$ ${parseFloat(despesa.valor).toFixed(2)}.`,
+              date: new Date().toISOString(),
+              read: false
+            });
+          }
+        }
+        // Processar despesas no cartão não pagas
+        else if (despesa.formaPagamento === 'cartao' && despesa.parcelas) {
+          despesa.parcelas.forEach((parcela, index) => {
+            if (!parcela.pago) {
+              const dataVencimento = new Date(parcela.vencimento);
+              
+              if (dataVencimento >= today && dataVencimento <= threeDaysLater) {
+                const daysLeft = Math.ceil((dataVencimento - today) / (1000 * 60 * 60 * 24));
+                
+                notifications.push({
+                  id: `due_date_${child.key}_${index}_${Date.now()}`,
+                  type: 'info',
+                  title: 'Vencimento Próximo',
+                  message: `A parcela ${index + 1} de "${despesa.descricao}" vence em ${daysLeft} dia(s). Valor: R$ ${parseFloat(parcela.valor).toFixed(2)}.`,
+                  date: new Date().toISOString(),
+                  read: false
+                });
+              }
+            }
+          });
+        }
+      });
+      
+      resolve(notifications);
+    }).catch(error => {
+      console.error('Erro ao verificar notificações de vencimentos:', error);
+      reject(error);
+    });
+  });
+}
+
+// Verificar notificações de despesas vencidas
+function checkOverdueNotifications(today) {
+  return new Promise((resolve, reject) => {
+    const notifications = [];
+    
+    db.ref('despesas').once('value').then(snapshot => {
+      snapshot.forEach(child => {
+        const despesa = child.val();
+        
+        // Processar despesas à vista não pagas
+        if (despesa.formaPagamento === 'avista' && !despesa.pago) {
+          const dataCompra = new Date(despesa.dataCompra);
+          
+          if (dataCompra < today) {
+            const daysOverdue = Math.ceil((today - dataCompra) / (1000 * 60 * 60 * 24));
+            
+            notifications.push({
+              id: `overdue_${child.key}_${Date.now()}`,
+              type: 'danger',
+              title: 'Despesa Vencida',
+              message: `A despesa "${despesa.descricao}" está vencida há ${daysOverdue} dia(s). Valor: R$ ${parseFloat(despesa.valor).toFixed(2)}.`,
+              date: new Date().toISOString(),
+              read: false
+            });
+          }
+        }
+        // Processar despesas no cartão não pagas
+        else if (despesa.formaPagamento === 'cartao' && despesa.parcelas) {
+          despesa.parcelas.forEach((parcela, index) => {
+            if (!parcela.pago) {
+              const dataVencimento = new Date(parcela.vencimento);
+              
+              if (dataVencimento < today) {
+                const daysOverdue = Math.ceil((today - dataVencimento) / (1000 * 60 * 60 * 24));
+                
+                notifications.push({
+                  id: `overdue_${child.key}_${index}_${Date.now()}`,
+                  type: 'danger',
+                  title: 'Parcela Vencida',
+                  message: `A parcela ${index + 1} de "${despesa.descricao}" está vencida há ${daysOverdue} dia(s). Valor: R$ ${parseFloat(parcela.valor).toFixed(2)}.`,
+                  date: new Date().toISOString(),
+                  read: false
+                });
+              }
+            }
+          });
+        }
+      });
+      
+      resolve(notifications);
+    }).catch(error => {
+      console.error('Erro ao verificar notificações de despesas vencidas:', error);
+      reject(error);
+    });
+  });
+}
+
+// Verificar notificações de metas
+function checkGoalNotifications(userId, today) {
+  return new Promise((resolve, reject) => {
+    const notifications = [];
+    
+    db.ref(`users/${userId}/goals`).once('value').then(snapshot => {
+      if (!snapshot.exists()) {
+        resolve(notifications);
+        return;
+      }
+      
+      snapshot.forEach(childSnapshot => {
+        const goal = childSnapshot.val();
+        const goalId = childSnapshot.key;
+        
+        // Verificar metas próximas do prazo
+        const targetDate = new Date(goal.targetDate);
+        const daysLeft = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+        
+        // Verificar progresso
+        const progress = calculateGoalProgress(goal);
+        
+        // Meta atingida
+        if (progress >= 100) {
+          notifications.push({
+            id: `goal_completed_${goalId}_${Date.now()}`,
+            type: 'success',
+            title: 'Meta Atingida',
+            message: `Parabéns! Você atingiu sua meta "${goal.name}".`,
+            date: new Date().toISOString(),
+            read: false
+          });
+        }
+        // Meta próxima do prazo com progresso baixo
+        else if (daysLeft <= 30 && daysLeft > 0 && progress < 80) {
+          notifications.push({
+            id: `goal_near_deadline_${goalId}_${Date.now()}`,
+            type: 'warning',
+            title: 'Meta Próxima do Prazo',
+            message: `Sua meta "${goal.name}" vence em ${daysLeft} dia(s) e está com ${progress}% de progresso.`,
+            date: new Date().toISOString(),
+            read: false
+          });
+        }
+        // Meta vencida
+        else if (daysLeft <= 0 && progress < 100) {
+          notifications.push({
+            id: `goal_overdue_${goalId}_${Date.now()}`,
+            type: 'danger',
+            title: 'Meta Vencida',
+            message: `Sua meta "${goal.name}" venceu e está com ${progress}% de progresso.`,
+            date: new Date().toISOString(),
+            read: false
+          });
+        }
+      });
+      
+      resolve(notifications);
+    }).catch(error => {
+      console.error('Erro ao verificar notificações de metas:', error);
+      reject(error);
+    });
+  });
+}
+
+// Marcar notificação como lida
+function markNotificationAsRead(notificationId) {
+  const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+  
+  if (notificationItem) {
+    notificationItem.classList.add('read');
+    
+    // Atualizar ícone
+    const icon = notificationItem.querySelector('.notification-actions i');
+    icon.classList.remove('fa-envelope');
+    icon.classList.add('fa-envelope-open');
+    
+    // Atualizar contador
+    const count = document.querySelectorAll('.notification-item:not(.read)').length;
+    updateNotificationCount(count);
   }
+}
+
+// Atualizar contador de notificações
+function updateNotificationCount(count) {
+  const badge = document.getElementById('notificationCount');
+  
+  if (badge) {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+}
+
+// Verificar todas as notificações
+function checkAllNotifications() {
+  const userId = firebase.auth().currentUser.uid;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Verificar configurações de notificações
+  db.ref(`users/${userId}/settings/notifications`).once('value').then(snapshot => {
+    const settings = snapshot.val() || {
+      notifyBudget: true,
+      notifyDueDate: true,
+      notifyOverdue: true,
+      notifyGoals: true
+    };
+    
+    // Gerar notificações
+    const budgetPromise = settings.notifyBudget ? checkBudgetNotifications(userId, today) : Promise.resolve([]);
+    const dueDatePromise = settings.notifyDueDate ? checkDueDateNotifications(today) : Promise.resolve([]);
+    const overduePromise = settings.notifyOverdue ? checkOverdueNotifications(today) : Promise.resolve([]);
+    const goalsPromise = settings.notifyGoals ? checkGoalNotifications(userId, today) : Promise.resolve([]);
+    
+    Promise.all([budgetPromise, dueDatePromise, overduePromise, goalsPromise])
+      .then(([budgetNotifications, dueDateNotifications, overdueNotifications, goalNotifications]) => {
+        const allNotifications = [
+          ...budgetNotifications,
+          ...dueDateNotifications,
+          ...overdueNotifications,
+          ...goalNotifications
+        ];
+        
+        // Atualizar contador de notificações
+        updateNotificationCount(allNotifications.length);
+        
+        // Mostrar toast para notificações importantes
+        const importantNotifications = allNotifications.filter(n => n.type === 'danger' || n.type === 'warning');
+        
+        if (importantNotifications.length > 0) {
+          showToast(`Você tem ${importantNotifications.length} notificação(ões) importante(s).`, 'warning');
+        }
+      })
+      .catch(error => {
+        console.error('Erro ao verificar notificações:', error);
+      });
+  });
 }
 
 // Obter ícone para tipo de notificação
 function getNotificationIcon(type) {
   switch (type) {
-    case 'warning':
-    case 'budget_alert':
-      return 'fa-exclamation-triangle';
     case 'success':
-    case 'goal_completed':
       return 'fa-check-circle';
+    case 'warning':
+      return 'fa-exclamation-triangle';
     case 'danger':
-    case 'overdue':
       return 'fa-exclamation-circle';
-    case 'due_date':
-      return 'fa-calendar-alt';
+    case 'info':
     default:
-      return 'fa-bell';
+      return 'fa-info-circle';
   }
 }
 
-// Formatar data da notificação
-function formatNotificationDate(dateString) {
-  const date = new Date(dateString);
+// Formatar data de notificação
+function formatNotificationDate(dateStr) {
+  const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now - date;
   const diffSec = Math.floor(diffMs / 1000);
@@ -1821,325 +2090,147 @@ function formatNotificationDate(dateString) {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
   
-  if (diffDay > 0) {
-    return diffDay === 1 ? 'Ontem' : `${diffDay} dias atrás`;
-  } else if (diffHour > 0) {
-    return `${diffHour} ${diffHour === 1 ? 'hora' : 'horas'} atrás`;
-  } else if (diffMin > 0) {
-    return `${diffMin} ${diffMin === 1 ? 'minuto' : 'minutos'} atrás`;
-  } else {
+  if (diffSec < 60) {
     return 'Agora mesmo';
+  } else if (diffMin < 60) {
+    return `${diffMin} minuto(s) atrás`;
+  } else if (diffHour < 24) {
+    return `${diffHour} hora(s) atrás`;
+  } else if (diffDay < 7) {
+    return `${diffDay} dia(s) atrás`;
+  } else {
+    return date.toLocaleDateString();
   }
 }
 
-// Marcar notificação como lida
-function markNotificationAsRead(notificationId) {
+// Salvar configurações de notificações
+function saveNotificationSettings() {
   const userId = firebase.auth().currentUser.uid;
   
-  db.ref(`users/${userId}/notifications/${notificationId}`).remove()
+  const settings = {
+    notifyBudget: document.getElementById('notifyBudget').checked,
+    notifyDueDate: document.getElementById('notifyDueDate').checked,
+    notifyOverdue: document.getElementById('notifyOverdue').checked,
+    notifyGoals: document.getElementById('notifyGoals').checked,
+    updatedAt: new Date().toISOString()
+  };
+  
+  db.ref(`users/${userId}/settings/notifications`).set(settings)
     .then(() => {
+      showToast('Configurações salvas com sucesso!', 'success');
+      fecharModal('notificationSettingsModal');
       loadNotifications();
     })
     .catch(error => {
-      console.error("Erro ao marcar notificação como lida:", error);
-      showToast("Erro ao marcar notificação como lida. Tente novamente.", "danger");
+      console.error('Erro ao salvar configurações:', error);
+      showToast('Erro ao salvar configurações. Tente novamente.', 'danger');
     });
 }
 
-// Adicionar notificação
-function addNotification(notification) {
-  const userId = firebase.auth().currentUser?.uid;
-  if (!userId) return;
-  
-  db.ref(`users/${userId}/notifications`).push(notification)
-    .catch(error => {
-      console.error("Erro ao adicionar notificação:", error);
-    });
-}
+// ==================== FUNÇÕES UTILITÁRIAS ====================
 
-// Verificar orçamentos e adicionar notificações
-function checkBudgetsAndNotify() {
-  const userId = firebase.auth().currentUser?.uid;
-  if (!userId) return;
+// Exibir toast
+function showToast(message, type = 'info') {
+  // Verificar se já existe um container de toast
+  let toastContainer = document.querySelector('.toast-container');
   
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container';
+    document.body.appendChild(toastContainer);
+  }
   
-  // Obter orçamentos do mês atual
-  db.ref(`users/${userId}/budgets/${currentYear}/${currentMonth}`).once('value').then(snapshot => {
-    if (!snapshot.exists()) return;
-    
-    // Obter despesas do mês para calcular o progresso
-    getMonthlyExpensesByCategory(currentYear, currentMonth).then(expenses => {
-      snapshot.forEach(childSnapshot => {
-        const budget = childSnapshot.val();
-        const categoryId = childSnapshot.key;
-        const categoryName = window.novo_categoriasMap[categoryId] || categoryId;
-        const spent = expenses[categoryId] || 0;
-        const limit = parseFloat(budget.limit);
-        const progress = (spent / limit) * 100;
-        
-        // Verificar se o orçamento está próximo do limite ou excedido
-        if (progress >= 90 && progress < 100) {
-          // Verificar se já existe uma notificação para este orçamento
-          db.ref(`users/${userId}/notifications`)
-            .orderByChild('budgetId')
-            .equalTo(categoryId)
-            .once('value')
-            .then(notificationSnapshot => {
-              if (!notificationSnapshot.exists()) {
-                // Adicionar notificação
-                addNotification({
-                  type: 'budget_alert',
-                  title: 'Orçamento quase atingido',
-                  message: `Você já utilizou ${progress.toFixed(0)}% do seu orçamento para ${categoryName}.`,
-                  date: new Date().toISOString(),
-                  budgetId: categoryId
-                });
-              }
-            });
-        } else if (progress >= 100) {
-          // Verificar se já existe uma notificação para este orçamento
-          db.ref(`users/${userId}/notifications`)
-            .orderByChild('budgetId')
-            .equalTo(categoryId)
-            .once('value')
-            .then(notificationSnapshot => {
-              if (!notificationSnapshot.exists()) {
-                // Adicionar notificação
-                addNotification({
-                  type: 'danger',
-                  title: 'Orçamento excedido',
-                  message: `Você excedeu o orçamento para ${categoryName} em ${(progress - 100).toFixed(0)}%.`,
-                  date: new Date().toISOString(),
-                  budgetId: categoryId
-                });
-              }
-            });
-        }
-      });
-    });
-  });
-}
-
-// Verificar despesas próximas do vencimento
-function checkUpcomingExpenses() {
-  const userId = firebase.auth().currentUser?.uid;
-  if (!userId) return;
-  
-  const today = new Date();
-  const threeDaysLater = new Date(today);
-  threeDaysLater.setDate(today.getDate() + 3);
-  
-  db.ref("despesas").once("value").then(snapshot => {
-    snapshot.forEach(child => {
-      const despesa = child.val();
-      
-      // Despesas à vista
-      if (despesa.formaPagamento === "avista" && !despesa.pago && despesa.dataCompra) {
-        const dataCompra = new Date(despesa.dataCompra);
-        
-        // Verificar se a data de compra está entre hoje e 3 dias depois
-        if (dataCompra >= today && dataCompra <= threeDaysLater) {
-          // Verificar se já existe uma notificação para esta despesa
-          db.ref(`users/${userId}/notifications`)
-            .orderByChild('expenseId')
-            .equalTo(child.key)
-            .once('value')
-            .then(notificationSnapshot => {
-              if (!notificationSnapshot.exists()) {
-                // Adicionar notificação
-                addNotification({
-                  type: 'due_date',
-                  title: 'Despesa próxima do vencimento',
-                  message: `A despesa "${despesa.descricao}" vence em ${Math.ceil((dataCompra - today) / (1000 * 60 * 60 * 24))} dias.`,
-                  date: new Date().toISOString(),
-                  expenseId: child.key
-                });
-              }
-            });
-        }
-      } 
-      // Despesas no cartão
-      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-        despesa.parcelas.forEach((parcela, index) => {
-          if (!parcela.pago) {
-            const dataVencimento = new Date(parcela.vencimento);
-            
-            // Verificar se a data de vencimento está entre hoje e 3 dias depois
-            if (dataVencimento >= today && dataVencimento <= threeDaysLater) {
-              // Verificar se já existe uma notificação para esta parcela
-              db.ref(`users/${userId}/notifications`)
-                .orderByChild('expenseId')
-                .equalTo(`${child.key}_${index}`)
-                .once('value')
-                .then(notificationSnapshot => {
-                  if (!notificationSnapshot.exists()) {
-                    // Adicionar notificação
-                    addNotification({
-                      type: 'due_date',
-                      title: 'Parcela próxima do vencimento',
-                      message: `A parcela ${index + 1} de "${despesa.descricao}" vence em ${Math.ceil((dataVencimento - today) / (1000 * 60 * 60 * 24))} dias.`,
-                      date: new Date().toISOString(),
-                      expenseId: `${child.key}_${index}`
-                    });
-                  }
-                });
-            }
-          }
-        });
-      }
-    });
-  });
-}
-
-// Verificar despesas vencidas
-function checkOverdueExpenses() {
-  const userId = firebase.auth().currentUser?.uid;
-  if (!userId) return;
-  
-  const today = new Date();
-  
-  db.ref("despesas").once("value").then(snapshot => {
-    snapshot.forEach(child => {
-      const despesa = child.val();
-      
-      // Despesas à vista
-      if (despesa.formaPagamento === "avista" && !despesa.pago && despesa.dataCompra) {
-        const dataCompra = new Date(despesa.dataCompra);
-        
-        // Verificar se a data de compra já passou
-        if (dataCompra < today) {
-          // Verificar se já existe uma notificação para esta despesa
-          db.ref(`users/${userId}/notifications`)
-            .orderByChild('overdueId')
-            .equalTo(child.key)
-            .once('value')
-            .then(notificationSnapshot => {
-              if (!notificationSnapshot.exists()) {
-                // Adicionar notificação
-                addNotification({
-                  type: 'overdue',
-                  title: 'Despesa vencida',
-                  message: `A despesa "${despesa.descricao}" está vencida há ${Math.ceil((today - dataCompra) / (1000 * 60 * 60 * 24))} dias.`,
-                  date: new Date().toISOString(),
-                  overdueId: child.key
-                });
-              }
-            });
-        }
-      } 
-      // Despesas no cartão
-      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-        despesa.parcelas.forEach((parcela, index) => {
-          if (!parcela.pago) {
-            const dataVencimento = new Date(parcela.vencimento);
-            
-            // Verificar se a data de vencimento já passou
-            if (dataVencimento < today) {
-              // Verificar se já existe uma notificação para esta parcela
-              db.ref(`users/${userId}/notifications`)
-                .orderByChild('overdueId')
-                .equalTo(`${child.key}_${index}`)
-                .once('value')
-                .then(notificationSnapshot => {
-                  if (!notificationSnapshot.exists()) {
-                    // Adicionar notificação
-                    addNotification({
-                      type: 'overdue',
-                      title: 'Parcela vencida',
-                      message: `A parcela ${index + 1} de "${despesa.descricao}" está vencida há ${Math.ceil((today - dataVencimento) / (1000 * 60 * 60 * 24))} dias.`,
-                      date: new Date().toISOString(),
-                      overdueId: `${child.key}_${index}`
-                    });
-                  }
-                });
-            }
-          }
-        });
-      }
-    });
-  });
-}
-
-// Verificar metas próximas do prazo
-function checkGoalDeadlines() {
-  const userId = firebase.auth().currentUser?.uid;
-  if (!userId) return;
-  
-  const today = new Date();
-  const sevenDaysLater = new Date(today);
-  sevenDaysLater.setDate(today.getDate() + 7);
-  
-  db.ref(`users/${userId}/goals`).once('value').then(snapshot => {
-    snapshot.forEach(child => {
-      const goal = child.val();
-      const targetDate = new Date(goal.targetDate);
-      
-      // Verificar se a meta está próxima do prazo
-      if (targetDate >= today && targetDate <= sevenDaysLater) {
-        const progress = calculateGoalProgress(goal);
-        
-        // Verificar se a meta ainda não foi atingida
-        if (progress < 100) {
-          // Verificar se já existe uma notificação para esta meta
-          db.ref(`users/${userId}/notifications`)
-            .orderByChild('goalDeadlineId')
-            .equalTo(child.key)
-            .once('value')
-            .then(notificationSnapshot => {
-              if (!notificationSnapshot.exists()) {
-                // Adicionar notificação
-                addNotification({
-                  type: 'warning',
-                  title: 'Meta próxima do prazo',
-                  message: `Sua meta "${goal.name}" vence em ${Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24))} dias e está ${progress}% concluída.`,
-                  date: new Date().toISOString(),
-                  goalDeadlineId: child.key
-                });
-              }
-            });
-        }
-      }
-    });
-  });
-}
-
-// Verificar todas as condições para notificações
-function checkAllNotifications() {
-  if (!firebase.auth().currentUser) return;
-  
-  checkBudgetsAndNotify();
-  checkUpcomingExpenses();
-  checkOverdueExpenses();
-  checkGoalDeadlines();
-}
-
-// Configurar verificação periódica de notificações
-function setupNotificationChecks() {
-  // Verificar notificações ao carregar a página
-  checkAllNotifications();
-  
-  // Verificar notificações a cada 12 horas
-  setInterval(checkAllNotifications, 12 * 60 * 60 * 1000);
-}
-
-// Mostrar toast
-function showToast(message, type = 'primary', duration = 3000) {
+  // Criar toast
   const toast = document.createElement('div');
-  toast.className = `toast-alerta bg-${type}`;
-  toast.innerText = message;
-  document.body.appendChild(toast);
+  toast.className = `toast toast-${type}`;
   
+  // Ícone baseado no tipo
+  let icon = 'fa-info-circle';
+  let title = 'Informação';
+  
+  switch (type) {
+    case 'success':
+      icon = 'fa-check-circle';
+      title = 'Sucesso';
+      break;
+    case 'warning':
+      icon = 'fa-exclamation-triangle';
+      title = 'Atenção';
+      break;
+    case 'danger':
+      icon = 'fa-exclamation-circle';
+      title = 'Erro';
+      break;
+  }
+  
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <i class="fas ${icon}"></i>
+    </div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <div class="toast-close" onclick="this.parentElement.remove()">
+      <i class="fas fa-times"></i>
+    </div>
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  // Remover toast após 5 segundos
   setTimeout(() => {
     toast.remove();
-  }, duration);
+  }, 5000);
 }
 
-// Inicializar verificação de autenticação
-firebase.auth().onAuthStateChanged(user => {
-  if (user) {
-    setupNotificationChecks();
-  }
-});
+// Exportar dados
+function exportData() {
+  const userId = firebase.auth().currentUser.uid;
+  
+  // Obter dados do usuário
+  Promise.all([
+    db.ref('despesas').once('value'),
+    db.ref('categorias').once('value'),
+    db.ref('cartoes').once('value'),
+    db.ref('usuarios').once('value'),
+    db.ref(`users/${userId}/goals`).once('value'),
+    db.ref(`users/${userId}/budgets`).once('value')
+  ])
+    .then(([despesasSnapshot, categoriasSnapshot, cartoesSnapshot, usuariosSnapshot, goalsSnapshot, budgetsSnapshot]) => {
+      const data = {
+        despesas: despesasSnapshot.val() || {},
+        categorias: categoriasSnapshot.val() || {},
+        cartoes: cartoesSnapshot.val() || {},
+        usuarios: usuariosSnapshot.val() || {},
+        goals: goalsSnapshot.val() || {},
+        budgets: budgetsSnapshot.val() || {},
+        exportedAt: new Date().toISOString()
+      };
+      
+      // Converter para JSON
+      const jsonData = JSON.stringify(data, null, 2);
+      
+      // Criar blob e link para download
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `financontrol_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Limpar
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+      
+      showToast('Dados exportados com sucesso!', 'success');
+    })
+    .catch(error => {
+      console.error('Erro ao exportar dados:', error);
+      showToast('Erro ao exportar dados. Tente novamente.', 'danger');
+    });
+}
