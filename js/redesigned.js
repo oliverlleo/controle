@@ -18,9 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Corrigir comportamento dos modais
   fixModals();
-  
-  // Inicializar componentes após autenticação
-  checkAuthState();
 });
 
 // Inicialização do menu móvel
@@ -175,6 +172,32 @@ function abrirModal(modalId) {
         firstInput.focus();
       }, 100);
     }
+    
+    // Inicializar componentes específicos do modal
+    if (modalId === 'cadastroDespesaModal') {
+      if (typeof updateCategoriaSelect === 'function') updateCategoriaSelect();
+      if (typeof updateCartaoSelect === 'function') updateCartaoSelect();
+      
+      // Definir data atual como padrão
+      const dataCompra = document.getElementById('dataCompra');
+      if (dataCompra) {
+        dataCompra.valueAsDate = new Date();
+      }
+    } else if (modalId === 'pagarDespesaModal') {
+      if (typeof loadDespesasNaoPagasSelect === 'function') loadDespesasNaoPagasSelect();
+      
+      // Definir data atual como padrão
+      const dataPagamento = document.getElementById('dataPagamento');
+      if (dataPagamento) {
+        dataPagamento.valueAsDate = new Date();
+      }
+    } else if (modalId === 'categoriasModal') {
+      if (typeof loadCategoriasModal === 'function') loadCategoriasModal();
+    } else if (modalId === 'cartaoModal') {
+      if (typeof loadCartoesModal === 'function') loadCartoesModal();
+    } else if (modalId === 'novo_limitesModal') {
+      if (typeof novo_carregarLimites === 'function') novo_carregarLimites();
+    }
   }
 }
 
@@ -183,25 +206,6 @@ function fecharModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.style.display = 'none';
-  }
-}
-
-// Verificar estado de autenticação
-function checkAuthState() {
-  // Se o Firebase Auth estiver disponível, usar o listener de autenticação
-  if (typeof firebase !== 'undefined' && firebase.auth) {
-    firebase.auth().onAuthStateChanged(function(user) {
-      if (user) {
-        // Usuário autenticado, inicializar componentes
-        initComponents();
-      } else {
-        // Usuário não autenticado, redirecionar para login
-        window.location.href = 'login.html';
-      }
-    });
-  } else {
-    // Firebase Auth não disponível, inicializar componentes diretamente
-    initComponents();
   }
 }
 
@@ -280,6 +284,11 @@ function updateMainComponents() {
   if (typeof novo_verificarAlertas === 'function') {
     novo_verificarAlertas();
   }
+  
+  // Inicializar o calendário
+  if (typeof renderCalendar === 'function') {
+    renderCalendar();
+  }
 }
 
 // Sobrescrever a função exibirToast para usar o estilo correto
@@ -318,23 +327,6 @@ function exibirToast(mensagem, tipo = 'success') {
   }).showToast();
 }
 
-// Função para alternar entre temas claro e escuro (preparação para futuro)
-function toggleTheme() {
-  document.body.classList.toggle('dark-theme');
-  
-  // Salvar preferência do usuário
-  const isDarkTheme = document.body.classList.contains('dark-theme');
-  localStorage.setItem('darkTheme', isDarkTheme);
-}
-
-// Função para aplicar tema baseado na preferência do usuário
-function applyTheme() {
-  const isDarkTheme = localStorage.getItem('darkTheme') === 'true';
-  if (isDarkTheme) {
-    document.body.classList.add('dark-theme');
-  }
-}
-
 // Função para criar um alerta no painel de mini-alertas
 function createAlertItem(titulo, descricao, tipo = 'normal', data = null) {
   const alertaItem = document.createElement('div');
@@ -358,60 +350,16 @@ function createAlertItem(titulo, descricao, tipo = 'normal', data = null) {
   return alertaItem;
 }
 
-// Função para criar um item de despesa na lista de despesas
-function createDespesaItem(descricao, valor, data, categoria) {
-  const despesaItem = document.createElement('div');
-  despesaItem.className = 'despesa-item';
+// Função para filtrar todas as despesas (compatibilidade)
+function filtrarTodasDespesas() {
+  const filtro = document.getElementById('filtroDescricao').value.toLowerCase();
+  const despesas = JSON.parse(localStorage.getItem('despesas')) || [];
   
-  despesaItem.innerHTML = `
-    <div class="despesa-info">
-      <div class="despesa-titulo">${descricao}</div>
-      <div class="despesa-detalhe">${categoria} • ${data}</div>
-    </div>
-    <div class="despesa-valor">R$ ${parseFloat(valor).toFixed(2)}</div>
-  `;
+  const despesasFiltradas = despesas.filter(despesa => 
+    despesa.descricao.toLowerCase().includes(filtro)
+  );
   
-  return despesaItem;
-}
-
-// Função para criar um badge de status
-function createStatusBadge(status) {
-  const badge = document.createElement('span');
-  
-  if (status === 'Pago') {
-    badge.className = 'badge badge-success';
-    badge.textContent = 'Pago';
-  } else if (status === 'Pendente') {
-    badge.className = 'badge badge-warning';
-    badge.textContent = 'Pendente';
-  } else if (status === 'Atrasado') {
-    badge.className = 'badge badge-danger';
-    badge.textContent = 'Atrasado';
-  } else {
-    badge.className = 'badge';
-    badge.textContent = status;
-  }
-  
-  return badge;
-}
-
-// Função para criar um botão de ação
-function createActionButton(icon, onClick, tooltip = '', btnClass = 'btn-icon') {
-  const button = document.createElement('button');
-  button.className = `btn ${btnClass}`;
-  button.innerHTML = `<i class="fas ${icon}"></i>`;
-  
-  if (tooltip) {
-    button.setAttribute('data-tooltip', tooltip);
-  }
-  
-  if (typeof onClick === 'function') {
-    button.addEventListener('click', onClick);
-  } else if (typeof onClick === 'string') {
-    button.setAttribute('onclick', onClick);
-  }
-  
-  return button;
+  renderizarTabelaDespesas(despesasFiltradas);
 }
 
 // Exportar funções para uso global
@@ -419,8 +367,5 @@ window.abrirModal = abrirModal;
 window.fecharModal = fecharModal;
 window.activateTab = activateTab;
 window.exibirToast = exibirToast;
-window.toggleTheme = toggleTheme;
+window.filtrarTodasDespesas = filtrarTodasDespesas;
 window.createAlertItem = createAlertItem;
-window.createDespesaItem = createDespesaItem;
-window.createStatusBadge = createStatusBadge;
-window.createActionButton = createActionButton;
