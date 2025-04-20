@@ -279,6 +279,8 @@ function atualizarDespesasMes() {
     });
     
     document.getElementById("despesasMes").innerText = "R$ " + despesasMes.toFixed(2);
+    document.getElementById("despesasMesTitle").innerText = new Date(dashboardYear, dashboardMonth).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+    carregarPainelDespesasMes();
   });
 }
 
@@ -470,5 +472,481 @@ function filtrarDespesas() {
       }
       
       if (categoriaFiltro && despesa.categoria !== categoriaFiltro) return;
-      if (contaMes && !de
-(Content truncated due to size limit. Use line ranges to read in chunks)
+      
+      if (contaMes && data) {
+        const hoje = new Date();
+        if (data.getMonth() !== hoje.getMonth() || data.getFullYear() !== hoje.getFullYear()) return;
+      }
+      
+      // Adicionar despesa ao select
+      let option = document.createElement("option");
+      option.value = child.key;
+      option.text = `${despesa.descricao} - ${despesa.formaPagamento === "avista" ? "À Vista" : "Cartão"}`;
+      despesaSelect.appendChild(option);
+    });
+  }).catch(error => {
+    console.error("Erro ao filtrar despesas:", error);
+    exibirToast("Erro ao filtrar despesas. Tente novamente.", "danger");
+  });
+}
+
+/**
+ * Carrega as categorias para o modal de categorias
+ */
+function loadCategorias() {
+  const categoriaSelect = document.getElementById("categoriaSelect");
+  categoriaSelect.innerHTML = '<option value="">Selecione uma categoria</option>';
+  
+  db.ref("categorias").once("value").then(snapshot => {
+    snapshot.forEach(child => {
+      const categoria = child.val();
+      let option = document.createElement("option");
+      option.value = child.key;
+      option.text = categoria.nome;
+      categoriaSelect.appendChild(option);
+    });
+  }).catch(error => {
+    console.error("Erro ao carregar categorias:", error);
+    exibirToast("Erro ao carregar categorias. Tente novamente.", "danger");
+  });
+}
+
+/**
+ * Carrega os usuários para o modal de fontes
+ */
+function loadUsuarios() {
+  const usuarioSelect = document.getElementById("fonteSelect");
+  usuarioSelect.innerHTML = '<option value="">Selecione uma fonte</option>';
+  
+  db.ref("pessoas").once("value").then(snapshot => {
+    snapshot.forEach(child => {
+      const pessoa = child.val();
+      let option = document.createElement("option");
+      option.value = child.key;
+      option.text = pessoa.nome;
+      usuarioSelect.appendChild(option);
+    });
+  }).catch(error => {
+    console.error("Erro ao carregar usuários:", error);
+    exibirToast("Erro ao carregar usuários. Tente novamente.", "danger");
+  });
+}
+
+/**
+ * Carrega os cartões para o modal de cartões
+ */
+function loadCartoes() {
+  const cartaoSelect = document.getElementById("cartaoSelect");
+  cartaoSelect.innerHTML = '<option value="">Selecione um cartão</option>';
+  
+  db.ref("cartoes").once("value").then(snapshot => {
+    snapshot.forEach(child => {
+      const cartao = child.val();
+      let option = document.createElement("option");
+      option.value = child.key;
+      option.text = cartao.nome;
+      cartaoSelect.appendChild(option);
+    });
+  }).catch(error => {
+    console.error("Erro ao carregar cartões:", error);
+    exibirToast("Erro ao carregar cartões. Tente novamente.", "danger");
+  });
+}
+
+/**
+ * Salva uma nova despesa
+ */
+function salvarDespesa() {
+  const descricao = document.getElementById("despesaDescricao").value;
+  const valor = parseFloat(document.getElementById("despesaValor").value);
+  const dataCompra = document.getElementById("despesaData").value;
+  const formaPagamento = document.getElementById("formaPagamento").value;
+  const categoria = document.getElementById("categoriaSelect").value;
+  const cartao = document.getElementById("cartaoSelect").value;
+  const parcelas = parseInt(document.getElementById("despesaParcelas").value) || 1;
+  
+  if (!descricao || !valor || !dataCompra || !formaPagamento || !categoria) {
+    exibirToast("Preencha todos os campos obrigatórios.", "danger");
+    return;
+  }
+  
+  const despesa = {
+    descricao: descricao,
+    valor: valor,
+    dataCompra: dataCompra,
+    formaPagamento: formaPagamento,
+    categoria: categoria,
+    pago: false,
+    userId: obterUsuarioId() || "default"
+  };
+  
+  if (formaPagamento === "cartao") {
+    if (!cartao || parcelas < 1) {
+      exibirToast("Selecione um cartão e informe o número de parcelas.", "danger");
+      return;
+    }
+    
+    despesa.cartao = cartao;
+    despesa.parcelas = [];
+    
+    const valorParcela = valor / parcelas;
+    const dataVencimento = new Date(dataCompra);
+    
+    for (let i = 0; i < parcelas; i++) {
+      dataVencimento.setMonth(dataVencimento.getMonth() + 1);
+      despesa.parcelas.push({
+        valor: valorParcela.toFixed(2),
+        vencimento: dataVencimento.toISOString().split("T")[0],
+        pago: false
+      });
+    }
+  }
+  
+  db.ref("despesas").push(despesa)
+    .then(() => {
+      exibirToast("Despesa cadastrada com sucesso!", "success");
+      fecharModal("cadastroDespesaModal");
+      atualizarDashboard();
+      novo_verificarAlertas();
+    })
+    .catch(error => {
+      console.error("Erro ao salvar despesa:", error);
+      exibirToast("Erro ao salvar despesa. Tente novamente.", "danger");
+    });
+}
+
+/**
+ * Marca uma despesa como paga
+ */
+function pagarDespesa() {
+  const despesaId = document.getElementById("despesaSelect").value;
+  const parcelaIndex = parseInt(document.getElementById("parcelaSelect").value) || -1;
+  
+  if (!despesaId) {
+    exibirToast("Selecione uma despesa para pagar.", "danger");
+    return;
+  }
+  
+  const despesaRef = db.ref("despesas").child(despesaId);
+  
+  despesaRef.once("value").then(snapshot => {
+    const despesa = snapshot.val();
+    
+    if (despesa.formaPagamento === "avista") {
+      despesaRef.update({ pago: true })
+        .then(() => {
+          exibirToast("Despesa marcada como paga!", "success");
+          fecharModal("pagarDespesaModal");
+          atualizarDashboard();
+        })
+        .catch(error => {
+          console.error("Erro ao marcar despesa como paga:", error);
+          exibirToast("Erro ao marcar despesa como paga. Tente novamente.", "danger");
+        });
+    } else if (despesa.formaPagamento === "cartao" && parcelaIndex >= 0) {
+      despesa.parcelas[parcelaIndex].pago = true;
+      despesaRef.update({ parcelas: despesa.parcelas })
+        .then(() => {
+          exibirToast(`Parcela ${parcelaIndex + 1} marcada como paga!`, "success");
+          fecharModal("pagarDespesaModal");
+          atualizarDashboard();
+        })
+        .catch(error => {
+          console.error("Erro ao marcar parcela como paga:", error);
+          exibirToast("Erro ao marcar parcela como paga. Tente novamente.", "danger");
+        });
+    }
+  });
+}
+
+/**
+ * Renderiza o calendário de despesas
+ */
+function renderCalendar() {
+  const calendarGrid = document.getElementById("calendarGrid");
+  calendarGrid.innerHTML = "";
+  
+  const primeiroDia = new Date(currentCalendarYear, currentCalendarMonth, 1);
+  const ultimoDia = new Date(currentCalendarYear, currentCalendarMonth + 1, 0);
+  const primeiroDiaSemana = primeiroDia.getDay();
+  const diasNoMes = ultimoDia.getDate();
+  
+  // Adicionar dias vazios para alinhar o primeiro dia
+  for (let i = 0; i < primeiroDiaSemana; i++) {
+    const emptyDay = document.createElement("div");
+    emptyDay.className = "calendar-day empty";
+    calendarGrid.appendChild(emptyDay);
+  }
+  
+  // Obter despesas para marcar eventos
+  db.ref("despesas").once("value").then(snapshot => {
+    const eventos = {};
+    
+    snapshot.forEach(child => {
+      const despesa = child.val();
+      if (despesa.pago) return;
+      
+      if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
+        const data = new Date(despesa.dataCompra);
+        const key = `${data.getFullYear()}-${data.getMonth()}-${data.getDate()}`;
+        eventos[key] = eventos[key] || [];
+        eventos[key].push({ tipo: "expense" });
+      } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+        despesa.parcelas.forEach(parcela => {
+          if (!parcela.pago) {
+            const data = new Date(parcela.vencimento);
+            const key = `${data.getFullYear()}-${data.getMonth()}-${data.getDate()}`;
+            eventos[key] = eventos[key] || [];
+            eventos[key].push({ tipo: "expense" });
+          }
+        });
+      }
+    });
+    
+    // Adicionar dias do mês
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+      const calendarDay = document.createElement("div");
+      calendarDay.className = "calendar-day";
+      
+      const data = new Date(currentCalendarYear, currentCalendarMonth, dia);
+      const key = `${currentCalendarYear}-${currentCalendarMonth}-${dia}`;
+      
+      if (eventos[key]) {
+        calendarDay.classList.add("has-events");
+      }
+      
+      calendarDay.innerHTML = `
+        <span class="calendar-day-number">${dia}</span>
+        <div class="calendar-day-events">
+          ${eventos[key] ? eventos[key].map(() => '<span class="calendar-event-dot event-expense"></span>').join("") : ""}
+        </div>
+      `;
+      
+      calendarGrid.appendChild(calendarDay);
+    }
+    
+    // Atualizar título do calendário
+    document.getElementById("calendarTitulo").innerText = 
+      new Date(currentCalendarYear, currentCalendarMonth).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+  });
+}
+
+/**
+ * Navega para o mês anterior no calendário
+ */
+function prevCalendarMonth() {
+  currentCalendarMonth--;
+  if (currentCalendarMonth < 0) {
+    currentCalendarMonth = 11;
+    currentCalendarYear--;
+  }
+  renderCalendar();
+}
+
+/**
+ * Navega para o mês seguinte no calendário
+ */
+function nextCalendarMonth() {
+  currentCalendarMonth++;
+  if (currentCalendarMonth > 11) {
+    currentCalendarMonth = 0;
+    currentCalendarYear++;
+  }
+  renderCalendar();
+}
+
+/**
+ * Navega para o mês anterior no dashboard
+ */
+function prevDashboardMonth() {
+  let month = parseInt(document.getElementById("dashboardMonth").value);
+  let year = parseInt(document.getElementById("dashboardYear").value);
+  
+  month--;
+  if (month < 0) {
+    month = 11;
+    year--;
+  }
+  
+  document.getElementById("dashboardMonth").value = month;
+  document.getElementById("dashboardYear").value = year;
+  atualizarDashboard();
+}
+
+/**
+ * Navega para o mês seguinte no dashboard
+ */
+function nextDashboardMonth() {
+  let month = parseInt(document.getElementById("dashboardMonth").value);
+  let year = parseInt(document.getElementById("dashboardYear").value);
+  
+  month++;
+  if (month > 11) {
+    month = 0;
+    year++;
+  }
+  
+  document.getElementById("dashboardMonth").value = month;
+  document.getElementById("dashboardYear").value = year;
+  atualizarDashboard();
+}
+
+/**
+ * Inicializa os componentes da página
+ */
+function init() {
+  // Preencher select de ano
+  preencherDashboardAno();
+  
+  // Configurar eventos de navegação
+  document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const sectionId = link.getAttribute('data-section');
+      if (sectionId) {
+        showSection(sectionId);
+      }
+    });
+  });
+  
+  // Inicializar dashboard
+  atualizarDashboard();
+  
+  // Carregar categorias no mapa global
+  db.ref("categorias").once("value").then(snapshot => {
+    snapshot.forEach(child => {
+      window.novo_categoriasMap[child.key] = child.val().nome;
+    });
+  });
+  
+  // Configurar eventos dos modais
+  document.querySelectorAll('.modal .close').forEach(closeBtn => {
+    closeBtn.addEventListener('click', () => {
+      const modal = closeBtn.closest('.modal');
+      if (modal) {
+        fecharModal(modal.id);
+      }
+    });
+  });
+  
+  // Configurar formulário de despesa
+  document.getElementById("cadastroDespesaForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    salvarDespesa();
+  });
+  
+  // Configurar formulário de pagamento
+  document.getElementById("pagarDespesaForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    pagarDespesa();
+  });
+  
+  // Configurar exportação
+  document.getElementById("exportDataBtn")?.addEventListener("click", exportData);
+}
+
+/**
+ * Calcula previsões financeiras
+ */
+function novo_calcularPrevisoes() {
+  const previsaoContainer = document.getElementById("previsaoContainer");
+  previsaoContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Carregando previsões...</div>';
+  
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+  
+  db.ref("despesas").once("value").then(snapshot => {
+    let despesasFuturas = [];
+    
+    snapshot.forEach(child => {
+      const despesa = child.val();
+      if (despesa.pago) return;
+      
+      if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
+        const data = new Date(despesa.dataCompra);
+        if (data > hoje) {
+          despesasFuturas.push({
+            descricao: despesa.descricao,
+            valor: parseFloat(despesa.valor) || 0,
+            data: data
+          });
+        }
+      } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+        despesa.parcelas.forEach((parcela, index) => {
+          if (!parcela.pago) {
+            const data = new Date(parcela.vencimento);
+            if (data > hoje) {
+              despesasFuturas.push({
+                descricao: `${despesa.descricao} - Parcela ${index + 1}`,
+                valor: parseFloat(parcela.valor) || 0,
+                data: data
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    // Agrupar por mês
+    const previsoesPorMes = {};
+    despesasFuturas.forEach(despesa => {
+      const mesKey = `${despesa.data.getFullYear()}-${despesa.data.getMonth()}`;
+      if (!previsoesPorMes[mesKey]) {
+        previsoesPorMes[mesKey] = {
+          total: 0,
+          despesas: []
+        };
+      }
+      previsoesPorMes[mesKey].total += despesa.valor;
+      previsoesPorMes[mesKey].despesas.push(despesa);
+    });
+    
+    // Renderizar previsões
+    previsaoContainer.innerHTML = "";
+    Object.keys(previsoesPorMes).sort().forEach(mesKey => {
+      const [ano, mes] = mesKey.split("-").map(Number);
+      const section = document.createElement("div");
+      section.className = "content-section";
+      
+      section.innerHTML = `
+        <div class="content-header">
+          <h3 class="content-title">${new Date(ano, mes).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</h3>
+          <div class="content-total">Total: R$ ${previsoesPorMes[mesKey].total.toFixed(2)}</div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${previsoesPorMes[mesKey].despesas.map(d => `
+                <tr>
+                  <td>${d.descricao}</td>
+                  <td>R$ ${d.valor.toFixed(2)}</td>
+                  <td>${d.data.toLocaleDateString()}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      previsaoContainer.appendChild(section);
+    });
+    
+    if (Object.keys(previsoesPorMes).length === 0) {
+      previsaoContainer.innerHTML = '<p class="text-muted">Nenhuma despesa futura registrada.</p>';
+    }
+  }).catch(error => {
+    console.error("Erro ao calcular previsões:", error);
+    exibirToast("Erro ao calcular previsões. Tente novamente.", "danger");
+  });
+}
+
+// Inicializar quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', init);
