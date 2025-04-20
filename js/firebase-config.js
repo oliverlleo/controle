@@ -1,26 +1,22 @@
-// Configuração do Firebase
 const firebaseConfig = {
-  apiKey: "sua-api-key",
-  authDomain: "seu-projeto.firebaseapp.com",
-  databaseURL: "https://seu-projeto.firebaseio.com",
-  projectId: "seu-projeto",
-  storageBucket: "seu-projeto.appspot.com",
-  messagingSenderId: "seu-messaging-sender-id",
-  appId: "seu-app-id"
-};
+   apiKey: "AIzaSyAG6LktPXGe6F-vSTHV2Y3n95vSwhpXch8",
+   authDomain: "controlegasto-df3f1.firebaseapp.com",
+   databaseURL: "https://controlegasto-df3f1-default-rtdb.firebaseio.com",
+   projectId: "controlegasto-df3f1",
+   storageBucket: "controlegasto-df3f1.firebasestorage.app",
+   messagingSenderId: "1034936676414",
+   appId: "1:1034936676414:web:61c67ce39c3ab71a07a16f",
+   measurementId: "G-PTN43GZHGR"
+ };
+ 
+ // Inicializar Firebase
+ firebase.initializeApp(firebaseConfig);
+ 
+ // Exportar instâncias do Firebase
+ const db = firebase.database();
+ const auth = firebase.auth();
+ 
 
-// Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
-
-// Referências para serviços do Firebase
-const auth = firebase.auth();
-const db = firebase.database();
-```
-
-### Autenticação
-A autenticação é gerenciada pelo módulo `auth.js`:
-
-```javascript
 // Login de usuário
 function login(email, senha) {
   return auth.signInWithEmailAndPassword(email, senha);
