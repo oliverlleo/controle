@@ -865,6 +865,7 @@ tbody tr:hover {
   padding: 1rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid rgba(0,0,0,0.1);
+  transition: all var(--transition-speed);
 }
 
 .user-avatar {
@@ -913,6 +914,9 @@ tbody tr:hover {
 @media (max-width: 768px) {
   .user-info {
     padding: 0.75rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
   }
   
   .user-avatar {
@@ -928,16 +932,125 @@ tbody tr:hover {
   .user-email {
     font-size: 0.7rem;
   }
+  
+  /* Novo estilo para navegação inferior */
+  aside {
+    width: 100%;
+    height: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    top: auto;
+    z-index: 100;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    transform: translateX(0);
+    background-color: var(--card-color);
+  }
+  
+  aside.active {
+    transform: translateY(0);
+  }
+  
+  /* Novo layout para o menu lateral em telas pequenas */
+  aside #sidebar-nav {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    padding: 0.5rem;
+  }
+  
+  aside #sidebar-nav::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  aside .nav-link {
+    flex: 0 0 auto;
+    padding: 0.5rem;
+    margin: 0 0.25rem;
+    flex-direction: column;
+    text-align: center;
+    font-size: 0.7rem;
+    border-radius: var(--border-radius-sm);
+    min-width: 60px;
+  }
+  
+  aside .nav-link i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+    width: auto;
+  }
+  
+  aside .nav-link span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  
+  /* Estilo compacto para userInfo em telas pequenas */
+  aside .user-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--card-color);
+    z-index: 101;
+    margin-bottom: 0;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Ajuste para o conteúdo principal quando userInfo está fixo no topo */
+  main {
+    padding-top: 4rem;
+    padding-bottom: 4.5rem;
+  }
+  
+  /* Botão de menu para dispositivos móveis */
+  .menu-toggle {
+    position: fixed;
+    top: 0.5rem;
+    left: auto;
+    right: 1rem;
+    z-index: 102;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.2rem;
+  }
+  
+  /* Estilo para o título do site em telas pequenas */
+  aside h2 {
+    display: none;
+  }
 }
 
 /* Para telas muito pequenas */
 @media (max-width: 480px) {
   .user-info {
-    padding: 0.5rem;
+    padding: 0.5rem 1rem;
   }
   
   .user-details {
-    max-width: 120px;
+    max-width: 150px;
+  }
+  
+  aside .nav-link {
+    min-width: 50px;
+    padding: 0.4rem;
+    margin: 0 0.2rem;
+  }
+  
+  aside .nav-link i {
+    font-size: 1rem;
+  }
+  
+  aside .nav-link span {
+    font-size: 0.65rem;
   }
 }
 
