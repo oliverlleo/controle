@@ -879,6 +879,7 @@ tbody tr:hover {
   justify-content: center;
   color: white;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .user-avatar img {
@@ -889,16 +890,55 @@ tbody tr:hover {
 
 .user-details {
   flex: 1;
+  overflow: hidden;
 }
 
 .user-name {
   font-weight: 500;
   color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-email {
   font-size: 0.75rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Media queries para telas menores */
+@media (max-width: 768px) {
+  .user-info {
+    padding: 0.75rem;
+  }
+  
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    margin-right: 0.5rem;
+  }
+  
+  .user-name {
+    font-size: 0.9rem;
+  }
+  
+  .user-email {
+    font-size: 0.7rem;
+  }
+}
+
+/* Para telas muito pequenas */
+@media (max-width: 480px) {
+  .user-info {
+    padding: 0.5rem;
+  }
+  
+  .user-details {
+    max-width: 120px;
+  }
 }
 
 /* Estilos para a página de login */
