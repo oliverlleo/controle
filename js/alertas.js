@@ -122,6 +122,9 @@ function verificarDespesasProximasVencimento(hoje, container) {
       
       container.appendChild(section);
     }
+  }).catch(error => {
+    console.error("Erro ao verificar despesas próximas do vencimento:", error);
+    exibirToast("Erro ao verificar despesas próximas do vencimento. Tente novamente.", "danger");
   });
 }
 
@@ -245,7 +248,13 @@ function verificarLimitesCategorias(container) {
         
         container.appendChild(section);
       }
+    }).catch(error => {
+      console.error("Erro ao verificar limites de categorias:", error);
+      exibirToast("Erro ao verificar limites de categorias. Tente novamente.", "danger");
     });
+  }).catch(error => {
+    console.error("Erro ao carregar limites de categorias:", error);
+    exibirToast("Erro ao carregar limites de categorias. Tente novamente.", "danger");
   });
 }
 
@@ -299,7 +308,7 @@ function verificarDespesasVencidas(container) {
     });
     
     // Ordenar despesas vencidas por dias (decrescente)
-    despesasVencidas.sort((a, b) => b.dias - a.dias);
+    despesasVencidas.sort((a, b) => b.dias - b.dias);
     
     // Adicionar alertas ao container
     if (despesasVencidas.length > 0) {
@@ -334,6 +343,9 @@ function verificarDespesasVencidas(container) {
       
       container.appendChild(section);
     }
+  }).catch(error => {
+    console.error("Erro ao verificar despesas vencidas:", error);
+    exibirToast("Erro ao verificar despesas vencidas. Tente novamente.", "danger");
   });
 }
 
@@ -369,6 +381,9 @@ function registrarAlertaHistorico(tipo, mensagem) {
           timestamp: firebase.database.ServerValue.TIMESTAMP
         });
       }
+    }).catch(error => {
+      console.error("Erro ao registrar alerta no histórico:", error);
+      exibirToast("Erro ao registrar alerta no histórico. Tente novamente.", "danger");
     });
 }
 
@@ -423,7 +438,13 @@ function novo_carregarLimites() {
         div.appendChild(input);
         container.appendChild(div);
       });
+    }).catch(error => {
+      console.error("Erro ao carregar limites de categorias:", error);
+      exibirToast("Erro ao carregar limites de categorias. Tente novamente.", "danger");
     });
+  }).catch(error => {
+    console.error("Erro ao carregar categorias:", error);
+    exibirToast("Erro ao carregar categorias. Tente novamente.", "danger");
   });
 }
 
@@ -463,6 +484,9 @@ function novo_salvarLimites() {
         console.error("Erro ao salvar limites:", error);
         exibirToast("Erro ao salvar limites. Tente novamente.", "danger");
       });
+  }).catch(error => {
+    console.error("Erro ao carregar categorias:", error);
+    exibirToast("Erro ao carregar categorias. Tente novamente.", "danger");
   });
 }
 
@@ -481,12 +505,50 @@ function novo_verificarDespesasVencidas() {
       // Verificar despesas à vista
       if (despesa.formaPagamento === "avista" && !despesa.pago && despesa.dataCompra) {
         let dataCompra = new Date(despesa.dataCompra);
+        let diffDays = Math.ceil((hoje - dataCompra) / (1000 * 60 * 60 * 24));
         
-        if (dataCompra < hoje) {
+        if (diffDays > 0) {
           despesasVencidas.push({
             descricao: despesa.descricao,
             data: dataCompra,
-            valor: parseFloat(despesa.valor) || 0
+            valor: parseFloat(despesa.valor) || 0,
+            dias: diffDays
           });
         }
+      } 
+      // Verificar parcelas de cartão
+      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+        despesa.parcelas.forEach((parcela, index) => {
+          if (!parcela.pago) {
+            let venc = new Date(parcela.vencimento);
+            let diffDays = Math.ceil((hoje - venc) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > 0) {
+              despesasVencidas.push({
+                descricao: `${despesa.descricao} - Parcela ${index + 1}`,
+                data: venc,
+                valor: parseFloat(parcela.valor) || 0,
+                dias: diffDays
+              });
+            }
+          }
+        });
       }
+    });
+    
+    // Ordenar despesas vencidas por dias (decrescente)
+    despesasVencidas.sort((a, b) => b.dias - b.dias);
+    
+    // Exibir notificações para despesas vencidas
+    despesasVencidas.forEach(despesa => {
+      const mensagem = `Despesa "${despesa.descricao}" está vencida há ${despesa.dias} dias. Valor: R$ ${despesa.valor.toFixed(2)}.`;
+      exibirToast(mensagem, "danger");
+      
+      // Registrar no histórico
+      registrarAlertaHistorico("vencida", mensagem);
+    });
+  }).catch(error => {
+    console.error("Erro ao verificar despesas vencidas:", error);
+    exibirToast("Erro ao verificar despesas vencidas. Tente novamente.", "danger");
+  });
+}
