@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Fechar menu ao clicar em um link do menu em dispositivos móveis
-    const navLinks = document.querySelectorAll('#sidebar .nav-link');
+    const navLinks = document.querySelectorAll('#sidebar-nav .nav-link');
     navLinks.forEach(link => {
       link.addEventListener('click', function() {
         if (window.innerWidth <= 768) {
