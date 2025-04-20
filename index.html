@@ -28,9 +28,8 @@
   <!-- Ícones (Font Awesome) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1.0.0">
   
-  <!-- CSS personalizado -->
+  <!-- CSS unificado -->
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/auth.css">
 </head>
 <body>
   <!-- Botão de menu para dispositivos móveis -->
@@ -396,12 +395,13 @@
           </div>
           <div class="form-group">
             <label class="form-label">Número de Parcelas:</label>
-            <input type="number" id="numParcelasDespesa" class="form-control" min="1" max="12" value="1" required>
+            <input type="number" id="numParcelasDespesa" class="form-control" min="1" max="24" value="1" required>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="salvarDespesa()">Salvar Despesa</button>
+        <button class="btn btn-outline" onclick="fecharModal('cadastroDespesaModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="cadastrarDespesa()">Cadastrar</button>
       </div>
     </div>
   </div>
@@ -415,31 +415,30 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Filtrar:</label>
+          <label class="form-label">Filtrar Despesas:</label>
           <div class="d-flex gap-2 flex-wrap">
-            <input type="text" id="despesaSearch" class="form-control" placeholder="Descrição">
-            <input type="text" id="mesFiltro" class="form-control" placeholder="Mês (ex: JAN)" list="meses">
-            <datalist id="meses">
-              <option value="JAN"></option>
-              <option value="FEV"></option>
-              <option value="MAR"></option>
-              <option value="ABR"></option>
-              <option value="MAI"></option>
-              <option value="JUN"></option>
-              <option value="JUL"></option>
-              <option value="AGO"></option>
-              <option value="SET"></option>
-              <option value="OUT"></option>
-              <option value="NOV"></option>
-              <option value="DEZ"></option>
-            </datalist>
-            <input type="text" id="anoFiltro" class="form-control" placeholder="Ano (ex: 2025)" list="anos">
-            <datalist id="anos">
-              <option value="2023"></option>
-              <option value="2024"></option>
-              <option value="2025"></option>
-              <option value="2026"></option>
-            </datalist>
+            <input type="text" id="despesaSearch" class="form-control" placeholder="Buscar por descrição">
+            <select id="mesFiltro" class="form-control">
+              <option value="">Todos os Meses</option>
+              <option value="JAN">Janeiro</option>
+              <option value="FEV">Fevereiro</option>
+              <option value="MAR">Março</option>
+              <option value="ABR">Abril</option>
+              <option value="MAI">Maio</option>
+              <option value="JUN">Junho</option>
+              <option value="JUL">Julho</option>
+              <option value="AGO">Agosto</option>
+              <option value="SET">Setembro</option>
+              <option value="OUT">Outubro</option>
+              <option value="NOV">Novembro</option>
+              <option value="DEZ">Dezembro</option>
+            </select>
+            <select id="anoFiltro" class="form-control">
+              <option value="">Todos os Anos</option>
+              <option value="2023">2023</option>
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+            </select>
           </div>
         </div>
         <div class="form-group">
@@ -450,22 +449,35 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="d-flex align-center gap-1">
-            <input type="checkbox" id="contaMesFiltro">
-            <span>Apenas contas do mês</span>
-          </label>
+          <div class="d-flex align-center gap-2">
+            <input type="checkbox" id="contaMesFiltro" class="form-control" style="width: auto;">
+            <label class="form-label mb-0" for="contaMesFiltro">Apenas despesas do mês atual</label>
+          </div>
         </div>
-        <button class="btn btn-primary mb-3" onclick="filtrarDespesas()">Filtrar</button>
-        
         <div class="form-group">
-          <label class="form-label">Despesas:</label>
-          <select id="despesaSelect" class="form-control" size="10" style="height: auto;">
+          <button class="btn btn-primary" onclick="filtrarDespesas()">
+            <i class="fas fa-filter"></i>
+            <span>Filtrar</span>
+          </button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Despesa:</label>
+          <select id="despesaSelect" class="form-control" onchange="carregarParcelas()">
+            <option value="">Selecione a Despesa</option>
+            <!-- Preenchido dinamicamente -->
+          </select>
+        </div>
+        <div id="parcelasDiv" class="form-group hidden">
+          <label class="form-label">Parcela:</label>
+          <select id="parcelaSelect" class="form-control">
+            <option value="">Selecione a Parcela</option>
             <!-- Preenchido dinamicamente -->
           </select>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-success" onclick="pagarDespesaSelecionada()">Pagar Despesa</button>
+        <button class="btn btn-outline" onclick="fecharModal('pagarDespesaModal')">Cancelar</button>
+        <button class="btn btn-success" onclick="pagarDespesa()">Pagar</button>
       </div>
     </div>
   </div>
@@ -479,52 +491,72 @@
       </div>
       <div class="modal-body">
         <div class="calendar-header">
-          <div class="d-flex justify-between align-center">
-            <button class="btn-icon" onclick="prevMonth()">
-              <i class="fas fa-chevron-left"></i>
+          <button class="btn-icon" onclick="prevMonth()">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <div class="calendar-title" id="calendarMonthYear">Abril 2025</div>
+          <button class="btn-icon" onclick="nextMonth()">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <div id="calendarContainer" class="calendar-container">
+          <!-- Preenchido dinamicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal: Categorias -->
+  <div id="categoriasModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Gerenciar Categorias</h2>
+        <button class="close" onclick="fecharModal('categoriasModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nova Categoria:</label>
+          <div class="d-flex gap-2">
+            <input type="text" id="novaCategoria" class="form-control" placeholder="Nome da categoria">
+            <button class="btn btn-primary" onclick="adicionarCategoria()">
+              <i class="fas fa-plus"></i>
             </button>
-            <h3 id="calendarMonthYear" class="calendar-title" onclick="toggleMonthYearSelect()">Mês Ano</h3>
-            <button class="btn-icon" onclick="nextMonth()">
-              <i class="fas fa-chevron-right"></i>
-            </button>
           </div>
-          <div id="monthYearSelect" style="display: none; margin-top: 10px;">
-            <div class="d-flex gap-2 align-center">
-              <select id="selectMonth" class="form-control">
-                <option value="0">Janeiro</option>
-                <option value="1">Fevereiro</option>
-                <option value="2">Março</option>
-                <option value="3">Abril</option>
-                <option value="4">Maio</option>
-                <option value="5">Junho</option>
-                <option value="6">Julho</option>
-                <option value="7">Agosto</option>
-                <option value="8">Setembro</option>
-                <option value="9">Outubro</option>
-                <option value="10">Novembro</option>
-                <option value="11">Dezembro</option>
-              </select>
-            </div>
-            <div class="form-group mb-0">
-              <select id="selectYear" class="form-control">
-                <!-- Preenchido dinamicamente -->
-              </select>
-            </div>
-            <button class="btn btn-primary" onclick="toggleMonthYearSelect()">Ok</button>
-          </div>
-          
-          <div id="calendarGrid" class="calendar-grid"></div>
-          
-          <div id="saldoDisponivelContainer" class="d-flex justify-between align-center mt-3">
-            <div>
-              <strong>Despesas do dia:</strong>
-              <span id="despesasDia">R$ 0,00</span>
-            </div>
-            <div>
-              <strong>Saldo Atual:</strong>
-              <span id="saldoDisponivel" class="text-primary">R$ 0,00</span>
-            </div>
-          </div>
+        </div>
+        <div id="categoriasLista">
+          <!-- Preenchido dinamicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal: Cartões -->
+  <div id="cartaoModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Gerenciar Cartões</h2>
+        <button class="close" onclick="fecharModal('cartaoModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Novo Cartão:</label>
+          <input type="text" id="nomeCartao" class="form-control" placeholder="Nome do cartão">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Limite (R$):</label>
+          <input type="number" id="limiteCartao" class="form-control" placeholder="Limite do cartão" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dia de Fechamento:</label>
+          <input type="number" id="fechamentoCartao" class="form-control" placeholder="Dia de fechamento" min="1" max="31">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dia de Vencimento:</label>
+          <input type="number" id="vencimentoCartao" class="form-control" placeholder="Dia de vencimento" min="1" max="31">
+        </div>
+        <button class="btn btn-primary" onclick="adicionarCartao()">Adicionar Cartão</button>
+        <div id="cartoesLista" class="mt-3">
+          <!-- Preenchido dinamicamente -->
         </div>
       </div>
     </div>
@@ -534,157 +566,75 @@
   <div id="cadastroModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title">Cadastrar Nova Renda</h2>
+        <h2 class="modal-title">Cadastrar Renda</h2>
         <button class="close" onclick="fecharModal('cadastroModal')">&times;</button>
       </div>
       <div class="modal-body">
-        <div id="mensagemSucessoRenda"></div>
-        <form id="cadastroForm">
-          <div class="form-group">
-            <label class="form-label" for="nome">Nome:</label>
-            <input type="text" id="nome" class="form-control" placeholder="Nome" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="parentesco">Parentesco:</label>
-            <select id="parentesco" class="form-control" required>
-              <option value="eu">Eu</option>
-              <option value="pai">Pai</option>
-              <option value="irma">Irmã</option>
-              <option value="esposa">Esposa</option>
-              <option value="filho">Filho</option>
-              <option value="filha">Filha</option>
-              <option value="outros">Outros</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="saldoInicial">Saldo Inicial (R$):</label>
-            <input type="number" id="saldoInicial" class="form-control" placeholder="Digite o saldo inicial" step="0.01" required>
-          </div>
-          <div class="d-flex gap-3 justify-center mb-3">
-            <label class="d-flex align-center gap-1">
-              <input type="checkbox" id="cltCheckbox" onclick="toggleClt()"> CLT
-            </label>
-            <label class="d-flex align-center gap-1">
-              <input type="checkbox" id="pjCheckbox"> PJ
-            </label>
-          </div>
-          <div id="cltFields" style="display: none;">
-            <div class="form-group">
-              <label class="form-label" for="salarioBruto">Salário Bruto (R$):</label>
-              <input type="number" id="salarioBruto" class="form-control" placeholder="Digite o salário bruto" step="0.01" oninput="atualizarSalarioLiquido()">
+        <div class="form-group">
+          <label class="form-label">Nome:</label>
+          <input type="text" id="nomePessoa" class="form-control" placeholder="Nome da pessoa">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Saldo Inicial (R$):</label>
+          <input type="number" id="saldoInicial" class="form-control" placeholder="Saldo inicial" step="0.01">
+        </div>
+        <div id="pagamentosContainer">
+          <h3 class="mb-2">Pagamentos Recorrentes</h3>
+          <div class="pagamento-item d-flex gap-2 mb-2">
+            <div class="form-group mb-0" style="flex: 1;">
+              <input type="number" class="form-control pagamento-dia" placeholder="Dia" min="1" max="31">
             </div>
-            <div class="form-group">
-              <label class="form-label" for="salarioLiquido">Salário Líquido (R$):</label>
-              <input type="number" id="salarioLiquido" class="form-control" placeholder="Salário líquido calculado" step="0.01">
+            <div class="form-group mb-0" style="flex: 2;">
+              <input type="number" class="form-control pagamento-valor" placeholder="Valor" step="0.01">
             </div>
-            <div class="form-group">
-              <label class="form-label" for="numPagamentos">Número de Pagamentos no Mês:</label>
-              <input type="number" id="numPagamentos" class="form-control" placeholder="Digite o número de pagamentos" min="1" max="5" oninput="gerarCamposPagamentos()">
-            </div>
-            <div id="pagamentosContainer"></div>
-            <p id="avisoErro" class="text-danger" style="display: none;">Os valores não somam o salário líquido!</p>
+            <button class="btn-icon" onclick="removerPagamento(this)">
+              <i class="fas fa-trash"></i>
+            </button>
           </div>
-        </form>
+        </div>
+        <button class="btn btn-outline mt-2" onclick="adicionarPagamento()">
+          <i class="fas fa-plus"></i>
+          <span>Adicionar Pagamento</span>
+        </button>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" type="submit" form="cadastroForm">Salvar</button>
+        <button class="btn btn-outline" onclick="fecharModal('cadastroModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="cadastrarPessoa()">Cadastrar</button>
       </div>
     </div>
   </div>
   
-  <!-- Modal: Fonte de Renda / Usuários -->
-  <div id="fonteModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Fonte de Renda</h2>
-        <button class="close" onclick="fecharModal('fonteModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="usuariosLista"></div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal: Gerenciar Categorias -->
-  <div id="categoriasModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Gerenciar Categorias</h2>
-        <button class="close" onclick="fecharModal('categoriasModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nome da Categoria:</label>
-          <input type="text" id="categoriaNome" class="form-control" placeholder="Nome da categoria">
-        </div>
-        <button class="btn btn-primary" onclick="salvarCategoria()">Salvar Categoria</button>
-        <div id="categoriasLista" class="mt-3"></div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal: Gerenciar Cartões -->
-  <div id="cartaoModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Gerenciar Cartões</h2>
-        <button class="close" onclick="fecharModal('cartaoModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nome do Cartão:</label>
-          <input type="text" id="nomeCartao" class="form-control" placeholder="Nome do Cartão">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Dia da Fatura:</label>
-          <input type="number" id="diaFatura" class="form-control" placeholder="Ex.: 20" min="1" max="31">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Dia do Fechamento:</label>
-          <input type="number" id="diaFechamento" class="form-control" placeholder="Ex.: 11" min="1" max="31">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Limite do Cartão (R$):</label>
-          <input type="number" id="limiteCartao" class="form-control" placeholder="Limite" step="0.01">
-        </div>
-        <button class="btn btn-primary" onclick="salvarCartao()">Salvar Cartão</button>
-        <div id="cartoesLista" class="mt-3"></div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal NOVO: Configurar Limites (Limites por Categoria) -->
+  <!-- Modal: Limites de Categorias -->
   <div id="novo_limitesModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title">Configurar Limites por Categoria</h2>
+        <h2 class="modal-title">Configurar Limites de Categorias</h2>
         <button class="close" onclick="fecharModal('novo_limitesModal')">&times;</button>
       </div>
       <div class="modal-body">
-        <div id="novo_limitesContainer"></div>
+        <p class="mb-3">Defina limites de gastos para cada categoria:</p>
+        <div id="novo_limitesContainer">
+          <!-- Preenchido dinamicamente -->
+        </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="novo_salvarLimites()">Salvar Limites</button>
+        <button class="btn btn-outline" onclick="fecharModal('novo_limitesModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="novo_salvarLimites()">Salvar</button>
       </div>
     </div>
   </div>
   
-  <!-- Container de Notificações -->
-  <div class="toast-container" id="toastContainer"></div>
-  
-  <!-- ===================== SCRIPTS ===================== -->
-  <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+  <!-- Scripts do Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
   
-  <!-- Scripts personalizados -->
-  <script src="js/auth.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/alertas.js"></script>
-  <script src="js/previsoes.js"></script>
+  <!-- jQuery e Moment.js para o DateRangePicker -->
+  <script src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  
+  <!-- Script unificado -->
+  <script src="js/script.js"></script>
 </body>
 </html>
