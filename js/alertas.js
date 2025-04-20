@@ -490,4 +490,3 @@ function novo_verificarDespesasVencidas() {
           });
         }
       }
-(Content truncated due to size limit. Use line ranges to read in chunks)
