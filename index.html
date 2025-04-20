@@ -42,44 +42,46 @@
     <aside id="sidebar">
       <h2><i class="fa-solid fa-wallet"></i> Contas</h2>
       <!-- Informações do usuário serão inseridas aqui pelo auth.js -->
-      <a href="#" class="nav-link active" onclick="showSection('dashboardSection')">
-        <i class="fa-solid fa-house"></i>
-        <span>Dashboard</span>
-      </a>
-      <a href="#" class="nav-link" onclick="showSection('despesasSection')">
-        <i class="fa-solid fa-money-bill-wave"></i>
-        <span>Despesas</span>
-      </a>
-      <a href="#" class="nav-link" onclick="showSection('relatorioSection')">
-        <i class="fa-solid fa-chart-line"></i>
-        <span>Relatórios</span>
-      </a>
-      <a href="#" class="nav-link" onclick="showSection('categoriasSection')">
-        <i class="fa-solid fa-tags"></i>
-        <span>Categorias</span>
-      </a>
-      <a href="#" class="nav-link" onclick="showSection('cartoesSection')">
-        <i class="fa-solid fa-credit-card"></i>
-        <span>Cartões</span>
-      </a>
-      <a href="#" class="nav-link" onclick="showSection('rendaSection')">
-        <i class="fa-solid fa-user"></i>
-        <span>Renda</span>
-      </a>
-      <a href="#" class="nav-link" onclick="exportData()">
-        <i class="fa-solid fa-file-export"></i>
-        <span>Exportar Dados</span>
-      </a>
-      <!-- Novos itens -->
-      <a href="#" class="nav-link" onclick="showSection('previsaoSection')">
-        <i class="fa-solid fa-chart-pie"></i>
-        <span>Previsões</span>
-      </a>
-      <a href="#" class="nav-link" onclick="showSection('alertasSection')">
-        <i class="fa-solid fa-bell"></i>
-        <span>Alertas</span>
-      </a>
-      <!-- Botão de logout será inserido aqui pelo auth.js -->
+      <div id="sidebar-nav">
+        <a href="#" class="nav-link active" onclick="showSection('dashboardSection')">
+          <i class="fa-solid fa-house"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-link" onclick="showSection('despesasSection')">
+          <i class="fa-solid fa-money-bill-wave"></i>
+          <span>Despesas</span>
+        </a>
+        <a href="#" class="nav-link" onclick="showSection('relatorioSection')">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Relatórios</span>
+        </a>
+        <a href="#" class="nav-link" onclick="showSection('categoriasSection')">
+          <i class="fa-solid fa-tags"></i>
+          <span>Categorias</span>
+        </a>
+        <a href="#" class="nav-link" onclick="showSection('cartoesSection')">
+          <i class="fa-solid fa-credit-card"></i>
+          <span>Cartões</span>
+        </a>
+        <a href="#" class="nav-link" onclick="showSection('rendaSection')">
+          <i class="fa-solid fa-user"></i>
+          <span>Renda</span>
+        </a>
+        <a href="#" class="nav-link" onclick="exportData()">
+          <i class="fa-solid fa-file-export"></i>
+          <span>Exportar</span>
+        </a>
+        <!-- Novos itens -->
+        <a href="#" class="nav-link" onclick="showSection('previsaoSection')">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Previsões</span>
+        </a>
+        <a href="#" class="nav-link" onclick="showSection('alertasSection')">
+          <i class="fa-solid fa-bell"></i>
+          <span>Alertas</span>
+        </a>
+        <!-- Botão de logout será inserido aqui pelo auth.js -->
+      </div>
     </aside>
     
     <!-- Conteúdo Principal -->
