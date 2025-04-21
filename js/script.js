@@ -156,10 +156,10 @@ function showConfigTab(tabId) {
   }
   
   // Carregar dados específicos da aba
-  if (tabId === "configCategoriasTab") {
-    loadCategorias();
-  } else if (tabId === 'rendaTab') {
+  if (tabId === 'rendaTab') {
     loadRendas();
+  } else if (tabId === 'categoriasTab') {
+    loadCategorias();
   } else if (tabId === 'cartoesTab') {
     loadCartoes();
   }
@@ -2789,83 +2789,4 @@ function salvarDespesa() {
 function salvarRenda() {
   // Chama a função cadastrarPessoa que já implementa toda a lógica necessária
   cadastrarPessoa();
-}
-
-/**
- * Prepara o formulário para editar uma categoria
- * @param {string} categoriaId - ID da categoria a ser editada
- * @param {string} categoriaNome - Nome atual da categoria
- */
-function prepararEditarCategoria(categoriaId, categoriaNome) {
-  // Ocultar formulário de adição
-  document.getElementById('formAdicionarCategoria').style.display = 'none';
-  
-  // Mostrar formulário de edição
-  document.getElementById('formEditarCategoria').style.display = 'block';
-  
-  // Preencher campos
-  document.getElementById('editarCategoriaId').value = categoriaId;
-  document.getElementById('editarCategoriaNome').value = categoriaNome;
-  
-  // Focar no campo de nome
-  document.getElementById('editarCategoriaNome').focus();
-}
-
-/**
- * Salva a edição de uma categoria
- */
-function salvarEdicaoCategoria() {
-  const categoriaId = document.getElementById('editarCategoriaId').value;
-  const categoriaNome = document.getElementById('editarCategoriaNome').value;
-  
-  if (!categoriaNome) {
-    exibirToast("Digite o nome da categoria.", "warning");
-    return;
-  }
-  
-  db.ref(`categorias/${categoriaId}`).update({
-    nome: categoriaNome
-  }).then(() => {
-    exibirToast("Categoria atualizada com sucesso!", "success");
-    cancelarEdicaoCategoria();
-    loadCategorias();
-    loadCategoriasFiltro();
-  }).catch(err => {
-    console.error("Erro ao atualizar categoria:", err);
-    exibirToast("Erro ao atualizar categoria: " + err.message, "danger");
-  });
-}
-
-/**
- * Cancela a edição de uma categoria
- */
-function cancelarEdicaoCategoria() {
-  // Limpar campos
-  document.getElementById('editarCategoriaId').value = '';
-  document.getElementById('editarCategoriaNome').value = '';
-  
-  // Ocultar formulário de edição
-  document.getElementById('formEditarCategoria').style.display = 'none';
-  
-  // Mostrar formulário de adição
-  document.getElementById('formAdicionarCategoria').style.display = 'block';
-}
-
-/**
- * Exclui uma categoria
- * @param {string} categoriaId - ID da categoria a ser excluída
- */
-function excluirCategoria(categoriaId) {
-  if (confirm("Tem certeza que deseja excluir esta categoria?")) {
-    db.ref("categorias").child(categoriaId).remove()
-      .then(() => {
-        exibirToast("Categoria excluída com sucesso!", "success");
-        loadCategorias();
-        loadCategoriasFiltro();
-      })
-      .catch(err => {
-        console.error("Erro ao excluir categoria:", err);
-        exibirToast("Erro ao excluir categoria: " + err.message, "danger");
-      });
-  }
 }
