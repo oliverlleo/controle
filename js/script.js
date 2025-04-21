@@ -66,6 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+  
+  // Inicializar a seção de configurações com a aba de rendas ativa
+  if (document.getElementById('configuracoesSection')) {
+    showConfigTab('rendaTab');
+  }
 });
 
 /**
@@ -117,6 +122,46 @@ function showSection(sectionId) {
     novo_calcularPrevisoes();
   } else if (sectionId === 'alertasSection') {
     novo_verificarAlertas();
+  } else if (sectionId === 'configuracoesSection') {
+    // Carregar dados para as abas de configurações
+    loadRendas();
+    loadCategorias();
+    loadCartoes();
+  }
+}
+
+/**
+ * Mostra uma aba específica na seção de configurações
+ * @param {string} tabId - ID da aba a ser mostrada
+ */
+function showConfigTab(tabId) {
+  // Esconder todas as abas
+  const tabPanes = document.querySelectorAll('.config-tab-pane');
+  tabPanes.forEach(pane => pane.style.display = 'none');
+  
+  // Mostrar a aba selecionada
+  document.getElementById(tabId).style.display = 'block';
+  
+  // Atualizar botões de navegação
+  const tabButtons = document.querySelectorAll('.config-tab-btn');
+  tabButtons.forEach(btn => btn.classList.remove('active'));
+  
+  // Encontrar e ativar o botão correspondente
+  const buttons = document.querySelectorAll('.config-tab-btn');
+  for (let i = 0; i < buttons.length; i++) {
+    if (buttons[i].getAttribute('onclick') && buttons[i].getAttribute('onclick').includes(tabId)) {
+      buttons[i].classList.add('active');
+      break;
+    }
+  }
+  
+  // Carregar dados específicos da aba
+  if (tabId === "configCategoriasTab") {
+    loadCategorias();
+  } else if (tabId === 'rendaTab') {
+    loadRendas();
+  } else if (tabId === 'cartoesTab') {
+    loadCartoes();
   }
 }
 
@@ -138,6 +183,45 @@ window.abrirModal = function(id) {
   if (id === "pagarDespesaModal") filtrarDespesas();
   if (id === "novo_limitesModal") novo_carregarLimites();
 };
+
+/**
+ * Filtra as despesas não pagas para o modal de pagamento
+ */
+function filtrarDespesas() {
+  const despesaSelect = document.getElementById("despesaSelect");
+  despesaSelect.innerHTML = "<option value=''>Selecione a Despesa</option>";
+  document.getElementById("parcelasDiv").classList.add("hidden");
+  
+  db.ref("despesas").once("value").then(snapshot => {
+    snapshot.forEach(child => {
+      const key = child.key;
+      const despesa = child.val();
+      
+      if (despesa.formaPagamento === "avista" && !despesa.pago) {
+        const option = document.createElement("option");
+        option.value = key;
+        option.text = `${despesa.descricao} - R$ ${parseFloat(despesa.valor).toFixed(2)} - ${new Date(despesa.dataCompra).toLocaleDateString()}`;
+        despesaSelect.appendChild(option);
+      } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+        // Verificar se há parcelas não pagas
+        let temParcelaNaoPaga = false;
+        despesa.parcelas.forEach(parcela => {
+          if (!parcela.pago) temParcelaNaoPaga = true;
+        });
+        
+        if (temParcelaNaoPaga) {
+          const option = document.createElement("option");
+          option.value = key;
+          option.text = `${despesa.descricao} - Cartão`;
+          despesaSelect.appendChild(option);
+        }
+      }
+    });
+  }).catch(error => {
+    console.error("Erro ao filtrar despesas:", error);
+    exibirToast("Erro ao carregar despesas. Tente novamente.", "danger");
+  });
+}
 
 /**
  * Fecha um modal
@@ -480,19 +564,22 @@ function atualizarGrafico() {
  * @param {Object} despesa - Objeto da despesa
  * @returns {boolean} Verdadeiro se a despesa for do mês atual
  */
-function despesaDoMesAtual(despesa) {
+function isDespesaDoMesAtual(despesa) {
   const hoje = new Date();
   const mesAtual = hoje.getMonth();
   const anoAtual = hoje.getFullYear();
   
   if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
-    const data = new Date(despesa.dataCompra);
-    return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+    const dataCompra = new Date(despesa.dataCompra);
+    return dataCompra.getMonth() === mesAtual && dataCompra.getFullYear() === anoAtual;
   } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
     for (let i = 0; i < despesa.parcelas.length; i++) {
-      const data = new Date(despesa.parcelas[i].vencimento);
-      if (data.getMonth() === mesAtual && data.getFullYear() === anoAtual) {
-        return true;
+      const parcela = despesa.parcelas[i];
+      if (!parcela.pago) {
+        const dataVencimento = new Date(parcela.vencimento);
+        if (dataVencimento.getMonth() === mesAtual && dataVencimento.getFullYear() === anoAtual) {
+          return true;
+        }
       }
     }
   }
@@ -583,8 +670,24 @@ function cadastrarDespesa() {
   };
   
   if (formaPagamento === "cartao") {
-    const cartao = document.getElementById("cartaoDespesa").value;
-    const numParcelas = parseInt(document.getElementById("numParcelasDespesa").value);
+    const cartaoElement = document.getElementById("cartaoDespesa");
+    // Validação para evitar erro de elemento null
+    if (!cartaoElement) {
+      console.error("Elemento cartaoDespesa não encontrado");
+      exibirToast("Erro ao processar formulário. Tente novamente.", "danger");
+      return;
+    }
+    const cartao = cartaoElement.value;
+    
+    // Correção: usando o ID correto "numeroParcelas" em vez de "numParcelasDespesa"
+    const numeroParcelasElement = document.getElementById("numeroParcelas");
+    // Validação para evitar erro de elemento null
+    if (!numeroParcelasElement) {
+      console.error("Elemento numeroParcelas não encontrado");
+      exibirToast("Erro ao processar formulário. Tente novamente.", "danger");
+      return;
+    }
+    const numParcelas = parseInt(numeroParcelasElement.value);
     
     if (!cartao || isNaN(numParcelas) || numParcelas <= 0) {
       exibirToast("Preencha os dados do cartão e parcelas.", "warning");
@@ -1385,9 +1488,14 @@ function loadCategorias() {
           <div class="categoria-info">
             <div class="categoria-titulo">${categoria.nome}</div>
           </div>
-          <button class="btn-icon btn-danger" onclick="excluirCategoria('${key}')">
-            <i class="fas fa-trash"></i>
-          </button>
+          <div class="categoria-acoes">
+            <button class="btn-icon btn-primary" onclick="prepararEditarCategoria('${key}', '${categoria.nome}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-icon btn-danger" onclick="excluirCategoria('${key}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
         `;
         
         categoriasLista.appendChild(div);
@@ -1695,8 +1803,24 @@ function removerPagamento(button) {
  * Cadastra uma pessoa
  */
 function cadastrarPessoa() {
-  const nome = document.getElementById("nomePessoa").value;
-  const saldoInicial = parseFloat(document.getElementById("saldoInicial").value) || 0;
+  // Correção: usando o ID correto "nome" em vez de "nomePessoa"
+  const nomeElement = document.getElementById("nome");
+  // Validação para evitar erro de elemento null
+  if (!nomeElement) {
+    console.error("Elemento nome não encontrado");
+    exibirToast("Erro ao processar formulário. Tente novamente.", "danger");
+    return;
+  }
+  const nome = nomeElement.value;
+  
+  const saldoInicialElement = document.getElementById("saldoInicial");
+  // Validação para evitar erro de elemento null
+  if (!saldoInicialElement) {
+    console.error("Elemento saldoInicial não encontrado");
+    exibirToast("Erro ao processar formulário. Tente novamente.", "danger");
+    return;
+  }
+  const saldoInicial = parseFloat(saldoInicialElement.value) || 0;
   
   if (!nome) {
     exibirToast("Digite o nome da pessoa.", "warning");
@@ -1826,8 +1950,15 @@ function exibirInfoUsuario(user) {
       
       // Inserir antes do primeiro link no sidebar
       const sidebar = document.getElementById('sidebar');
-      const firstLink = sidebar.querySelector('a');
-      sidebar.insertBefore(userInfoElement, firstLink);
+      const sidebarNav = document.getElementById('sidebar-nav');
+      
+      if (sidebarNav) {
+        // Se sidebar-nav existe, inserir antes dele
+        sidebar.insertBefore(userInfoElement, sidebarNav);
+      } else {
+        // Se não, apenas adicionar ao início do sidebar
+        sidebar.prepend(userInfoElement);
+      }
     }
     
     // Atualizar conteúdo
@@ -2005,9 +2136,6 @@ function novo_verificarDespesasVencidas(hoje = new Date(), container = null) {
         `;
         
         section.appendChild(alertaEl);
-        
-        // Registrar alerta no histórico
-        registrarAlertaHistorico("vencida", alerta.mensagem);
       });
       
       container.appendChild(section);
@@ -2020,9 +2148,14 @@ function novo_verificarDespesasVencidas(hoje = new Date(), container = null) {
  * @param {Date} hoje - Data atual
  * @param {HTMLElement} container - Container para adicionar os alertas
  */
-function verificarDespesasProximasVencimento(hoje, container) {
+function verificarDespesasProximasVencimento(hoje = new Date(), container = null) {
+  if (!container) {
+    container = document.getElementById("novo_listaAlertas");
+    if (!container) return;
+  }
+  
   db.ref("despesas").once("value").then(snapshot => {
-    let alertasVencimento = [];
+    let alertasProximos = [];
     
     snapshot.forEach(child => {
       let despesa = child.val();
@@ -2030,16 +2163,18 @@ function verificarDespesasProximasVencimento(hoje, container) {
       // Verificar despesas à vista
       if (despesa.formaPagamento === "avista" && !despesa.pago && despesa.dataCompra) {
         let dataCompra = new Date(despesa.dataCompra);
-        let diffDays = Math.ceil((dataCompra - hoje) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays >= 0 && diffDays <= 5) {
-          alertasVencimento.push({
-            tipo: "vencimento",
-            mensagem: `Despesa "${despesa.descricao}" vence em ${diffDays} dias.`,
-            data: dataCompra,
-            dias: diffDays,
-            valor: parseFloat(despesa.valor) || 0
-          });
+        if (dataCompra >= hoje) {
+          let diffDays = Math.ceil((dataCompra - hoje) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays <= 7) {
+            alertasProximos.push({
+              tipo: "proxima",
+              mensagem: `Despesa "${despesa.descricao}" vence em ${diffDays} dias.`,
+              data: dataCompra,
+              dias: diffDays,
+              valor: parseFloat(despesa.valor) || 0
+            });
+          }
         }
       } 
       // Verificar parcelas de cartão
@@ -2047,45 +2182,43 @@ function verificarDespesasProximasVencimento(hoje, container) {
         despesa.parcelas.forEach((parcela, index) => {
           if (!parcela.pago) {
             let venc = new Date(parcela.vencimento);
-            let diffDays = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays >= 0 && diffDays <= 5) {
-              alertasVencimento.push({
-                tipo: "vencimento",
-                mensagem: `Parcela ${index+1} de "${despesa.descricao}" vence em ${diffDays} dias.`,
-                data: venc,
-                dias: diffDays,
-                valor: parseFloat(parcela.valor) || 0
-              });
+            if (venc >= hoje) {
+              let diffDays = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+              
+              if (diffDays <= 7) {
+                alertasProximos.push({
+                  tipo: "proxima",
+                  mensagem: `Parcela ${index+1} de "${despesa.descricao}" vence em ${diffDays} dias.`,
+                  data: venc,
+                  dias: diffDays,
+                  valor: parseFloat(parcela.valor) || 0
+                });
+              }
             }
           }
         });
       }
     });
     
-    // Ordenar alertas por data de vencimento
-    alertasVencimento.sort((a, b) => a.dias - b.dias);
+    // Ordenar alertas por dias até vencimento (crescente)
+    alertasProximos.sort((a, b) => a.dias - b.dias);
     
     // Adicionar alertas ao container
-    if (alertasVencimento.length > 0) {
+    if (alertasProximos.length > 0) {
       const section = document.createElement("div");
       section.className = "alertas-section";
       
       const header = document.createElement("h3");
       header.className = "alertas-header";
-      header.innerHTML = '<i class="fas fa-calendar-alt"></i> Próximos Vencimentos';
+      header.innerHTML = '<i class="fas fa-clock"></i> Próximos Vencimentos';
       section.appendChild(header);
       
-      alertasVencimento.forEach(alerta => {
+      alertasProximos.forEach(alerta => {
         const alertaEl = document.createElement("div");
         alertaEl.className = "alerta-item alerta-vencimento";
         
-        const diasText = alerta.dias === 0 ? "hoje" : 
-                        alerta.dias === 1 ? "amanhã" : 
-                        `em ${alerta.dias} dias`;
-        
         alertaEl.innerHTML = `
-          <div class="alerta-icon"><i class="fas fa-exclamation-circle"></i></div>
+          <div class="alerta-icon"><i class="fas fa-clock"></i></div>
           <div class="alerta-content">
             <div class="alerta-title">${alerta.mensagem}</div>
             <div class="alerta-details">
@@ -2096,9 +2229,6 @@ function verificarDespesasProximasVencimento(hoje, container) {
         `;
         
         section.appendChild(alertaEl);
-        
-        // Registrar alerta no histórico
-        registrarAlertaHistorico("vencimento", alerta.mensagem);
       });
       
       container.appendChild(section);
@@ -2107,138 +2237,121 @@ function verificarDespesasProximasVencimento(hoje, container) {
 }
 
 /**
- * Verifica limites de gastos por categoria
+ * Verifica limites de categorias
  * @param {HTMLElement} container - Container para adicionar os alertas
  */
-function verificarLimitesCategorias(container) {
-  // Primeiro, obter os limites configurados
-  db.ref("limites_categorias").once("value").then(snapshotLimites => {
-    if (!snapshotLimites.exists()) return;
+function verificarLimitesCategorias(container = null) {
+  if (!container) {
+    container = document.getElementById("novo_listaAlertas");
+    if (!container) return;
+  }
+  
+  // Obter limites de categorias
+  db.ref("limites_categorias").once("value").then(limSnapshot => {
+    if (!limSnapshot.exists()) return;
     
-    let limites = {};
-    snapshotLimites.forEach(child => {
+    const limites = {};
+    limSnapshot.forEach(child => {
       limites[child.key] = child.val().limite;
     });
     
-    // Depois, obter as categorias
-    db.ref("categorias").once("value").then(snapshotCategorias => {
-      let categorias = {};
-      snapshotCategorias.forEach(child => {
-        categorias[child.key] = child.val().nome;
+    // Obter despesas do mês atual
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    
+    db.ref("despesas").once("value").then(snapshot => {
+      const gastosPorCategoria = {};
+      
+      snapshot.forEach(child => {
+        const despesa = child.val();
+        const categoriaId = despesa.categoria;
+        
+        if (!categoriaId || !limites[categoriaId]) return;
+        
+        if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
+          const data = new Date(despesa.dataCompra);
+          if (data.getMonth() === mesAtual && data.getFullYear() === anoAtual) {
+            if (!gastosPorCategoria[categoriaId]) gastosPorCategoria[categoriaId] = 0;
+            gastosPorCategoria[categoriaId] += parseFloat(despesa.valor) || 0;
+          }
+        } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+          despesa.parcelas.forEach(parcela => {
+            const data = new Date(parcela.vencimento);
+            if (data.getMonth() === mesAtual && data.getFullYear() === anoAtual) {
+              if (!gastosPorCategoria[categoriaId]) gastosPorCategoria[categoriaId] = 0;
+              gastosPorCategoria[categoriaId] += parseFloat(parcela.valor) || 0;
+            }
+          });
+        }
       });
       
-      // Obter o mês atual
-      const hoje = new Date();
-      const mesAtual = hoje.getMonth();
-      const anoAtual = hoje.getFullYear();
+      // Verificar categorias que ultrapassaram o limite
+      const alertasLimite = [];
       
-      // Calcular gastos por categoria no mês atual
-      db.ref("despesas").once("value").then(snapshot => {
-        let gastosPorCategoria = {};
+      Object.keys(limites).forEach(categoriaId => {
+        const limite = parseFloat(limites[categoriaId]);
+        const gasto = parseFloat(gastosPorCategoria[categoriaId] || 0);
         
-        snapshot.forEach(child => {
-          const despesa = child.val();
-          const categoriaId = despesa.categoria;
-          
-          if (!categoriaId || !limites[categoriaId]) return;
-          
-          if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
-            const data = new Date(despesa.dataCompra);
-            if (data.getMonth() === mesAtual && data.getFullYear() === anoAtual) {
-              if (!gastosPorCategoria[categoriaId]) {
-                gastosPorCategoria[categoriaId] = 0;
-              }
-              gastosPorCategoria[categoriaId] += parseFloat(despesa.valor) || 0;
-            }
-          } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
-            despesa.parcelas.forEach(parcela => {
-              const data = new Date(parcela.vencimento);
-              if (data.getMonth() === mesAtual && data.getFullYear() === anoAtual) {
-                if (!gastosPorCategoria[categoriaId]) {
-                  gastosPorCategoria[categoriaId] = 0;
-                }
-                gastosPorCategoria[categoriaId] += parseFloat(parcela.valor) || 0;
-              }
-            });
-          }
-        });
-        
-        // Verificar categorias que ultrapassaram o limite
-        let alertasLimite = [];
-        
-        Object.keys(limites).forEach(categoriaId => {
-          const limite = parseFloat(limites[categoriaId]);
-          const gasto = parseFloat(gastosPorCategoria[categoriaId] || 0);
+        if (gasto > 0) {
           const percentual = (gasto / limite) * 100;
           
           if (percentual >= 80) {
             alertasLimite.push({
-              tipo: percentual >= 100 ? "critico" : "alto",
-              categoria: categorias[categoriaId] || "Categoria Desconhecida",
               categoriaId: categoriaId,
               limite: limite,
               gasto: gasto,
-              percentual: percentual
+              percentual: percentual,
+              tipo: percentual >= 100 ? "critico" : "alto"
             });
           }
-        });
-        
-        // Ordenar alertas por percentual (decrescente)
-        alertasLimite.sort((a, b) => b.percentual - a.percentual);
-        
-        // Adicionar alertas ao container
-        if (alertasLimite.length > 0) {
-          const section = document.createElement("div");
-          section.className = "alertas-section";
-          
-          const header = document.createElement("h3");
-          header.className = "alertas-header";
-          header.innerHTML = '<i class="fas fa-chart-pie"></i> Limites de Categorias';
-          section.appendChild(header);
-          
-          alertasLimite.forEach(alerta => {
-            const alertaEl = document.createElement("div");
-            alertaEl.className = `alerta-item alerta-limite alerta-${alerta.tipo}`;
-            
-            const mensagem = alerta.percentual >= 100 ? 
-              `Limite da categoria "${alerta.categoria}" foi ultrapassado!` : 
-              `Categoria "${alerta.categoria}" está próxima do limite!`;
-            
-            alertaEl.innerHTML = `
-              <div class="alerta-icon"><i class="fas fa-chart-pie"></i></div>
-              <div class="alerta-content">
-                <div class="alerta-title">${mensagem}</div>
-                <div class="alerta-details">
-                  <span>Gasto: R$ ${alerta.gasto.toFixed(2)}</span>
-                  <span>Limite: R$ ${alerta.limite.toFixed(2)}</span>
-                  <span>${alerta.percentual.toFixed(0)}% do limite</span>
-                </div>
-                <div class="alerta-progress">
-                  <div class="progress-bar" style="width: ${Math.min(alerta.percentual, 100)}%"></div>
-                </div>
-              </div>
-            `;
-            
-            section.appendChild(alertaEl);
-            
-            // Registrar alerta no histórico
-            registrarAlertaHistorico("limite", mensagem);
-          });
-          
-          container.appendChild(section);
         }
       });
+      
+      // Ordenar alertas por percentual (decrescente)
+      alertasLimite.sort((a, b) => b.percentual - a.percentual);
+      
+      // Adicionar alertas ao container
+      if (alertasLimite.length > 0) {
+        const section = document.createElement("div");
+        section.className = "alertas-section";
+        
+        const header = document.createElement("h3");
+        header.className = "alertas-header";
+        header.innerHTML = '<i class="fas fa-chart-pie"></i> Limites de Categorias';
+        section.appendChild(header);
+        
+        alertasLimite.forEach(alerta => {
+          const alertaEl = document.createElement("div");
+          alertaEl.className = `alerta-item alerta-limite alerta-${alerta.tipo}`;
+          
+          const categoriaNome = window.novo_categoriasMap[alerta.categoriaId] || "Categoria";
+          
+          alertaEl.innerHTML = `
+            <div class="alerta-icon"><i class="fas fa-chart-pie"></i></div>
+            <div class="alerta-content">
+              <div class="alerta-title">
+                ${alerta.percentual >= 100 
+                  ? `Limite de ${categoriaNome} ultrapassado!` 
+                  : `${categoriaNome} próximo do limite!`}
+              </div>
+              <div class="alerta-details">
+                <span>Gasto: R$ ${alerta.gasto.toFixed(2)} de R$ ${alerta.limite.toFixed(2)}</span>
+                <span>${alerta.percentual.toFixed(0)}% do limite</span>
+              </div>
+              <div class="alerta-progress">
+                <div class="progress-bar" style="width: ${Math.min(100, alerta.percentual)}%"></div>
+              </div>
+            </div>
+          `;
+          
+          section.appendChild(alertaEl);
+        });
+        
+        container.appendChild(section);
+      }
     });
   });
-}
-
-/**
- * Registra um alerta no histórico
- * @param {string} tipo - Tipo do alerta
- * @param {string} mensagem - Mensagem do alerta
- */
-function registrarAlertaHistorico(tipo, mensagem) {
-  // Implementação futura: registrar alertas no histórico
 }
 
 /**
@@ -2251,34 +2364,37 @@ function novo_carregarLimites() {
   container.innerHTML = "";
   
   // Obter categorias
-  db.ref("categorias").once("value").then(snapshotCategorias => {
-    let categorias = [];
-    
-    snapshotCategorias.forEach(child => {
-      categorias.push({
-        id: child.key,
-        nome: child.val().nome
-      });
-    });
+  db.ref("categorias").once("value").then(snapshot => {
+    if (!snapshot.exists()) {
+      container.innerHTML = "<p>Nenhuma categoria cadastrada.</p>";
+      return;
+    }
     
     // Obter limites atuais
-    db.ref("limites_categorias").once("value").then(snapshotLimites => {
-      let limites = {};
+    db.ref("limites_categorias").once("value").then(limSnapshot => {
+      const limites = {};
       
-      snapshotLimites.forEach(child => {
-        limites[child.key] = child.val().limite;
-      });
+      if (limSnapshot.exists()) {
+        limSnapshot.forEach(child => {
+          limites[child.key] = child.val().limite;
+        });
+      }
       
       // Criar formulário de limites
-      categorias.forEach(categoria => {
-        const limite = limites[categoria.id] || 0;
+      snapshot.forEach(child => {
+        const categoriaId = child.key;
+        const categoria = child.val();
+        const limite = limites[categoriaId] || 0;
         
         const div = document.createElement("div");
         div.className = "form-group";
         
         div.innerHTML = `
           <label class="form-label">${categoria.nome}:</label>
-          <input type="number" id="limite_${categoria.id}" class="form-control" value="${limite}" min="0" step="0.01">
+          <input type="number" class="form-control limite-categoria" 
+                 data-categoria="${categoriaId}" 
+                 value="${limite}" 
+                 step="0.01" min="0">
         `;
         
         container.appendChild(div);
@@ -2291,11 +2407,11 @@ function novo_carregarLimites() {
  * Salva os limites de categorias
  */
 function novo_salvarLimites() {
-  const inputs = document.querySelectorAll("#novo_limitesContainer input[id^='limite_']");
-  let limites = {};
+  const inputs = document.querySelectorAll(".limite-categoria");
+  const limites = {};
   
   inputs.forEach(input => {
-    const categoriaId = input.id.replace("limite_", "");
+    const categoriaId = input.getAttribute("data-categoria");
     const valor = parseFloat(input.value) || 0;
     
     limites[categoriaId] = {
@@ -2309,290 +2425,447 @@ function novo_salvarLimites() {
       fecharModal("novo_limitesModal");
       novo_verificarAlertas();
     })
-    .catch(error => {
-      console.error("Erro ao salvar limites:", error);
-      exibirToast("Erro ao salvar limites. Tente novamente.", "danger");
+    .catch(err => {
+      console.error("Erro ao salvar limites:", err);
+      exibirToast("Erro ao salvar limites: " + err.message, "danger");
     });
 }
-
-// ===================== MÓDULO DE PREVISÕES =====================
 
 /**
  * Calcula previsões de gastos
  */
 function novo_calcularPrevisoes() {
-  const hoje = new Date();
-  const seisMesesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 6, 1);
+  const graficoContainer = document.getElementById("novo_graficoPrevisao");
+  const tabelaContainer = document.getElementById("novo_tabelaPrevisao");
   
-  // Buscar despesas dos últimos 6 meses
-  db.ref("despesas").once("value").then(snapshot => {
-    let despesasMes = {};
+  if (!graficoContainer || !tabelaContainer) return;
+  
+  graficoContainer.innerHTML = "";
+  tabelaContainer.innerHTML = "";
+  
+  // Obter despesas dos últimos 6 meses
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+  
+  // Criar array com os últimos 6 meses
+  const meses = [];
+  for (let i = 5; i >= 0; i--) {
+    let mes = mesAtual - i;
+    let ano = anoAtual;
     
+    if (mes < 0) {
+      mes += 12;
+      ano--;
+    }
+    
+    meses.push({
+      mes: mes,
+      ano: ano,
+      nome: new Date(ano, mes, 1).toLocaleString('pt-BR', { month: 'long' }),
+      total: 0
+    });
+  }
+  
+  // Obter despesas
+  db.ref("despesas").once("value").then(snapshot => {
     snapshot.forEach(child => {
       const despesa = child.val();
-      let dt;
       
-      // Processar despesas à vista
-      if (despesa.formaPagamento === "avista") {
-        dt = new Date(despesa.dataCompra);
-        if (dt >= seisMesesAtras && dt <= hoje) {
-          let key = dt.getFullYear() + "-" + (dt.getMonth() + 1);
-          despesasMes[key] = (despesasMes[key] || 0) + parseFloat(despesa.valor);
+      if (despesa.formaPagamento === "avista" && despesa.dataCompra) {
+        const data = new Date(despesa.dataCompra);
+        const mes = data.getMonth();
+        const ano = data.getFullYear();
+        
+        // Verificar se a data está nos últimos 6 meses
+        for (let i = 0; i < meses.length; i++) {
+          if (meses[i].mes === mes && meses[i].ano === ano) {
+            meses[i].total += parseFloat(despesa.valor) || 0;
+            break;
+          }
         }
-      } 
-      // Processar despesas no cartão
-      else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+      } else if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
         despesa.parcelas.forEach(parcela => {
-          dt = new Date(parcela.vencimento);
-          if (dt >= seisMesesAtras && dt <= hoje) {
-            let key = dt.getFullYear() + "-" + (dt.getMonth() + 1);
-            despesasMes[key] = (despesasMes[key] || 0) + parseFloat(parcela.valor);
+          const data = new Date(parcela.vencimento);
+          const mes = data.getMonth();
+          const ano = data.getFullYear();
+          
+          // Verificar se a data está nos últimos 6 meses
+          for (let i = 0; i < meses.length; i++) {
+            if (meses[i].mes === mes && meses[i].ano === ano) {
+              meses[i].total += parseFloat(parcela.valor) || 0;
+              break;
+            }
           }
         });
       }
     });
     
-    // Preparar dados para regressão linear
-    const keys = Object.keys(despesasMes).sort();
-    let x = [];
-    let y = [];
-    let labels = [];
+    // Calcular média e tendência
+    const valores = meses.map(m => m.total);
+    const media = valores.reduce((a, b) => a + b, 0) / valores.length;
     
-    keys.forEach((k, index) => {
-      x.push(index + 1);
-      y.push(despesasMes[k]);
-      
-      // Formatar rótulo do mês
-      const [ano, mes] = k.split('-');
-      const data = new Date(parseInt(ano), parseInt(mes) - 1, 1);
-      labels.push(data.toLocaleString('pt-BR', { month: 'short', year: 'numeric' }));
-    });
+    // Calcular tendência linear simples
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumX2 = 0;
     
-    // Calcular regressão linear
-    const { m, b } = regressaoLinear(x, y);
+    for (let i = 0; i < valores.length; i++) {
+      sumX += i;
+      sumY += valores[i];
+      sumXY += i * valores[i];
+      sumX2 += i * i;
+    }
+    
+    const n = valores.length;
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
     
     // Calcular previsões para os próximos 3 meses
-    let previsoes = [];
-    let labelsPrevisao = [];
-    
+    const previsoes = [];
     for (let i = 1; i <= 3; i++) {
-      const proximoMes = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
-      labelsPrevisao.push(proximoMes.toLocaleString('pt-BR', { month: 'short', year: 'numeric' }));
-      previsoes.push(b + m * (x.length + i));
+      const previsao = intercept + slope * (n - 1 + i);
+      
+      let mes = (mesAtual + i) % 12;
+      let ano = anoAtual + Math.floor((mesAtual + i) / 12);
+      
+      previsoes.push({
+        mes: mes,
+        ano: ano,
+        nome: new Date(ano, mes, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
+        valor: Math.max(0, previsao)
+      });
     }
     
-    // Criar gráfico de previsões
-    criarGraficoPrevisoes(labels, y, labelsPrevisao, previsoes);
-    
-    // Atualizar tabela de previsões
-    atualizarTabelaPrevisoes(labelsPrevisao, previsoes);
-  }).catch(error => {
-    console.error("Erro ao calcular previsões:", error);
-    exibirToast("Erro ao calcular previsões. Tente novamente.", "danger");
-  });
-}
-
-/**
- * Calcula os coeficientes da regressão linear
- * @param {Array} x - Array de valores x (índices dos meses)
- * @param {Array} y - Array de valores y (valores das despesas)
- * @returns {Object} Coeficientes m (inclinação) e b (intercepto)
- */
-function regressaoLinear(x, y) {
-  let n = x.length;
-  let sumX = x.reduce((a, b) => a + b, 0);
-  let sumY = y.reduce((a, b) => a + b, 0);
-  let sumXY = x.reduce((acc, val, i) => acc + val * y[i], 0);
-  let sumX2 = x.reduce((acc, val) => acc + val * val, 0);
-  
-  // Fórmulas da regressão linear
-  let m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-  let b = (sumY - m * sumX) / n;
-  
-  return { m, b };
-}
-
-/**
- * Cria o gráfico de previsões
- * @param {Array} labelsHistorico - Rótulos dos meses do histórico
- * @param {Array} valoresHistorico - Valores das despesas do histórico
- * @param {Array} labelsPrevisao - Rótulos dos meses da previsão
- * @param {Array} valoresPrevisao - Valores previstos das despesas
- */
-function criarGraficoPrevisoes(labelsHistorico, valoresHistorico, labelsPrevisao, valoresPrevisao) {
-  // Destruir gráfico anterior se existir
-  if (window.graficoPrevisao) {
-    window.graficoPrevisao.destroy();
-  }
-  
-  // Configurar opções do gráfico
-  const options = {
-    series: [
-      {
-        name: 'Histórico',
-        data: valoresHistorico
-      },
-      {
+    // Criar gráfico
+    const options = {
+      series: [{
+        name: 'Despesas',
+        data: meses.map(m => m.total.toFixed(2))
+      }, {
         name: 'Previsão',
-        data: [...Array(valoresHistorico.length).fill(null), ...valoresPrevisao]
-      }
-    ],
-    chart: {
-      type: 'line',
-      height: 350,
-      animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800
-      },
-      toolbar: {
-        show: true
-      }
-    },
-    stroke: {
-      width: [3, 3],
-      curve: 'smooth',
-      dashArray: [0, 5]
-    },
-    colors: ['#4caf50', '#ff9800'],
-    xaxis: {
-      categories: [...labelsHistorico, ...labelsPrevisao],
-      labels: {
-        style: {
-          fontSize: '12px'
+        data: [...Array(meses.length - 1).fill(null), meses[meses.length - 1].total.toFixed(2), ...previsoes.map(p => p.valor.toFixed(2))]
+      }],
+      chart: {
+        height: 350,
+        type: 'line',
+        zoom: {
+          enabled: false
         }
-      }
-    },
-    yaxis: {
+      },
+      dataLabels: {
+        enabled: false
+      },
+      stroke: {
+        curve: 'straight',
+        width: [3, 3],
+        dashArray: [0, 5]
+      },
       title: {
-        text: 'Valor (R$)'
+        text: 'Tendência de Gastos',
+        align: 'left'
       },
-      labels: {
-        formatter: function(value) {
-          return value !== null && value !== undefined ? "R$ " + value.toFixed(2) : "R$ 0.00";
+      grid: {
+        row: {
+          colors: ['#f3f3f3', 'transparent'],
+          opacity: 0.5
+        },
+      },
+      xaxis: {
+        categories: [...meses.map(m => `${m.nome} ${m.ano}`), ...previsoes.map(p => p.nome)],
+      },
+      yaxis: {
+        labels: {
+          formatter: function(val) {
+            return "R$ " + val.toFixed(2);
+          }
         }
-      }
-    },
-    tooltip: {
-      y: {
-        formatter: function(value) {
-          return value !== null && value !== undefined ? "R$ " + value.toFixed(2) : "R$ 0.00";
+      },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return "R$ " + parseFloat(val).toFixed(2);
+          }
         }
-      }
-    },
-    legend: {
-      position: 'top'
-    },
-    markers: {
-      size: 5,
-      hover: {
-        size: 7
-      }
-    },
-    grid: {
-      borderColor: '#e0e0e0',
-      row: {
-        colors: ['#f8f9fa', 'transparent'],
-        opacity: 0.5
-      }
-    }
-  };
-  
-  // Criar gráfico
-  window.graficoPrevisao = new ApexCharts(document.getElementById("novo_graficoPrevisao"), options);
-  window.graficoPrevisao.render();
-}
-
-/**
- * Atualiza a tabela de previsões
- * @param {Array} labels - Rótulos dos meses
- * @param {Array} valores - Valores previstos
- */
-function atualizarTabelaPrevisoes(labels, valores) {
-  const tabela = document.getElementById("novo_tabelaPrevisao");
-  tabela.innerHTML = "";
-  
-  // Criar tabela
-  const table = document.createElement("table");
-  table.className = "table";
-  
-  // Cabeçalho
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-  
-  const thMes = document.createElement("th");
-  thMes.textContent = "Mês";
-  headerRow.appendChild(thMes);
-  
-  const thValor = document.createElement("th");
-  thValor.textContent = "Valor Previsto";
-  headerRow.appendChild(thValor);
-  
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-  
-  // Corpo da tabela
-  const tbody = document.createElement("tbody");
-  
-  labels.forEach((label, index) => {
-    const row = document.createElement("tr");
+      },
+      colors: ['#4361ee', '#f72585']
+    };
     
-    const tdMes = document.createElement("td");
-    tdMes.textContent = label;
-    row.appendChild(tdMes);
+    // Criar gráfico
+    const chart = new ApexCharts(graficoContainer, options);
+    chart.render();
     
-    const tdValor = document.createElement("td");
-    tdValor.textContent = `R$ ${valores[index].toFixed(2)}`;
-    row.appendChild(tdValor);
+    // Criar tabela de previsões
+    let html = `
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>Previsão</th>
+              <th>Variação</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
     
-    tbody.appendChild(row);
+    const ultimoMes = meses[meses.length - 1];
+    
+    previsoes.forEach(previsao => {
+      const variacao = ((previsao.valor - ultimoMes.total) / ultimoMes.total) * 100;
+      
+      html += `
+        <tr>
+          <td>${previsao.nome}</td>
+          <td>R$ ${previsao.valor.toFixed(2)}</td>
+          <td class="${variacao > 0 ? 'text-danger' : 'text-success'}">
+            ${variacao > 0 ? '+' : ''}${variacao.toFixed(2)}%
+          </td>
+        </tr>
+      `;
+    });
+    
+    html += `
+          </tbody>
+        </table>
+      </div>
+      <div class="previsao-info mt-3">
+        <p><strong>Nota:</strong> Estas previsões são baseadas na tendência dos últimos 6 meses e podem variar conforme seus hábitos de consumo.</p>
+      </div>
+    `;
+    
+    tabelaContainer.innerHTML = html;
   });
-  
-  table.appendChild(tbody);
-  
-  // Adicionar informações sobre a previsão
-  const info = document.createElement("div");
-  info.className = "previsao-info mt-3";
-  info.innerHTML = `
-    <p><strong>Sobre esta previsão:</strong></p>
-    <p>Esta previsão é baseada no histórico de despesas dos últimos 6 meses, utilizando um modelo de regressão linear para projetar os gastos futuros. Os valores são estimativas e podem variar conforme seus hábitos de consumo.</p>
-  `;
-  
-  tabela.appendChild(table);
-  tabela.appendChild(info);
 }
 
 // ===================== INICIALIZAÇÃO =====================
 
-// Verificar estado de autenticação ao carregar a página
+// Verificar estado de autenticação
+if (typeof firebase !== 'undefined' && firebase.auth) {
+  firebase.auth().onAuthStateChanged(handleAuthStateChanged);
+}
+
+// Inicializar DateRangePicker quando o documento estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
-  // Verificar se o Firebase está disponível
-  if (typeof firebase !== 'undefined') {
-    // Observar mudanças no estado de autenticação
-    firebase.auth().onAuthStateChanged(handleAuthStateChanged);
-  }
+  // Inicializar DateRangePicker
+  initDateRangePicker();
   
   // Preencher select de ano do dashboard
-  if (document.getElementById('dashboardYear')) {
-    preencherDashboardAno();
-    
-    // Definir mês e ano atuais
-    const hoje = new Date();
-    document.getElementById('dashboardMonth').value = hoje.getMonth();
-    document.getElementById('dashboardYear').value = hoje.getFullYear();
-    
-    // Atualizar dashboard
-    atualizarDashboard();
+  preencherDashboardAno();
+  
+  // Definir mês e ano atual no dashboard
+  const hoje = new Date();
+  document.getElementById("dashboardMonth").value = hoje.getMonth();
+  document.getElementById("dashboardYear").value = hoje.getFullYear();
+  
+  // Atualizar dashboard
+  atualizarDashboard();
+  
+  // Inicializar data de compra com a data atual
+  const dataCompraInput = document.getElementById("dataCompra");
+  if (dataCompraInput) {
+    dataCompraInput.valueAsDate = hoje;
   }
   
-  // Inicializar DateRangePicker se existir
-  if (document.getElementById('dataRange')) {
-    initDateRangePicker();
-  }
-  
-  // Inicializar menu mobile
-  const menuToggle = document.getElementById('menuToggle');
-  if (menuToggle) {
-    menuToggle.addEventListener('click', toggleMenu);
-  }
+  // Filtrar despesas
+  filtrarTodasDespesas();
 });
+
+/**
+ * Verifica se a despesa selecionada tem parcelas e exibe o seletor de parcelas
+ */
+function verificarParcelas() {
+  const despesaId = document.getElementById("despesaSelect").value;
+  const parcelasDiv = document.getElementById("parcelasDiv");
+  const parcelaSelect = document.getElementById("parcelaSelect");
+  
+  // Limpar o select de parcelas
+  parcelaSelect.innerHTML = "<option value=''>Selecione a Parcela</option>";
+  
+  // Esconder o div de parcelas por padrão
+  parcelasDiv.classList.add("hidden");
+  
+  if (!despesaId) return;
+  
+  // Buscar a despesa selecionada
+  db.ref("despesas").child(despesaId).once("value").then(snapshot => {
+    const despesa = snapshot.val();
+    
+    // Verificar se é uma despesa parcelada
+    if (despesa.formaPagamento === "cartao" && despesa.parcelas) {
+      // Mostrar o div de parcelas
+      parcelasDiv.classList.remove("hidden");
+      
+      // Adicionar as parcelas não pagas ao select
+      despesa.parcelas.forEach((parcela, index) => {
+        if (!parcela.pago) {
+          const option = document.createElement("option");
+          option.value = index;
+          option.text = `Parcela ${index+1} - Venc: ${new Date(parcela.vencimento).toLocaleDateString()} - R$ ${parseFloat(parcela.valor).toFixed(2)}`;
+          parcelaSelect.appendChild(option);
+        }
+      });
+    }
+  }).catch(error => {
+    console.error("Erro ao verificar parcelas:", error);
+    exibirToast("Erro ao carregar parcelas. Tente novamente.", "danger");
+  });
+}
+
+/**
+ * Prepara o formulário para editar uma categoria
+ * @param {string} categoriaId - ID da categoria a ser editada
+ * @param {string} categoriaNome - Nome atual da categoria
+ */
+function prepararEditarCategoria(categoriaId, categoriaNome) {
+  // Ocultar formulário de adição
+  document.getElementById('formAdicionarCategoria').style.display = 'none';
+  
+  // Mostrar formulário de edição
+  document.getElementById('formEditarCategoria').style.display = 'block';
+  
+  // Preencher campos
+  document.getElementById('editarCategoriaId').value = categoriaId;
+  document.getElementById('editarCategoriaNome').value = categoriaNome;
+  
+  // Focar no campo de nome
+  document.getElementById('editarCategoriaNome').focus();
+}
+
+/**
+ * Salva a edição de uma categoria
+ */
+function salvarEdicaoCategoria() {
+  const categoriaId = document.getElementById('editarCategoriaId').value;
+  const categoriaNome = document.getElementById('editarCategoriaNome').value;
+  
+  if (!categoriaNome) {
+    exibirToast("Digite o nome da categoria.", "warning");
+    return;
+  }
+  
+  db.ref(`categorias/${categoriaId}`).update({
+    nome: categoriaNome
+  }).then(() => {
+    exibirToast("Categoria atualizada com sucesso!", "success");
+    cancelarEdicaoCategoria();
+    loadCategorias();
+    loadCategoriasFiltro();
+  }).catch(err => {
+    console.error("Erro ao atualizar categoria:", err);
+    exibirToast("Erro ao atualizar categoria: " + err.message, "danger");
+  });
+}
+
+/**
+ * Cancela a edição de uma categoria
+ */
+function cancelarEdicaoCategoria() {
+  // Limpar campos
+  document.getElementById('editarCategoriaId').value = '';
+  document.getElementById('editarCategoriaNome').value = '';
+  
+  // Ocultar formulário de edição
+  document.getElementById('formEditarCategoria').style.display = 'none';
+  
+  // Mostrar formulário de adição
+  document.getElementById('formAdicionarCategoria').style.display = 'block';
+}
+
+/**
+ * Salva uma despesa (alias para cadastrarDespesa)
+ * Esta função serve como um alias para manter compatibilidade com o botão no modal
+ */
+function salvarDespesa() {
+  // Chama a função cadastrarDespesa que já implementa toda a lógica necessária
+  cadastrarDespesa();
+}
+
+/**
+ * Salva uma renda (alias para cadastrarPessoa)
+ * Esta função serve como um alias para manter compatibilidade com o botão no modal
+ */
+function salvarRenda() {
+  // Chama a função cadastrarPessoa que já implementa toda a lógica necessária
+  cadastrarPessoa();
+}
+
+/**
+ * Prepara o formulário para editar uma categoria
+ * @param {string} categoriaId - ID da categoria a ser editada
+ * @param {string} categoriaNome - Nome atual da categoria
+ */
+function prepararEditarCategoria(categoriaId, categoriaNome) {
+  // Ocultar formulário de adição
+  document.getElementById('formAdicionarCategoria').style.display = 'none';
+  
+  // Mostrar formulário de edição
+  document.getElementById('formEditarCategoria').style.display = 'block';
+  
+  // Preencher campos
+  document.getElementById('editarCategoriaId').value = categoriaId;
+  document.getElementById('editarCategoriaNome').value = categoriaNome;
+  
+  // Focar no campo de nome
+  document.getElementById('editarCategoriaNome').focus();
+}
+
+/**
+ * Salva a edição de uma categoria
+ */
+function salvarEdicaoCategoria() {
+  const categoriaId = document.getElementById('editarCategoriaId').value;
+  const categoriaNome = document.getElementById('editarCategoriaNome').value;
+  
+  if (!categoriaNome) {
+    exibirToast("Digite o nome da categoria.", "warning");
+    return;
+  }
+  
+  db.ref(`categorias/${categoriaId}`).update({
+    nome: categoriaNome
+  }).then(() => {
+    exibirToast("Categoria atualizada com sucesso!", "success");
+    cancelarEdicaoCategoria();
+    loadCategorias();
+    loadCategoriasFiltro();
+  }).catch(err => {
+    console.error("Erro ao atualizar categoria:", err);
+    exibirToast("Erro ao atualizar categoria: " + err.message, "danger");
+  });
+}
+
+/**
+ * Cancela a edição de uma categoria
+ */
+function cancelarEdicaoCategoria() {
+  // Limpar campos
+  document.getElementById('editarCategoriaId').value = '';
+  document.getElementById('editarCategoriaNome').value = '';
+  
+  // Ocultar formulário de edição
+  document.getElementById('formEditarCategoria').style.display = 'none';
+  
+  // Mostrar formulário de adição
+  document.getElementById('formAdicionarCategoria').style.display = 'block';
+}
+
+/**
+ * Exclui uma categoria
+ * @param {string} categoriaId - ID da categoria a ser excluída
+ */
+function excluirCategoria(categoriaId) {
+  if (confirm("Tem certeza que deseja excluir esta categoria?")) {
+    db.ref("categorias").child(categoriaId).remove()
+      .then(() => {
+        exibirToast("Categoria excluída com sucesso!", "success");
+        loadCategorias();
+        loadCategoriasFiltro();
+      })
+      .catch(err => {
+        console.error("Erro ao excluir categoria:", err);
+        exibirToast("Erro ao excluir categoria: " + err.message, "danger");
+      });
+  }
+}
