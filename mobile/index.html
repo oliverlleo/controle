@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Finanças Pessoais - Mobile</title>
+  
+  <!-- Meta tags para evitar cache -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
+  <!-- Google Fonts: Roboto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Ícones (Font Awesome) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Toastify para notificações -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  
+  <!-- ApexCharts para gráficos interativos -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  
+  <!-- CSS Mobile -->
+  <link rel="stylesheet" href="css/mobile.css">
+  
+  <!-- Tema claro/escuro -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#6200EE">
+</head>
+<body>
+  <!-- Tela de carregamento inicial -->
+  <div id="splash-screen">
+    <div class="splash-logo">
+      <i class="fa-solid fa-wallet"></i>
+    </div>
+    <div class="splash-title">Finanças Pessoais</div>
+    <div class="splash-spinner"></div>
+  </div>
+
+  <!-- Cabeçalho -->
+  <header id="app-header">
+    <div class="header-content">
+      <h1 id="page-title">Dashboard</h1>
+      <div class="header-actions">
+        <button id="notifications-btn" class="icon-btn">
+          <i class="fas fa-bell"></i>
+          <span class="notification-badge" id="notification-count">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo principal -->
+  <main id="app-content">
+    <!-- Seção de saldo -->
+    <section id="balance-section" class="card-section">
+      <div class="balance-card">
+        <div class="balance-header">
+          <h2>Saldo Total</h2>
+          <button id="toggle-balance" class="icon-btn">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <div class="balance-amount">
+          <span id="total-balance">R$ 0,00</span>
+        </div>
+        <div class="balance-period">
+          <span id="current-period">Abril 2025</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de resumo -->
+    <section id="summary-section" class="card-section">
+      <div class="summary-cards">
+        <div class="summary-card income">
+          <div class="summary-icon">
+            <i class="fas fa-arrow-up"></i>
+          </div>
+          <div class="summary-info">
+            <h3>Receitas</h3>
+            <span id="total-income">R$ 0,00</span>
+          </div>
+        </div>
+        <div class="summary-card expenses">
+          <div class="summary-icon">
+            <i class="fas fa-arrow-down"></i>
+          </div>
+          <div class="summary-info">
+            <h3>Despesas</h3>
+            <span id="total-expenses">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de gráfico -->
+    <section id="chart-section" class="card-section">
+      <div class="section-header">
+        <h2>Despesas por Categoria</h2>
+        <button id="chart-options" class="icon-btn">
+          <i class="fas fa-ellipsis-v"></i>
+        </button>
+      </div>
+      <div id="expenses-chart"></div>
+    </section>
+
+    <!-- Seção de transações recentes -->
+    <section id="recent-transactions" class="card-section">
+      <div class="section-header">
+        <h2>Transações Recentes</h2>
+        <a href="transacoes.html" class="view-all">Ver todas</a>
+      </div>
+      <div class="transactions-list" id="transactions-container">
+        <!-- Transações serão inseridas dinamicamente via JavaScript -->
+        <div class="empty-state">
+          <i class="fas fa-receipt"></i>
+          <p>Nenhuma transação recente</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de contas a pagar -->
+    <section id="upcoming-bills" class="card-section">
+      <div class="section-header">
+        <h2>Próximas Contas</h2>
+        <a href="contas.html" class="view-all">Ver todas</a>
+      </div>
+      <div class="bills-list" id="bills-container">
+        <!-- Contas serão inseridas dinamicamente via JavaScript -->
+        <div class="empty-state">
+          <i class="fas fa-calendar-check"></i>
+          <p>Nenhuma conta próxima</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Botão de ação flutuante (FAB) -->
+  <button id="fab-button" class="fab">
+    <i class="fas fa-plus"></i>
+  </button>
+  
+  <!-- Menu do FAB -->
+  <div id="fab-menu" class="fab-menu">
+    <button class="fab-menu-item" data-action="add-expense">
+      <i class="fas fa-arrow-down"></i>
+      <span>Despesa</span>
+    </button>
+    <button class="fab-menu-item" data-action="add-income">
+      <i class="fas fa-arrow-up"></i>
+      <span>Receita</span>
+    </button>
+    <button class="fab-menu-item" data-action="add-transfer">
+      <i class="fas fa-exchange-alt"></i>
+      <span>Transferência</span>
+    </button>
+  </div>
+
+  <!-- Navegação inferior -->
+  <nav id="bottom-nav">
+    <a href="index.html" class="nav-item active">
+      <i class="fas fa-home"></i>
+      <span>Início</span>
+    </a>
+    <a href="despesas.html" class="nav-item">
+      <i class="fas fa-chart-pie"></i>
+      <span>Despesas</span>
+    </a>
+    <a href="receitas.html" class="nav-item">
+      <i class="fas fa-wallet"></i>
+      <span>Receitas</span>
+    </a>
+    <a href="cartoes.html" class="nav-item">
+      <i class="fas fa-credit-card"></i>
+      <span>Cartões</span>
+    </a>
+    <a href="#" class="nav-item" id="more-menu-btn">
+      <i class="fas fa-ellipsis-h"></i>
+      <span>Mais</span>
+    </a>
+  </nav>
+
+  <!-- Menu "Mais" -->
+  <div id="more-menu" class="more-menu">
+    <div class="more-menu-header">
+      <h3>Mais opções</h3>
+      <button id="close-more-menu" class="icon-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="more-menu-items">
+      <a href="metas.html" class="more-menu-item">
+        <i class="fas fa-bullseye"></i>
+        <span>Metas</span>
+      </a>
+      <a href="relatorios.html" class="more-menu-item">
+        <i class="fas fa-chart-line"></i>
+        <span>Relatórios</span>
+      </a>
+      <a href="categorias.html" class="more-menu-item">
+        <i class="fas fa-tags"></i>
+        <span>Categorias</span>
+      </a>
+      <a href="perfil.html" class="more-menu-item">
+        <i class="fas fa-user"></i>
+        <span>Perfil</span>
+      </a>
+      <a href="configuracoes.html" class="more-menu-item">
+        <i class="fas fa-cog"></i>
+        <span>Configurações</span>
+      </a>
+      <button id="logout-btn" class="more-menu-item">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Sair</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlay para menus e modais -->
+  <div id="overlay"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
+  
+  <!-- Scripts da aplicação -->
+  <script src="js/mobile.js"></script>
+</body>
+</html>

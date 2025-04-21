@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Cartões - Finanças Pessoais</title>
+  
+  <!-- Meta tags para evitar cache -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
+  <!-- Google Fonts: Roboto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Ícones (Font Awesome) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Toastify para notificações -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  
+  <!-- ApexCharts para gráficos interativos -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  
+  <!-- CSS Mobile -->
+  <link rel="stylesheet" href="css/mobile.css">
+  
+  <!-- Tema claro/escuro -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#6200EE">
+</head>
+<body>
+  <!-- Cabeçalho -->
+  <header id="app-header">
+    <div class="header-content">
+      <h1 id="page-title">Cartões</h1>
+      <div class="header-actions">
+        <button id="search-btn" class="icon-btn">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Barra de pesquisa -->
+    <div id="search-bar" class="search-bar">
+      <div class="input-with-icon">
+        <i class="fas fa-search"></i>
+        <input type="text" id="search-input" placeholder="Pesquisar cartões...">
+        <button id="clear-search" class="icon-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo principal -->
+  <main id="app-content">
+    <!-- Carrossel de cartões -->
+    <section id="cards-carousel" class="card-section">
+      <div class="carousel-container">
+        <div class="carousel-wrapper" id="cards-wrapper">
+          <!-- Os cartões serão inseridos dinamicamente -->
+          
+          <!-- Exemplo de cartão -->
+          <div class="credit-card">
+            <div class="card-header">
+              <div class="card-logo">
+                <i class="fab fa-cc-visa"></i>
+              </div>
+              <div class="card-type">Visa</div>
+            </div>
+            <div class="card-number">•••• •••• •••• 1234</div>
+            <div class="card-footer">
+              <div class="card-holder">João Silva</div>
+              <div class="card-expiry">12/28</div>
+            </div>
+            <div class="card-background"></div>
+          </div>
+          
+          <!-- Cartão de adicionar -->
+          <div class="add-card-btn">
+            <div class="add-icon">
+              <i class="fas fa-plus"></i>
+            </div>
+            <span>Adicionar cartão</span>
+          </div>
+        </div>
+        
+        <!-- Indicadores de carrossel -->
+        <div class="carousel-indicators" id="carousel-indicators">
+          <!-- Indicadores serão inseridos dinamicamente -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Resumo do cartão selecionado -->
+    <section id="card-summary" class="card-section">
+      <div class="summary-tabs">
+        <button class="tab-btn active" data-tab="overview">Visão Geral</button>
+        <button class="tab-btn" data-tab="invoice">Fatura</button>
+        <button class="tab-btn" data-tab="transactions">Transações</button>
+      </div>
+      
+      <div class="tab-content">
+        <!-- Aba de visão geral -->
+        <div id="overview-tab" class="tab-pane active">
+          <div class="card-info-grid">
+            <div class="card-info-item">
+              <div class="info-label">Limite Total</div>
+              <div class="info-value" id="card-limit">R$ 5.000,00</div>
+            </div>
+            <div class="card-info-item">
+              <div class="info-label">Limite Utilizado</div>
+              <div class="info-value" id="card-used">R$ 1.250,00</div>
+            </div>
+            <div class="card-info-item">
+              <div class="info-label">Limite Disponível</div>
+              <div class="info-value" id="card-available">R$ 3.750,00</div>
+            </div>
+            <div class="card-info-item">
+              <div class="info-label">Fechamento</div>
+              <div class="info-value" id="card-closing">15/04/2025</div>
+            </div>
+            <div class="card-info-item">
+              <div class="info-label">Vencimento</div>
+              <div class="info-value" id="card-due-date">22/04/2025</div>
+            </div>
+            <div class="card-info-item">
+              <div class="info-label">Fatura Atual</div>
+              <div class="info-value" id="card-invoice">R$ 1.250,00</div>
+            </div>
+          </div>
+          
+          <div class="limit-progress">
+            <div class="progress-label">
+              <span>Uso do Limite</span>
+              <span id="limit-percentage">25%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 25%;"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Aba de fatura -->
+        <div id="invoice-tab" class="tab-pane">
+          <div class="invoice-header">
+            <div class="invoice-period">
+              <span>Fatura de</span>
+              <select id="invoice-month">
+                <option value="current">Abril 2025 (atual)</option>
+                <option value="previous">Março 2025</option>
+                <option value="next">Maio 2025</option>
+              </select>
+            </div>
+            <div class="invoice-summary">
+              <div class="invoice-total">
+                <span>Total da fatura</span>
+                <span id="invoice-amount">R$ 1.250,00</span>
+              </div>
+              <div class="invoice-due">
+                <span>Vencimento</span>
+                <span id="invoice-due-date">22/04/2025</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="invoice-actions">
+            <button class="btn btn-outline btn-sm">
+              <i class="fas fa-file-pdf"></i>
+              <span>Ver fatura</span>
+            </button>
+            <button class="btn btn-primary btn-sm">
+              <i class="fas fa-dollar-sign"></i>
+              <span>Pagar fatura</span>
+            </button>
+          </div>
+          
+          <div class="invoice-transactions">
+            <h3>Compras e despesas</h3>
+            <div class="transactions-list" id="invoice-transactions">
+              <!-- Transações serão inseridas dinamicamente -->
+              
+              <!-- Exemplo de transação -->
+              <div class="transaction-item">
+                <div class="transaction-date">15/03</div>
+                <div class="transaction-details">
+                  <div class="transaction-title">Supermercado</div>
+                  <div class="transaction-info">À vista</div>
+                </div>
+                <div class="transaction-amount">R$ 250,00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Aba de transações -->
+        <div id="transactions-tab" class="tab-pane">
+          <div class="transactions-filter">
+            <div class="filter-label">Filtrar por</div>
+            <div class="filter-options">
+              <button class="filter-option active" data-filter="all">Todas</button>
+              <button class="filter-option" data-filter="pending">Pendentes</button>
+              <button class="filter-option" data-filter="completed">Concluídas</button>
+            </div>
+          </div>
+          
+          <div class="transactions-list" id="card-transactions">
+            <!-- Transações serão inseridas dinamicamente -->
+            
+            <!-- Exemplo de transação -->
+            <div class="transaction-item">
+              <div class="transaction-date">15/03</div>
+              <div class="transaction-details">
+                <div class="transaction-title">Supermercado</div>
+                <div class="transaction-info">À vista</div>
+              </div>
+              <div class="transaction-amount">R$ 250,00</div>
+            </div>
+          </div>
+          
+          <!-- Estado vazio -->
+          <div class="empty-state" id="empty-transactions" style="display: none;">
+            <i class="fas fa-credit-card"></i>
+            <p>Nenhuma transação encontrada</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Botão de ação flutuante (FAB) -->
+  <button id="fab-button" class="fab">
+    <i class="fas fa-plus"></i>
+  </button>
+
+  <!-- Navegação inferior -->
+  <nav id="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <i class="fas fa-home"></i>
+      <span>Início</span>
+    </a>
+    <a href="despesas.html" class="nav-item">
+      <i class="fas fa-chart-pie"></i>
+      <span>Despesas</span>
+    </a>
+    <a href="receitas.html" class="nav-item">
+      <i class="fas fa-wallet"></i>
+      <span>Receitas</span>
+    </a>
+    <a href="cartoes.html" class="nav-item active">
+      <i class="fas fa-credit-card"></i>
+      <span>Cartões</span>
+    </a>
+    <a href="#" class="nav-item" id="more-menu-btn">
+      <i class="fas fa-ellipsis-h"></i>
+      <span>Mais</span>
+    </a>
+  </nav>
+
+  <!-- Menu "Mais" -->
+  <div id="more-menu" class="more-menu">
+    <div class="more-menu-header">
+      <h3>Mais opções</h3>
+      <button id="close-more-menu" class="icon-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="more-menu-items">
+      <a href="metas.html" class="more-menu-item">
+        <i class="fas fa-bullseye"></i>
+        <span>Metas</span>
+      </a>
+      <a href="relatorios.html" class="more-menu-item">
+        <i class="fas fa-chart-line"></i>
+        <span>Relatórios</span>
+      </a>
+      <a href="categorias.html" class="more-menu-item">
+        <i class="fas fa-tags"></i>
+        <span>Categorias</span>
+      </a>
+      <a href="perfil.html" class="more-menu-item">
+        <i class="fas fa-user"></i>
+        <span>Perfil</span>
+      </a>
+      <a href="configuracoes.html" class="more-menu-item">
+        <i class="fas fa-cog"></i>
+        <span>Configurações</span>
+      </a>
+      <button id="logout-btn" class="more-menu-item">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Sair</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de adicionar cartão -->
+  <div id="add-card-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Novo Cartão</h2>
+        <button class="close-modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form id="card-form">
+          <div class="form-group">
+            <label for="card-name">Nome do cartão</label>
+            <input type="text" id="card-name" placeholder="Ex: Nubank" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="card-brand">Bandeira</label>
+            <select id="card-brand" required>
+              <option value="">Selecione</option>
+              <option value="visa">Visa</option>
+              <option value="mastercard">Mastercard</option>
+              <option value="amex">American Express</option>
+              <option value="elo">Elo</option>
+              <option value="hipercard">Hipercard</option>
+              <option value="other">Outra</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="card-number">Número do cartão</label>
+            <div class="input-with-icon">
+              <i class="fas fa-credit-card"></i>
+              <input type="text" id="card-number" placeholder="•••• •••• •••• ••••" maxlength="19" required>
+            </div>
+            <small class="form-hint">Apenas os últimos 4 dígitos serão armazenados.</small>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="card-expiry">Validade</label>
+              <input type="text" id="card-expiry" placeholder="MM/AA" maxlength="5" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="card-cvv">CVV</label>
+              <input type="text" id="card-cvv" placeholder="•••" maxlength="4" required>
+              <small class="form-hint">Não será armazenado.</small>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="card-holder">Nome do titular</label>
+            <input type="text" id="card-holder" placeholder="Como está no cartão" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="card-limit">Limite total (R$)</label>
+            <div class="input-with-icon">
+              <i class="fas fa-dollar-sign"></i>
+              <input type="number" id="card-limit-input" placeholder="0,00" step="0.01" min="0" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="card-closing-day">Dia de fechamento</label>
+              <input type="number" id="card-closing-day" placeholder="1-31" min="1" max="31" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="card-due-day">Dia de vencimento</label>
+              <input type="number" id="card-due-day" placeholder="1-31" min="1" max="31" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Cor do cartão</label>
+            <div class="color-picker">
+              <div class="color-option" data-color="#6200EE" style="background-color: #6200EE;"></div>
+              <div class="color-option" data-color="#03DAC6" style="background-color: #03DAC6;"></div>
+              <div class="color-option" data-color="#F44336" style="background-color: #F44336;"></div>
+              <div class="color-option" data-color="#4CAF50" style="background-color: #4CAF50;"></div>
+              <div class="color-option" data-color="#2196F3" style="background-color: #2196F3;"></div>
+              <div class="color-option" data-color="#FFC107" style="background-color: #FFC107;"></div>
+              <div class="color-option" data-color="#9C27B0" style="background-color: #9C27B0;"></div>
+              <div class="color-option" data-color="#607D8B" style="background-color: #607D8B;"></div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="card-notes">Observações</label>
+            <textarea id="card-notes" rows="3" placeholder="Observações (opcional)"></textarea>
+          </div>
+        </form>
+      </div>
+      
+      <div class="modal-footer">
+        <button id="save-card" class="btn btn-primary">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de pagar fatura -->
+  <div id="pay-invoice-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Pagar Fatura</h2>
+        <button class="close-modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="invoice-details">
+          <div class="invoice-card">Nubank Visa</div>
+          <div class="invoice-amount">R$ 1.250,00</div>
+          <div class="invoice-due">Vencimento: 22/04/2025</div>
+        </div>
+        
+        <form id="pay-invoice-form">
+          <div class="form-group">
+            <label for="payment-type">Forma de pagamento</label>
+            <select id="payment-type" required>
+              <option value="">Selecione</option>
+              <option value="full">Valor total</option>
+              <option value="minimum">Pagamento mínimo</option>
+              <option value="custom">Valor personalizado</option>
+            </select>
+          </div>
+          
+          <div id="custom-amount-group" class="form-group" style="display: none;">
+            <label for="custom-amount">Valor a pagar (R$)</label>
+            <div class="input-with-icon">
+              <i class="fas fa-dollar-sign"></i>
+              <input type="number" id="custom-amount" placeholder="0,00" step="0.01" min="0">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="payment-method">Método de pagamento</label>
+            <select id="payment-method" required>
+              <option value="">Selecione</option>
+              <option value="bank-slip">Boleto</option>
+              <option value="bank-transfer">Transferência bancária</option>
+              <option value="pix">PIX</option>
+              <option value="debit">Débito automático</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="payment-date">Data de pagamento</label>
+            <div class="input-with-icon">
+              <i class="fas fa-calendar"></i>
+              <input type="date" id="payment-date" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="payment-account">Conta de origem</label>
+            <select id="payment-account" required>
+              <option value="">Selecione</option>
+              <option value="checking">Conta Corrente</option>
+              <option value="savings">Poupança</option>
+              <option value="other">Outra</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      
+      <div class="modal-footer">
+        <button id="confirm-payment" class="btn btn-primary">Confirmar pagamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay para menus e modais -->
+  <div id="overlay"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
+  
+  <!-- Scripts da aplicação -->
+  <script src="js/mobile.js"></script>
+</body>
+</html>
