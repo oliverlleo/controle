@@ -31,6 +31,9 @@
   <!-- CSS unificado -->
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/inteligencia_financeira.css">
+  
+  <!-- CSS Mobile -->
+  <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
   <!-- Botão de menu para dispositivos móveis -->
@@ -336,7 +339,7 @@
             <i class="fas fa-user"></i>
             <span>Rendas</span>
           </button>
-          <button class="config-tab-btn" onclick="showConfigTab('categoriasTab')">
+          <button class="config-tab-btn" onclick="showConfigTab('configCategoriasTab')">
             <i class="fas fa-tags"></i>
             <span>Categorias</span>
           </button>
@@ -367,11 +370,18 @@
           </div>
           
           <!-- Aba de Categorias -->
-          <div id="categoriasTab" class="config-tab-pane" style="display: none;">
-            <button class="btn btn-primary mb-3" onclick="abrirModal('categoriasModal')">
-              <i class="fas fa-tags"></i>
-              <span>Gerenciar Categorias</span>
-            </button>
+          <div id="configCategoriasTab" class="config-tab-pane" style="display: none;">
+            <div class="d-flex gap-2 flex-wrap mb-3">
+              <button class="btn btn-primary" onclick="abrirModal('categoriasModal')">
+                <i class="fas fa-tags"></i>
+                <span>Gerenciar Categorias</span>
+              </button>
+              <!-- Botão "Configurar Limites" movido da tela de alertas para a tela de configurações -->
+              <button class="btn btn-primary" onclick="abrirModal('novo_limitesModal')">
+                <i class="fas fa-sliders"></i>
+                <span>Configurar Limites</span>
+              </button>
+            </div>
             
             <div class="chart-container">
               <div id="categoriasListaPrincipal"></div>
@@ -395,10 +405,7 @@
       <!-- Seção de Alertas -->
       <section id="alertasSection" class="container" style="display:none;">
         <h2 class="mb-3">Alertas</h2>
-        <button class="btn btn-primary mb-3" onclick="abrirModal('novo_limitesModal')">
-          <i class="fas fa-sliders"></i>
-          <span>Configurar Limites</span>
-        </button>
+        <!-- Botão "Configurar Limites" foi movido para a tela de configurações -->
         
         <div class="chart-container">
           <div id="novo_listaAlertas"></div>
@@ -820,5 +827,8 @@
       };
     });
   </script>
+  
+  <!-- Script Mobile -->
+  <script src="js/mobile.js"></script>
 </body>
 </html>
