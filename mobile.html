@@ -1,13 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="theme-color" content="#4361ee" />
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="manifest.json">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#4361ee">
   <title>Sistema de Gerenciamento de Contas Pessoais - Mobile</title>
   
   <!-- Meta tags para evitar cache -->
@@ -35,1042 +30,627 @@
   
   <!-- CSS Mobile (nova versão) -->
   <link rel="stylesheet" href="css/mobile.css">
+  
+  <style>
+    /* Sobrescrever estilos específicos para garantir que o mobile seja aplicado */
+    body {
+      font-family: 'Roboto', sans-serif !important;
+      background: var(--bg-color) !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow-x: hidden !important;
+    }
+  </style>
 </head>
-<body class="app-mobile">
-  <!-- Tela de carregamento -->
-  <div id="loadingScreen" class="loading-screen">
-    <div class="loading-spinner"></div>
-    <p>Carregando...</p>
-  </div>
-
+<body class="mobile-body">
   <!-- Cabeçalho Mobile -->
-  <header class="app-header">
-    <div class="header-content">
-      <div class="header-title">
-        <h1 id="pageTitle">Dashboard</h1>
-      </div>
-      <div class="header-actions">
-        <button id="notificationsBtn" class="icon-btn">
-          <i class="fas fa-bell"></i>
-          <span id="notificationBadge" class="notification-badge hidden">0</span>
-        </button>
-        <button id="profileBtn" class="profile-btn">
-          <div id="profileAvatar" class="profile-avatar">
-            <span>JD</span>
-          </div>
-        </button>
-      </div>
-    </div>
+  <header class="mobile-header">
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+      <i class="fas fa-bars"></i>
+    </button>
+    <h1 class="mobile-title">Sistema de Contas</h1>
+    <button class="mobile-user-btn" id="mobileUserBtn">
+      <i class="fas fa-user"></i>
+    </button>
   </header>
 
-  <!-- Conteúdo Principal -->
-  <main class="app-content">
-    <!-- Dashboard -->
-    <section id="dashboardSection" class="app-section active">
-      <div class="section-scroll">
-        <!-- Resumo Financeiro -->
-        <div class="balance-card">
-          <div class="balance-header">
-            <h2>Saldo Atual</h2>
-            <div class="period-selector">
-              <button id="prevMonthBtn" class="icon-btn small">
+  <!-- Menu de Navegação Mobile -->
+  <nav class="mobile-nav" id="mobileNav">
+    <div class="mobile-nav-header">
+      <h2><i class="fa-solid fa-wallet"></i> Contas</h2>
+      <button class="mobile-nav-close" id="mobileNavClose">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mobile-user-info" id="mobileUserInfo">
+      <!-- Preenchido dinamicamente -->
+    </div>
+    <div class="mobile-nav-links">
+      <a href="#" class="mobile-nav-link active" data-section="dashboardSection">
+        <i class="fa-solid fa-house"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="despesasSection">
+        <i class="fa-solid fa-money-bill-wave"></i>
+        <span>Despesas</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="relatorioIntegradoSection">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Relatórios & Previsões</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="inteligenciaFinanceiraSection">
+        <i class="fa-solid fa-brain"></i>
+        <span>Inteligência Financeira</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="metasFinanceirasSection">
+        <i class="fa-solid fa-bullseye"></i>
+        <span>Metas</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="configuracoesSection">
+        <i class="fa-solid fa-cog"></i>
+        <span>Configurações</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-action="exportData">
+        <i class="fa-solid fa-file-export"></i>
+        <span>Exportar</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="alertasSection">
+        <i class="fa-solid fa-bell"></i>
+        <span>Alertas</span>
+      </a>
+      <a href="#" class="mobile-nav-link mobile-logout" id="mobileLogout">
+        <i class="fa-solid fa-sign-out-alt"></i>
+        <span>Sair</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Conteúdo Principal Mobile -->
+  <main class="mobile-main">
+    <!-- Dashboard Mobile -->
+    <section id="mobileDashboardSection" class="mobile-section active">
+      <div class="mobile-section-header">
+        <h2>Dashboard</h2>
+        <div class="mobile-date-selector">
+          <select id="mobileDashboardMonth" class="mobile-select">
+            <option value="0">Janeiro</option>
+            <option value="1">Fevereiro</option>
+            <option value="2">Março</option>
+            <option value="3">Abril</option>
+            <option value="4">Maio</option>
+            <option value="5">Junho</option>
+            <option value="6">Julho</option>
+            <option value="7">Agosto</option>
+            <option value="8">Setembro</option>
+            <option value="9">Outubro</option>
+            <option value="10">Novembro</option>
+            <option value="11">Dezembro</option>
+          </select>
+          <select id="mobileDashboardYear" class="mobile-select">
+            <option value="2020">2020</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+            <option value="2029">2029</option>
+            <option value="2030">2030</option>
+          </select>
+          <button class="mobile-btn mobile-btn-primary" id="mobileUpdateDashboard">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="mobile-cards">
+        <div class="mobile-card">
+          <div class="mobile-card-header">
+            <div class="mobile-card-title">Saldo Atual</div>
+            <div class="mobile-card-icon">
+              <i class="fas fa-wallet"></i>
+            </div>
+          </div>
+          <div class="mobile-card-value" id="mobileSaldoAtual">R$ 0,00</div>
+          <div class="mobile-card-label">Disponível para uso</div>
+        </div>
+        
+        <div class="mobile-card">
+          <div class="mobile-card-header">
+            <div class="mobile-card-title">Despesas do Mês</div>
+            <div class="mobile-card-nav">
+              <button class="mobile-btn-icon" id="mobilePrevMonth">
                 <i class="fas fa-chevron-left"></i>
               </button>
-              <span id="currentPeriod">Abril 2025</span>
-              <button id="nextMonthBtn" class="icon-btn small">
+              <button class="mobile-btn-icon" id="mobileNextMonth">
                 <i class="fas fa-chevron-right"></i>
               </button>
             </div>
           </div>
-          <div class="balance-amount">
-            <span id="balanceValue">R$ 6.416,60</span>
-          </div>
-          <div class="balance-actions">
-            <button id="addIncomeBtn" class="action-btn income">
-              <i class="fas fa-plus"></i>
-              <span>Receita</span>
-            </button>
-            <button id="addExpenseBtn" class="action-btn expense">
-              <i class="fas fa-minus"></i>
-              <span>Despesa</span>
-            </button>
-          </div>
+          <div class="mobile-card-value" id="mobileDespesasMes">R$ 0,00</div>
+          <div class="mobile-card-label" id="mobileDespesasMesTitle">Mês de 2025</div>
         </div>
-
-        <!-- Cards de Resumo -->
-        <div class="summary-cards">
-          <div class="summary-card income">
-            <div class="card-icon">
-              <i class="fas fa-arrow-down"></i>
-            </div>
-            <div class="card-info">
-              <span class="card-label">Receitas</span>
-              <span id="incomeValue" class="card-value">R$ 8.500,00</span>
+        
+        <div class="mobile-card">
+          <div class="mobile-card-header">
+            <div class="mobile-card-title">Próximos Vencimentos</div>
+            <div class="mobile-card-icon">
+              <i class="fas fa-calendar-alt"></i>
             </div>
           </div>
-          <div class="summary-card expense">
-            <div class="card-icon">
-              <i class="fas fa-arrow-up"></i>
-            </div>
-            <div class="card-info">
-              <span class="card-label">Despesas</span>
-              <span id="expenseValue" class="card-value">R$ 4.440,00</span>
-            </div>
-          </div>
-          <div class="summary-card upcoming">
-            <div class="card-icon">
-              <i class="fas fa-calendar"></i>
-            </div>
-            <div class="card-info">
-              <span class="card-label">Próximo Vencimento</span>
-              <span id="upcomingValue" class="card-value">Em 3 dias</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Gráfico de Despesas -->
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3>Despesas por Categoria</h3>
-            <button id="chartOptionsBtn" class="icon-btn small">
-              <i class="fas fa-ellipsis-v"></i>
-            </button>
-          </div>
-          <div id="expensesChart" class="chart-body"></div>
-        </div>
-
-        <!-- Transações Recentes -->
-        <div class="transactions-container">
-          <div class="transactions-header">
-            <h3>Transações Recentes</h3>
-            <button id="viewAllTransactionsBtn" class="text-btn">
-              Ver todas
-            </button>
-          </div>
-          <div id="recentTransactionsList" class="transactions-list">
-            <!-- Transações serão inseridas via JavaScript -->
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-home"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Aluguel</div>
-                <div class="transaction-date">05/04/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 1.500,00
-              </div>
-            </div>
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-shopping-cart"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Supermercado</div>
-                <div class="transaction-date">10/04/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 800,00
-              </div>
-            </div>
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-wifi"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Internet</div>
-                <div class="transaction-date">15/04/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 120,00
-              </div>
-            </div>
-            <div class="transaction-item">
-              <div class="transaction-icon income">
-                <i class="fas fa-briefcase"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Salário</div>
-                <div class="transaction-date">01/04/2025</div>
-              </div>
-              <div class="transaction-amount income">
-                R$ 8.500,00
-              </div>
-            </div>
-          </div>
+          <div class="mobile-card-value" id="mobileProximosVencimentos">0</div>
+          <div class="mobile-card-label">Dias até o próximo vencimento</div>
         </div>
       </div>
+      
+      <div class="mobile-chart-container">
+        <h3 class="mobile-chart-title">Análise de Despesas</h3>
+        <div id="mobileGraficoDespesas" class="mobile-chart"></div>
+      </div>
+      
+      <div class="mobile-list-container">
+        <h3 class="mobile-list-title">Despesas do Mês</h3>
+        <div id="mobileListaDespesasMes" class="mobile-despesas-lista"></div>
+      </div>
+      
+      <button class="mobile-btn mobile-btn-primary mobile-btn-float" id="mobileAddDespesa">
+        <i class="fas fa-plus"></i>
+      </button>
     </section>
 
-    <!-- Transações -->
-    <section id="transactionsSection" class="app-section">
-      <div class="section-scroll">
-        <div class="filter-bar">
-          <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchTransaction" placeholder="Buscar transação">
-          </div>
-          <button id="filterBtn" class="icon-btn">
+    <!-- Despesas Mobile -->
+    <section id="mobileDespesasSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Despesas</h2>
+        <div class="mobile-actions">
+          <button class="mobile-btn mobile-btn-primary" id="mobileAddDespesaBtn">
+            <i class="fas fa-plus"></i>
+            <span>Nova</span>
+          </button>
+          <button class="mobile-btn mobile-btn-success" id="mobilePagarDespesaBtn">
+            <i class="fas fa-check"></i>
+            <span>Pagar</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="mobile-filter-container">
+        <div class="mobile-search-box">
+          <input type="text" id="mobileFiltroDescricao" class="mobile-form-control" placeholder="Filtrar por descrição">
+          <button class="mobile-btn mobile-btn-primary" id="mobileFiltrarBtn">
             <i class="fas fa-filter"></i>
           </button>
         </div>
-
-        <div class="filter-chips">
-          <div class="filter-chip active">
-            <span>Todos</span>
-          </div>
-          <div class="filter-chip">
-            <span>Receitas</span>
-          </div>
-          <div class="filter-chip">
-            <span>Despesas</span>
-          </div>
-          <div class="filter-chip">
-            <span>Pendentes</span>
-          </div>
-        </div>
-
-        <div class="transactions-group">
-          <div class="group-header">
-            <h3>Abril 2025</h3>
-            <span class="group-total">R$ 4.440,00</span>
-          </div>
-          <div class="transactions-list">
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-home"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Aluguel</div>
-                <div class="transaction-date">05/04/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 1.500,00
-              </div>
-            </div>
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-shopping-cart"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Supermercado</div>
-                <div class="transaction-date">10/04/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 800,00
-              </div>
-            </div>
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-wifi"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Internet</div>
-                <div class="transaction-date">15/04/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 120,00
-              </div>
-            </div>
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-bolt"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Energia Elétrica</div>
-                <div class="transaction-date">20/04/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 250,00
-              </div>
-            </div>
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-gas-pump"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Combustível</div>
-                <div class="transaction-date">25/04/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 300,00
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="transactions-group">
-          <div class="group-header">
-            <h3>Março 2025</h3>
-            <span class="group-total">R$ 4.320,00</span>
-          </div>
-          <div class="transactions-list">
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-home"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Aluguel</div>
-                <div class="transaction-date">05/03/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 1.500,00
-              </div>
-            </div>
-            <div class="transaction-item">
-              <div class="transaction-icon expense">
-                <i class="fas fa-shopping-cart"></i>
-              </div>
-              <div class="transaction-details">
-                <div class="transaction-title">Supermercado</div>
-                <div class="transaction-date">10/03/2025</div>
-              </div>
-              <div class="transaction-amount expense">
-                R$ 750,00
-              </div>
-            </div>
-          </div>
+        <div class="mobile-filter-options">
+          <select id="mobileFiltroStatus" class="mobile-select">
+            <option value="todos">Todos os status</option>
+            <option value="pendente">Pendentes</option>
+            <option value="pago">Pagas</option>
+          </select>
+          <select id="mobileFiltroMes" class="mobile-select">
+            <option value="todos">Todos os meses</option>
+            <option value="0">Janeiro</option>
+            <option value="1">Fevereiro</option>
+            <option value="2">Março</option>
+            <option value="3">Abril</option>
+            <option value="4">Maio</option>
+            <option value="5">Junho</option>
+            <option value="6">Julho</option>
+            <option value="7">Agosto</option>
+            <option value="8">Setembro</option>
+            <option value="9">Outubro</option>
+            <option value="10">Novembro</option>
+            <option value="11">Dezembro</option>
+          </select>
         </div>
       </div>
+      
+      <div class="mobile-despesas-container">
+        <div id="mobileDespesasList" class="mobile-despesas-list"></div>
+      </div>
+      
+      <div class="mobile-calendar-btn-container">
+        <button class="mobile-btn mobile-btn-outline" id="mobileCalendarBtn">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Calendário</span>
+        </button>
+      </div>
     </section>
-
-    <!-- Relatórios -->
-    <section id="reportsSection" class="app-section">
-      <div class="section-scroll">
-        <div class="tabs-container">
-          <div class="tab-buttons">
-            <button class="tab-btn active" data-tab="summaryTab">Resumo</button>
-            <button class="tab-btn" data-tab="categoriesTab">Categorias</button>
-            <button class="tab-btn" data-tab="trendsTab">Tendências</button>
+    
+    <!-- Relatórios Mobile -->
+    <section id="mobileRelatorioIntegradoSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Relatórios & Previsões</h2>
+      </div>
+      
+      <div class="mobile-tabs">
+        <button class="mobile-tab-btn active" data-tab="mobileRelatorioTab">
+          <i class="fas fa-chart-line"></i>
+          <span>Relatórios</span>
+        </button>
+        <button class="mobile-tab-btn" data-tab="mobilePrevisaoTab">
+          <i class="fas fa-chart-pie"></i>
+          <span>Previsões</span>
+        </button>
+        <button class="mobile-tab-btn" data-tab="mobileCategoriasTab">
+          <i class="fas fa-tags"></i>
+          <span>Categorias</span>
+        </button>
+      </div>
+      
+      <div class="mobile-tab-content">
+        <!-- Aba de Relatórios -->
+        <div id="mobileRelatorioTab" class="mobile-tab-pane active">
+          <div class="mobile-date-range">
+            <input type="text" id="mobileDateRange" class="mobile-form-control" placeholder="Selecione o período">
           </div>
           
-          <div class="tab-content">
-            <!-- Aba de Resumo -->
-            <div id="summaryTab" class="tab-pane active">
-              <div class="period-selector-large">
-                <button id="prevPeriodBtn" class="icon-btn">
-                  <i class="fas fa-chevron-left"></i>
-                </button>
-                <div class="period-display">
-                  <span id="periodLabel">Abril 2025</span>
-                  <button id="calendarBtn" class="calendar-btn">
-                    <i class="fas fa-calendar-alt"></i>
-                  </button>
-                </div>
-                <button id="nextPeriodBtn" class="icon-btn">
-                  <i class="fas fa-chevron-right"></i>
-                </button>
-              </div>
-              
-              <div class="summary-chart-container">
-                <div id="summaryChart" class="chart-body"></div>
-              </div>
-              
-              <div class="summary-stats">
-                <div class="stat-item">
-                  <span class="stat-label">Receitas</span>
-                  <span class="stat-value income">R$ 8.500,00</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Despesas</span>
-                  <span class="stat-value expense">R$ 4.440,00</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Saldo</span>
-                  <span class="stat-value">R$ 4.060,00</span>
-                </div>
-              </div>
+          <div class="mobile-chart-container">
+            <h3 class="mobile-chart-title">Resumo Financeiro</h3>
+            <div id="mobileRelatorioMensalChart" class="mobile-chart"></div>
+          </div>
+          
+          <div class="mobile-summary-cards">
+            <div class="mobile-summary-card">
+              <div class="mobile-summary-title">Total de Despesas</div>
+              <div class="mobile-summary-value" id="mobileTotalDespesas">R$ 0,00</div>
             </div>
-            
-            <!-- Aba de Categorias -->
-            <div id="categoriesTab" class="tab-pane">
-              <div class="categories-chart-container">
-                <div id="categoriesChart" class="chart-body"></div>
-              </div>
-              
-              <div class="categories-list">
-                <div class="category-item">
-                  <div class="category-color" style="background-color: #4361ee;"></div>
-                  <div class="category-info">
-                    <span class="category-name">Moradia</span>
-                    <div class="category-bar">
-                      <div class="category-progress" style="width: 35%;"></div>
-                    </div>
-                  </div>
-                  <span class="category-amount">R$ 1.500,00</span>
-                </div>
-                <div class="category-item">
-                  <div class="category-color" style="background-color: #3a0ca3;"></div>
-                  <div class="category-info">
-                    <span class="category-name">Alimentação</span>
-                    <div class="category-bar">
-                      <div class="category-progress" style="width: 20%;"></div>
-                    </div>
-                  </div>
-                  <span class="category-amount">R$ 800,00</span>
-                </div>
-                <div class="category-item">
-                  <div class="category-color" style="background-color: #f72585;"></div>
-                  <div class="category-info">
-                    <span class="category-name">Transporte</span>
-                    <div class="category-bar">
-                      <div class="category-progress" style="width: 15%;"></div>
-                    </div>
-                  </div>
-                  <span class="category-amount">R$ 600,00</span>
-                </div>
-                <div class="category-item">
-                  <div class="category-color" style="background-color: #4cc9f0;"></div>
-                  <div class="category-info">
-                    <span class="category-name">Serviços</span>
-                    <div class="category-bar">
-                      <div class="category-progress" style="width: 10%;"></div>
-                    </div>
-                  </div>
-                  <span class="category-amount">R$ 370,00</span>
-                </div>
-                <div class="category-item">
-                  <div class="category-color" style="background-color: #f8961e;"></div>
-                  <div class="category-info">
-                    <span class="category-name">Lazer</span>
-                    <div class="category-bar">
-                      <div class="category-progress" style="width: 8%;"></div>
-                    </div>
-                  </div>
-                  <span class="category-amount">R$ 300,00</span>
-                </div>
-              </div>
+            <div class="mobile-summary-card">
+              <div class="mobile-summary-title">Média Mensal</div>
+              <div class="mobile-summary-value" id="mobileMediaMensal">R$ 0,00</div>
             </div>
-            
-            <!-- Aba de Tendências -->
-            <div id="trendsTab" class="tab-pane">
-              <div class="trends-chart-container">
-                <div id="trendsChart" class="chart-body"></div>
-              </div>
-              
-              <div class="trends-insights">
-                <h3>Insights</h3>
-                <div class="insight-item">
-                  <div class="insight-icon">
-                    <i class="fas fa-arrow-down"></i>
-                  </div>
-                  <div class="insight-content">
-                    <span class="insight-title">Redução em Alimentação</span>
-                    <p class="insight-text">Seus gastos com alimentação diminuíram 12% em relação ao mês anterior.</p>
-                  </div>
-                </div>
-                <div class="insight-item">
-                  <div class="insight-icon warning">
-                    <i class="fas fa-arrow-up"></i>
-                  </div>
-                  <div class="insight-content">
-                    <span class="insight-title">Aumento em Lazer</span>
-                    <p class="insight-text">Seus gastos com lazer aumentaram 15% em relação ao mês anterior.</p>
-                  </div>
-                </div>
-                <div class="insight-item">
-                  <div class="insight-icon success">
-                    <i class="fas fa-check"></i>
-                  </div>
-                  <div class="insight-content">
-                    <span class="insight-title">Meta de Economia</span>
-                    <p class="insight-text">Você está 75% próximo de atingir sua meta de economia mensal.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          </div>
+        </div>
+        
+        <!-- Aba de Previsões -->
+        <div id="mobilePrevisaoTab" class="mobile-tab-pane">
+          <div class="mobile-chart-container">
+            <h3 class="mobile-chart-title">Tendência de Gastos</h3>
+            <button class="mobile-btn mobile-btn-primary" id="mobileGerarPrevisoes">
+              <i class="fas fa-calculator"></i>
+              <span>Gerar Previsões</span>
+            </button>
+            <div id="mobileGraficoPrevisao" class="mobile-chart"></div>
+          </div>
+          
+          <div class="mobile-list-container">
+            <h3 class="mobile-list-title">Próximos 3 Meses</h3>
+            <div id="mobileTabelaPrevisao" class="mobile-previsao-lista"></div>
+          </div>
+        </div>
+        
+        <!-- Aba de Categorias -->
+        <div id="mobileCategoriasTab" class="mobile-tab-pane">
+          <div class="mobile-chart-container">
+            <h3 class="mobile-chart-title">Despesas por Categoria</h3>
+            <div id="mobileGraficoCategorias" class="mobile-chart"></div>
+          </div>
+          
+          <div class="mobile-list-container">
+            <h3 class="mobile-list-title">Detalhamento por Categoria</h3>
+            <div id="mobileListaCategorias" class="mobile-categorias-lista"></div>
           </div>
         </div>
       </div>
     </section>
-
-    <!-- Inteligência Financeira -->
-    <section id="intelligenceSection" class="app-section">
-      <div class="section-scroll">
-        <div class="financial-health-card">
-          <div class="health-score">
-            <div class="score-circle">
-              <svg viewBox="0 0 36 36">
-                <path class="score-bg"
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#eee"
-                  stroke-width="3"
-                  stroke-dasharray="100, 100"
-                />
-                <path class="score-value"
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#4361ee"
-                  stroke-width="3"
-                  stroke-dasharray="75, 100"
-                />
-              </svg>
-              <div class="score-text">
-                <span class="score-number">75</span>
-                <span class="score-label">Saúde Financeira</span>
-              </div>
-            </div>
-          </div>
-          <div class="health-details">
-            <div class="health-item">
-              <span class="health-label">Economia</span>
-              <div class="health-bar">
-                <div class="health-progress" style="width: 48%;"></div>
-              </div>
-              <span class="health-value">48%</span>
-            </div>
-            <div class="health-item">
-              <span class="health-label">Essenciais</span>
-              <div class="health-bar">
-                <div class="health-progress" style="width: 65%;"></div>
-              </div>
-              <span class="health-value">65%</span>
-            </div>
-            <div class="health-item">
-              <span class="health-label">Supérfluos</span>
-              <div class="health-bar">
-                <div class="health-progress" style="width: 22%;"></div>
-              </div>
-              <span class="health-value">22%</span>
-            </div>
-          </div>
+    
+    <!-- Inteligência Financeira Mobile -->
+    <section id="mobileInteligenciaFinanceiraSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Inteligência Financeira</h2>
+      </div>
+      
+      <div class="mobile-inteligencia-header" id="mobileInteligenciaHeader">
+        <div class="mobile-inteligencia-icon">
+          <i class="fas fa-brain"></i>
         </div>
-
-        <div class="intelligence-cards">
-          <div class="intelligence-card">
-            <div class="card-header">
-              <h3>Recomendações</h3>
-            </div>
-            <div class="card-content">
-              <div class="recommendation-item">
-                <div class="recommendation-icon">
-                  <i class="fas fa-piggy-bank"></i>
-                </div>
-                <div class="recommendation-text">
-                  <p>Aumente sua economia mensal em 5% para atingir sua meta de reserva de emergência.</p>
-                </div>
-              </div>
-              <div class="recommendation-item">
-                <div class="recommendation-icon">
-                  <i class="fas fa-utensils"></i>
-                </div>
-                <div class="recommendation-text">
-                  <p>Seus gastos com alimentação fora de casa representam 15% do seu orçamento. Considere reduzir para 10%.</p>
-                </div>
-              </div>
-              <div class="recommendation-item">
-                <div class="recommendation-icon">
-                  <i class="fas fa-credit-card"></i>
-                </div>
-                <div class="recommendation-text">
-                  <p>Você tem 3 despesas recorrentes que poderiam ser renegociadas para obter melhores preços.</p>
-                </div>
-              </div>
-            </div>
+        <div class="mobile-inteligencia-title">
+          <h3>Análise Financeira</h3>
+          <p>Sua saúde financeira está <span id="mobileSaudeFinanceira">boa</span></p>
+        </div>
+      </div>
+      
+      <div class="mobile-inteligencia-cards">
+        <div class="mobile-inteligencia-card">
+          <div class="mobile-inteligencia-card-title">Índice de Economia</div>
+          <div class="mobile-inteligencia-card-value" id="mobileIndiceEconomia">0%</div>
+        </div>
+        <div class="mobile-inteligencia-card">
+          <div class="mobile-inteligencia-card-title">Gastos Essenciais</div>
+          <div class="mobile-inteligencia-card-value" id="mobileGastosEssenciais">0%</div>
+        </div>
+        <div class="mobile-inteligencia-card">
+          <div class="mobile-inteligencia-card-title">Gastos Supérfluos</div>
+          <div class="mobile-inteligencia-card-value" id="mobileGastosSuperfluos">0%</div>
+        </div>
+      </div>
+      
+      <div class="mobile-chart-container">
+        <h3 class="mobile-chart-title">Evolução de Gastos</h3>
+        <div id="mobileGraficoEvolucao" class="mobile-chart"></div>
+      </div>
+      
+      <div class="mobile-insights-container">
+        <h3 class="mobile-insights-title">Recomendações</h3>
+        <div id="mobileInsightsList" class="mobile-insights-list"></div>
+      </div>
+    </section>
+    
+    <!-- Metas Financeiras Mobile -->
+    <section id="mobileMetasFinanceirasSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Metas Financeiras</h2>
+        <button class="mobile-btn mobile-btn-primary" id="mobileAddMetaBtn">
+          <i class="fas fa-plus"></i>
+          <span>Nova Meta</span>
+        </button>
+      </div>
+      
+      <div id="mobileMetasList" class="mobile-metas-list"></div>
+      
+      <div id="mobileMetasEmpty" class="mobile-empty-state">
+        <i class="fas fa-bullseye"></i>
+        <h3>Nenhuma meta cadastrada</h3>
+        <p>Adicione metas financeiras para acompanhar seu progresso</p>
+      </div>
+    </section>
+    
+    <!-- Configurações Mobile -->
+    <section id="mobileConfiguracoesSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Configurações</h2>
+      </div>
+      
+      <div class="mobile-tabs">
+        <button class="mobile-tab-btn active" data-tab="mobileRendaTab">
+          <i class="fas fa-user"></i>
+          <span>Rendas</span>
+        </button>
+        <button class="mobile-tab-btn" data-tab="mobileConfigCategoriasTab">
+          <i class="fas fa-tags"></i>
+          <span>Categorias</span>
+        </button>
+        <button class="mobile-tab-btn" data-tab="mobileCartoesTab">
+          <i class="fas fa-credit-card"></i>
+          <span>Cartões</span>
+        </button>
+      </div>
+      
+      <div class="mobile-tab-content">
+        <!-- Aba de Rendas -->
+        <div id="mobileRendaTab" class="mobile-tab-pane active">
+          <div class="mobile-actions">
+            <button class="mobile-btn mobile-btn-primary" id="mobileAddRendaBtn">
+              <i class="fas fa-plus"></i>
+              <span>Nova Renda</span>
+            </button>
+            <button class="mobile-btn mobile-btn-outline" id="mobileAtualizarRendasBtn">
+              <i class="fas fa-sync-alt"></i>
+              <span>Atualizar</span>
+            </button>
           </div>
-
-          <div class="intelligence-card">
-            <div class="card-header">
-              <h3>Previsões</h3>
-            </div>
-            <div class="card-content">
-              <div id="forecastChart" class="forecast-chart"></div>
-              <div class="forecast-legend">
-                <div class="legend-item">
-                  <div class="legend-color" style="background-color: #4361ee;"></div>
-                  <span>Receitas</span>
-                </div>
-                <div class="legend-item">
-                  <div class="legend-color" style="background-color: #f72585;"></div>
-                  <span>Despesas</span>
-                </div>
-                <div class="legend-item">
-                  <div class="legend-color" style="background-color: #4cc9f0;"></div>
-                  <span>Saldo</span>
-                </div>
-              </div>
-            </div>
+          
+          <div id="mobileRendasList" class="mobile-rendas-list"></div>
+        </div>
+        
+        <!-- Aba de Categorias -->
+        <div id="mobileConfigCategoriasTab" class="mobile-tab-pane">
+          <div class="mobile-actions">
+            <button class="mobile-btn mobile-btn-primary" id="mobileGerenciarCategoriasBtn">
+              <i class="fas fa-tags"></i>
+              <span>Gerenciar Categorias</span>
+            </button>
+            <button class="mobile-btn mobile-btn-primary" id="mobileLimitesBtn">
+              <i class="fas fa-sliders"></i>
+              <span>Configurar Limites</span>
+            </button>
           </div>
+          
+          <div id="mobileCategoriasList" class="mobile-categorias-list"></div>
+        </div>
+        
+        <!-- Aba de Cartões -->
+        <div id="mobileCartoesTab" class="mobile-tab-pane">
+          <div class="mobile-actions">
+            <button class="mobile-btn mobile-btn-primary" id="mobileAddCartaoBtn">
+              <i class="fas fa-plus"></i>
+              <span>Novo Cartão</span>
+            </button>
+          </div>
+          
+          <div id="mobileCartoesList" class="mobile-cartoes-list"></div>
         </div>
       </div>
     </section>
-
-    <!-- Metas -->
-    <section id="goalsSection" class="app-section">
-      <div class="section-scroll">
-        <div class="goals-header">
-          <h2>Suas Metas</h2>
-          <button id="addGoalBtn" class="icon-btn">
-            <i class="fas fa-plus"></i>
-          </button>
-        </div>
-
-        <div class="goals-list">
-          <div class="goal-card">
-            <div class="goal-info">
-              <h3>Reserva de Emergência</h3>
-              <div class="goal-progress-container">
-                <div class="goal-progress">
-                  <div class="goal-progress-bar" style="width: 65%;"></div>
-                </div>
-                <div class="goal-progress-text">
-                  <span>65%</span>
-                </div>
-              </div>
-              <div class="goal-details">
-                <div class="goal-amount">
-                  <span class="goal-current">R$ 6.500,00</span>
-                  <span class="goal-separator">/</span>
-                  <span class="goal-target">R$ 10.000,00</span>
-                </div>
-                <div class="goal-date">
-                  <i class="fas fa-calendar-alt"></i>
-                  <span>Até 31/12/2025</span>
-                </div>
-              </div>
-            </div>
-            <div class="goal-actions">
-              <button class="icon-btn small">
-                <i class="fas fa-ellipsis-v"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="goal-card">
-            <div class="goal-info">
-              <h3>Viagem de Férias</h3>
-              <div class="goal-progress-container">
-                <div class="goal-progress">
-                  <div class="goal-progress-bar" style="width: 40%;"></div>
-                </div>
-                <div class="goal-progress-text">
-                  <span>40%</span>
-                </div>
-              </div>
-              <div class="goal-details">
-                <div class="goal-amount">
-                  <span class="goal-current">R$ 2.000,00</span>
-                  <span class="goal-separator">/</span>
-                  <span class="goal-target">R$ 5.000,00</span>
-                </div>
-                <div class="goal-date">
-                  <i class="fas fa-calendar-alt"></i>
-                  <span>Até 30/06/2025</span>
-                </div>
-              </div>
-            </div>
-            <div class="goal-actions">
-              <button class="icon-btn small">
-                <i class="fas fa-ellipsis-v"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="goal-card">
-            <div class="goal-info">
-              <h3>Novo Notebook</h3>
-              <div class="goal-progress-container">
-                <div class="goal-progress">
-                  <div class="goal-progress-bar" style="width: 25%;"></div>
-                </div>
-                <div class="goal-progress-text">
-                  <span>25%</span>
-                </div>
-              </div>
-              <div class="goal-details">
-                <div class="goal-amount">
-                  <span class="goal-current">R$ 1.500,00</span>
-                  <span class="goal-separator">/</span>
-                  <span class="goal-target">R$ 6.000,00</span>
-                </div>
-                <div class="goal-date">
-                  <i class="fas fa-calendar-alt"></i>
-                  <span>Até 30/09/2025</span>
-                </div>
-              </div>
-            </div>
-            <div class="goal-actions">
-              <button class="icon-btn small">
-                <i class="fas fa-ellipsis-v"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="goals-tips">
-          <h3>Dicas para Atingir suas Metas</h3>
-          <div class="tip-item">
-            <div class="tip-icon">
-              <i class="fas fa-lightbulb"></i>
-            </div>
-            <div class="tip-text">
-              <p>Automatize suas economias: configure transferências automáticas para sua conta de metas no dia do pagamento.</p>
-            </div>
-          </div>
-          <div class="tip-item">
-            <div class="tip-icon">
-              <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="tip-text">
-              <p>Revise suas metas mensalmente e ajuste os valores conforme necessário para manter-se no caminho certo.</p>
-            </div>
-          </div>
-        </div>
+    
+    <!-- Alertas Mobile -->
+    <section id="mobileAlertasSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Alertas</h2>
       </div>
-    </section>
-
-    <!-- Configurações -->
-    <section id="settingsSection" class="app-section">
-      <div class="section-scroll">
-        <div class="settings-list">
-          <div class="settings-group">
-            <h3>Perfil</h3>
-            <div class="settings-item">
-              <div class="settings-icon">
-                <i class="fas fa-user"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Dados Pessoais</span>
-                <span class="settings-description">Nome, email, senha</span>
-              </div>
-              <div class="settings-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-            <div class="settings-item">
-              <div class="settings-icon">
-                <i class="fas fa-bell"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Notificações</span>
-                <span class="settings-description">Alertas e lembretes</span>
-              </div>
-              <div class="settings-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-group">
-            <h3>Finanças</h3>
-            <div class="settings-item">
-              <div class="settings-icon">
-                <i class="fas fa-tags"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Categorias</span>
-                <span class="settings-description">Gerenciar categorias de despesas</span>
-              </div>
-              <div class="settings-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-            <div class="settings-item">
-              <div class="settings-icon">
-                <i class="fas fa-credit-card"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Contas e Cartões</span>
-                <span class="settings-description">Gerenciar métodos de pagamento</span>
-              </div>
-              <div class="settings-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-            <div class="settings-item">
-              <div class="settings-icon">
-                <i class="fas fa-money-bill-wave"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Rendas</span>
-                <span class="settings-description">Gerenciar fontes de renda</span>
-              </div>
-              <div class="settings-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-group">
-            <h3>Aplicativo</h3>
-            <div class="settings-item">
-              <div class="settings-icon">
-                <i class="fas fa-palette"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Aparência</span>
-                <span class="settings-description">Tema e cores</span>
-              </div>
-              <div class="settings-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-            <div class="settings-item">
-              <div class="settings-icon">
-                <i class="fas fa-file-export"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Exportar Dados</span>
-                <span class="settings-description">CSV, PDF</span>
-              </div>
-              <div class="settings-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-            <div class="settings-item">
-              <div class="settings-icon">
-                <i class="fas fa-question-circle"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Ajuda e Suporte</span>
-                <span class="settings-description">Perguntas frequentes, contato</span>
-              </div>
-              <div class="settings-action">
-                <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-group">
-            <div class="settings-item logout">
-              <div class="settings-icon">
-                <i class="fas fa-sign-out-alt"></i>
-              </div>
-              <div class="settings-info">
-                <span class="settings-title">Sair</span>
-              </div>
-            </div>
-          </div>
+      
+      <div class="mobile-alertas-container">
+        <div class="mobile-alertas-section">
+          <h3 class="mobile-alertas-title">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Vencimentos Próximos</span>
+          </h3>
+          <div id="mobileVencimentosList" class="mobile-alertas-list"></div>
+        </div>
+        
+        <div class="mobile-alertas-section">
+          <h3 class="mobile-alertas-title">
+            <i class="fas fa-chart-pie"></i>
+            <span>Limites de Categorias</span>
+          </h3>
+          <div id="mobileLimitesList" class="mobile-alertas-list"></div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- Navegação Inferior -->
-  <nav class="bottom-nav">
-    <button id="dashboardNavBtn" class="nav-btn active" data-section="dashboardSection">
-      <i class="fas fa-home"></i>
-      <span>Início</span>
-    </button>
-    <button id="transactionsNavBtn" class="nav-btn" data-section="transactionsSection">
-      <i class="fas fa-exchange-alt"></i>
-      <span>Transações</span>
-    </button>
-    <button id="addTransactionNavBtn" class="nav-btn add-btn">
-      <div class="add-btn-circle">
-        <i class="fas fa-plus"></i>
-      </div>
-    </button>
-    <button id="reportsNavBtn" class="nav-btn" data-section="reportsSection">
-      <i class="fas fa-chart-pie"></i>
-      <span>Relatórios</span>
-    </button>
-    <button id="moreNavBtn" class="nav-btn" data-section="moreSection">
-      <i class="fas fa-ellipsis-h"></i>
-      <span>Mais</span>
-    </button>
-  </nav>
-
-  <!-- Menu Mais -->
-  <div id="moreMenu" class="more-menu">
-    <div class="more-menu-content">
-      <div class="more-menu-header">
-        <h3>Mais Opções</h3>
-        <button id="closeMoreMenuBtn" class="icon-btn">
+  <!-- Modais Mobile -->
+  <!-- Modal de Cadastro de Despesa -->
+  <div id="mobileCadastroDespesaModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h2 class="mobile-modal-title">Cadastrar Despesa</h2>
+        <button class="mobile-modal-close" data-modal="mobileCadastroDespesaModal">
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="more-menu-items">
-        <button id="intelligenceMoreBtn" class="more-menu-item" data-section="intelligenceSection">
-          <div class="more-menu-icon">
-            <i class="fas fa-brain"></i>
-          </div>
-          <span>Inteligência Financeira</span>
-        </button>
-        <button id="goalsMoreBtn" class="more-menu-item" data-section="goalsSection">
-          <div class="more-menu-icon">
-            <i class="fas fa-bullseye"></i>
-          </div>
-          <span>Metas</span>
-        </button>
-        <button id="settingsMoreBtn" class="more-menu-item" data-section="settingsSection">
-          <div class="more-menu-icon">
-            <i class="fas fa-cog"></i>
-          </div>
-          <span>Configurações</span>
-        </button>
-        <button id="calendarMoreBtn" class="more-menu-item">
-          <div class="more-menu-icon">
-            <i class="fas fa-calendar-alt"></i>
-          </div>
-          <span>Calendário</span>
-        </button>
-        <button id="alertsMoreBtn" class="more-menu-item">
-          <div class="more-menu-icon">
-            <i class="fas fa-bell"></i>
-          </div>
-          <span>Alertas</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal de Nova Transação -->
-  <div id="newTransactionModal" class="modal">
-    <div class="modal-overlay"></div>
-    <div class="modal-container">
-      <div class="modal-header">
-        <h3>Nova Transação</h3>
-        <button id="closeTransactionModalBtn" class="icon-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="modal-content">
-        <div class="transaction-type-selector">
-          <button id="expenseTypeBtn" class="type-btn active">
-            <i class="fas fa-arrow-up"></i>
-            <span>Despesa</span>
-          </button>
-          <button id="incomeTypeBtn" class="type-btn">
-            <i class="fas fa-arrow-down"></i>
-            <span>Receita</span>
-          </button>
-        </div>
-
-        <form id="transactionForm">
-          <div class="form-group">
-            <label for="transactionDescription">Descrição</label>
-            <input type="text" id="transactionDescription" placeholder="Ex: Supermercado" required>
+      <div class="mobile-modal-body">
+        <form id="mobileCadastroDespesaForm">
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDescricaoDespesa">Descrição:</label>
+            <input type="text" id="mobileDescricaoDespesa" class="mobile-form-control" required>
           </div>
           
-          <div class="form-group">
-            <label for="transactionAmount">Valor (R$)</label>
-            <input type="number" id="transactionAmount" placeholder="0,00" step="0.01" min="0" required>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileValorDespesa">Valor (R$):</label>
+            <input type="number" id="mobileValorDespesa" class="mobile-form-control" step="0.01" min="0" required>
           </div>
           
-          <div class="form-group">
-            <label for="transactionDate">Data</label>
-            <input type="date" id="transactionDate" required>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDataDespesa">Data:</label>
+            <input type="date" id="mobileDataDespesa" class="mobile-form-control" required>
           </div>
           
-          <div class="form-group">
-            <label for="transactionCategory">Categoria</label>
-            <select id="transactionCategory" required>
-              <option value="">Selecione uma categoria</option>
-              <option value="moradia">Moradia</option>
-              <option value="alimentacao">Alimentação</option>
-              <option value="transporte">Transporte</option>
-              <option value="lazer">Lazer</option>
-              <option value="saude">Saúde</option>
-              <option value="educacao">Educação</option>
-              <option value="servicos">Serviços</option>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileCategoriaDespesa">Categoria:</label>
+            <select id="mobileCategoriaDespesa" class="mobile-form-control" required>
+              <!-- Preenchido dinamicamente -->
             </select>
           </div>
           
-          <div class="form-group">
-            <label for="transactionStatus">Status</label>
-            <select id="transactionStatus" required>
-              <option value="pago">Pago</option>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileStatusDespesa">Status:</label>
+            <select id="mobileStatusDespesa" class="mobile-form-control" required>
               <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
             </select>
           </div>
           
-          <div class="form-group">
-            <label for="transactionNotes">Observações</label>
-            <textarea id="transactionNotes" placeholder="Observações adicionais"></textarea>
-          </div>
-          
-          <button type="submit" class="btn-primary btn-block">Salvar</button>
+          <button type="submit" class="mobile-btn mobile-btn-primary mobile-btn-block">
+            <i class="fas fa-save"></i>
+            <span>Salvar</span>
+          </button>
         </form>
       </div>
     </div>
   </div>
-
-  <!-- Modal de Notificações -->
-  <div id="notificationsModal" class="modal">
-    <div class="modal-overlay"></div>
-    <div class="modal-container">
-      <div class="modal-header">
-        <h3>Notificações</h3>
-        <button id="closeNotificationsModalBtn" class="icon-btn">
+  
+  <!-- Modal de Pagamento de Despesa -->
+  <div id="mobilePagarDespesaModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h2 class="mobile-modal-title">Pagar Despesa</h2>
+        <button class="mobile-modal-close" data-modal="mobilePagarDespesaModal">
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="modal-content">
-        <div class="notifications-list">
-          <div class="notification-item unread">
-            <div class="notification-icon warning">
-              <i class="fas fa-exclamation-circle"></i>
-            </div>
-            <div class="notification-content">
-              <div class="notification-title">Aluguel vence amanhã</div>
-              <div class="notification-text">Lembrete: Sua despesa de aluguel no valor de R$ 1.500,00 vence amanhã.</div>
-              <div class="notification-time">Hoje, 10:30</div>
-            </div>
+      <div class="mobile-modal-body">
+        <form id="mobilePagarDespesaForm">
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDespesaSelect">Selecione a Despesa:</label>
+            <select id="mobileDespesaSelect" class="mobile-form-control" required>
+              <!-- Preenchido dinamicamente -->
+            </select>
           </div>
-          <div class="notification-item unread">
-            <div class="notification-icon success">
-              <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="notification-content">
-              <div class="notification-title">Meta atingida</div>
-              <div class="notification-text">Parabéns! Você atingiu 50% da sua meta "Reserva de Emergência".</div>
-              <div class="notification-time">Ontem, 15:45</div>
-            </div>
+          
+          <div id="mobileParcelasDiv" class="mobile-form-group mobile-hidden">
+            <label class="mobile-form-label" for="mobileParcelaSelect">Selecione a Parcela:</label>
+            <select id="mobileParcelaSelect" class="mobile-form-control">
+              <!-- Preenchido dinamicamente -->
+            </select>
           </div>
-          <div class="notification-item">
-            <div class="notification-icon info">
-              <i class="fas fa-info-circle"></i>
-            </div>
-            <div class="notification-content">
-              <div class="notification-title">Dica de economia</div>
-              <div class="notification-text">Seus gastos com alimentação estão 15% acima da média. Considere revisar este orçamento.</div>
-              <div class="notification-time">20/04/2025, 09:15</div>
-            </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDataPagamento">Data de Pagamento:</label>
+            <input type="date" id="mobileDataPagamento" class="mobile-form-control" required>
           </div>
+          
+          <button type="submit" class="mobile-btn mobile-btn-success mobile-btn-block">
+            <i class="fas fa-check"></i>
+            <span>Confirmar Pagamento</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Calendário -->
+  <div id="mobileCalendarModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h2 class="mobile-modal-title" id="mobileCalendarTitulo">Calendário de Despesas</h2>
+        <button class="mobile-modal-close" data-modal="mobileCalendarModal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-modal-body">
+        <div class="mobile-calendar-header">
+          <div class="mobile-calendar-title" id="mobileCalendarMonthYear">Mês de 2025</div>
+          <div class="mobile-calendar-nav">
+            <button class="mobile-btn-icon" id="mobilePrevCalendarMonth">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="mobile-btn-icon" id="mobileNextCalendarMonth">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="mobile-calendar-grid" id="mobileCalendarGrid">
+          <!-- Preenchido dinamicamente -->
+        </div>
+        
+        <div id="mobileDayDetails" class="mobile-day-details mobile-hidden">
+          <h3 id="mobileDayDetailsTitle">Detalhes do Dia</h3>
+          <div id="mobileDayDetailsList"></div>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Modal de Perfil -->
-  <div id="profileModal" class="modal">
-    <div class="modal-overlay"></div>
-    <div class="modal-container">
-      <div class="modal-header">
-        <h3>Perfil</h3>
-        <button id="closeProfileModalBtn" class="icon-btn">
+  
+  <!-- Modal de Nova Meta -->
+  <div id="mobileNovaMetaModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h2 class="mobile-modal-title">Nova Meta Financeira</h2>
+        <button class="mobile-modal-close" data-modal="mobileNovaMetaModal">
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="modal-content">
-        <div class="profile-info">
-          <div class="profile-avatar-large">
-            <span>JD</span>
+      <div class="mobile-modal-body">
+        <form id="mobileNovaMetaForm">
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDescricaoMeta">Descrição:</label>
+            <input type="text" id="mobileDescricaoMeta" class="mobile-form-control" required>
           </div>
-          <h3 class="profile-name">João da Silva</h3>
-          <p class="profile-email">joao.silva@email.com</p>
-        </div>
-        
-        <div class="profile-actions">
-          <button id="editProfileBtn" class="btn-outline btn-block">
-            <i class="fas fa-user-edit"></i>
-            <span>Editar Perfil</span>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileValorMeta">Valor (R$):</label>
+            <input type="number" id="mobileValorMeta" class="mobile-form-control" step="0.01" min="0" required>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDataMeta">Data Limite:</label>
+            <input type="date" id="mobileDataMeta" class="mobile-form-control" required>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileValorAtualMeta">Valor Atual (R$):</label>
+            <input type="number" id="mobileValorAtualMeta" class="mobile-form-control" step="0.01" min="0" value="0">
+          </div>
+          
+          <button type="submit" class="mobile-btn mobile-btn-primary mobile-btn-block">
+            <i class="fas fa-save"></i>
+            <span>Salvar Meta</span>
           </button>
-          <button id="viewSettingsBtn" class="btn-outline btn-block">
-            <i class="fas fa-cog"></i>
-            <span>Configurações</span>
-          </button>
-          <button id="logoutBtn" class="btn-danger btn-block">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Sair</span>
-          </button>
-        </div>
+        </form>
       </div>
     </div>
   </div>
