@@ -1,446 +1,876 @@
 /* Estilos mobile para o Sistema de Gerenciamento de Contas Pessoais */
+/* Nova versão criada do zero, otimizada para dispositivos móveis */
 
-/* Ajustes mobile: Geral */
-@media (max-width: 768px) {
-  body {
+/* ===================== VARIÁVEIS E RESET ===================== */
+:root {
+  /* Esquema de cores principal (mantido da versão desktop) */
+  --primary: #4361ee;
+  --secondary: #3a0ca3;
+  --danger: #f72585;
+  --success: #4cc9f0;
+  --warning: #f8961e;
+  --info: #90e0ef;
+  
+  /* Cores de fundo e texto */
+  --bg-color: #f8f9fa;
+  --card-color: #ffffff;
+  --text-color: #212529;
+  --text-muted: #6c757d;
+  
+  /* Sombras */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  /* Arredondamento */
+  --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 1rem;
+  
+  /* Transições */
+  --transition-speed: 0.3s;
+  
+  /* Variáveis específicas para mobile */
+  --header-height: 60px;
+  --footer-height: 60px;
+  --nav-width: 85%;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Reset para mobile */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  padding-bottom: var(--safe-area-bottom);
+}
+
+/* ===================== LAYOUT PRINCIPAL MOBILE ===================== */
+.mobile-body {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--header-height);
+}
+
+/* Cabeçalho Mobile */
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-height);
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+}
+
+.mobile-menu-btn,
+.mobile-user-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.mobile-menu-btn:active,
+.mobile-user-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mobile-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  flex: 1;
+  margin: 0 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Menu de Navegação Mobile */
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: var(--nav-width);
+  height: 100vh;
+  background: var(--card-color);
+  z-index: 200;
+  box-shadow: var(--shadow-lg);
+  transition: left var(--transition-speed) ease;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.mobile-nav.active {
+  left: 0;
+}
+
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: var(--primary);
+  color: white;
+}
+
+.mobile-nav-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mobile-nav-close {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.mobile-nav-close:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mobile-user-info {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mobile-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.mobile-user-details {
+  flex: 1;
+  overflow: hidden;
+}
+
+.mobile-user-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-user-email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-nav-links {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 500;
+  transition: background-color var(--transition-speed);
+}
+
+.mobile-nav-link:active {
+  background: rgba(67, 97, 238, 0.1);
+}
+
+.mobile-nav-link.active {
+  background: rgba(67, 97, 238, 0.1);
+  color: var(--primary);
+  border-left: 4px solid var(--primary);
+}
+
+.mobile-nav-link i {
+  font-size: 1.25rem;
+  width: 1.5rem;
+  text-align: center;
+  color: inherit;
+}
+
+.mobile-logout {
+  margin-top: auto;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--danger) !important;
+}
+
+/* Overlay para quando o menu está aberto */
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 150;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-speed), visibility var(--transition-speed);
+}
+
+.mobile-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Conteúdo Principal Mobile */
+.mobile-main {
+  flex: 1;
+  padding: 1rem;
+  padding-bottom: calc(1rem + var(--safe-area-bottom));
+}
+
+.mobile-section {
+  display: none;
+}
+
+.mobile-section.active {
+  display: block;
+}
+
+.mobile-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mobile-section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.mobile-date-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mobile-select {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: var(--border-radius-md);
+  background: var(--card-color);
+  font-size: 1rem;
+  color: var(--text-color);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23212529' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  min-height: 44px;
+}
+
+/* ===================== COMPONENTES MOBILE ===================== */
+
+/* Cards Mobile */
+.mobile-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mobile-card {
+  background: var(--card-color);
+  border-radius: var(--border-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.mobile-card-title {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.mobile-card-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(67, 97, 238, 0.1);
+  color: var(--primary);
+  font-size: 1.25rem;
+}
+
+.mobile-card-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mobile-card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-card-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Gráficos Mobile */
+.mobile-chart-container {
+  background: var(--card-color);
+  border-radius: var(--border-radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.mobile-chart-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.mobile-chart {
+  height: 250px;
+  width: 100%;
+}
+
+/* Listas Mobile */
+.mobile-list-container {
+  background: var(--card-color);
+  border-radius: var(--border-radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.mobile-list-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.mobile-despesas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobile-despesa-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.025);
+  border-radius: var(--border-radius-sm);
+}
+
+.mobile-despesa-info {
+  flex: 1;
+}
+
+.mobile-despesa-titulo {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-despesa-detalhe {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.mobile-despesa-valor {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* Botões Mobile */
+.mobile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-speed);
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+.mobile-btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.mobile-btn-primary:active {
+  background: #3a56d4;
+}
+
+.mobile-btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.mobile-btn-danger:active {
+  background: #e01e79;
+}
+
+.mobile-btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.mobile-btn-success:active {
+  background: #3ab8df;
+}
+
+.mobile-btn-outline {
+  background: transparent;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+}
+
+.mobile-btn-outline:active {
+  background: rgba(67, 97, 238, 0.1);
+}
+
+.mobile-btn-block {
+  width: 100%;
+  display: flex;
+}
+
+.mobile-btn-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(67, 97, 238, 0.1);
+  color: var(--primary);
+}
+
+.mobile-btn-icon:active {
+  background: rgba(67, 97, 238, 0.2);
+}
+
+.mobile-btn-float {
+  position: fixed;
+  bottom: calc(1.5rem + var(--safe-area-bottom));
+  right: 1.5rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+  font-size: 1.5rem;
+  z-index: 90;
+}
+
+/* Formulários Mobile */
+.mobile-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.mobile-form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.mobile-form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: var(--border-radius-md);
+  background: var(--card-color);
+  font-size: 16px; /* Evitar zoom em iOS */
+  color: var(--text-color);
+  min-height: 44px;
+}
+
+.mobile-form-control:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.25);
+}
+
+/* Modais Mobile */
+.mobile-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0;
+  backdrop-filter: blur(4px);
+}
+
+.mobile-modal-content {
+  background: var(--card-color);
+  width: 100%;
+  max-height: 90vh;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  overflow-y: auto;
+  animation: slideUp var(--transition-speed);
+  padding-bottom: calc(1.5rem + var(--safe-area-bottom));
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.mobile-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.25rem 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+  position: sticky;
+  top: 0;
+  background: var(--card-color);
+  z-index: 10;
+}
+
+.mobile-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.mobile-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: 50%;
+}
+
+.mobile-modal-close:active {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--danger);
+}
+
+.mobile-modal-body {
+  padding: 1.25rem;
+}
+
+/* ===================== TELA DE LOGIN MOBILE ===================== */
+.mobile-login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg-color);
+  padding: 1rem;
+}
+
+.mobile-login-container {
+  width: 100%;
+  max-width: 400px;
+  background: var(--card-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.mobile-login-header {
+  margin-bottom: 2rem;
+}
+
+.mobile-login-header h1 {
+  font-size: 1.75rem;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.mobile-login-header p {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.mobile-login-form {
+  margin-bottom: 1.5rem;
+}
+
+.mobile-login-divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.mobile-login-divider::before,
+.mobile-login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e9ecef;
+}
+
+.mobile-login-divider::before {
+  margin-right: 1rem;
+}
+
+.mobile-login-divider::after {
+  margin-left: 1rem;
+}
+
+.mobile-social-login {
+  margin-bottom: 1.5rem;
+}
+
+.mobile-btn-google {
+  background: #fff;
+  color: #757575;
+  border: 1px solid #ddd;
+}
+
+.mobile-btn-google:active {
+  background: #f5f5f5;
+}
+
+.mobile-login-footer {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.mobile-login-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* ===================== UTILITÁRIOS MOBILE ===================== */
+.mobile-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.mobile-badge-success {
+  background: var(--success);
+  color: white;
+}
+
+.mobile-badge-warning {
+  background: var(--warning);
+  color: white;
+}
+
+.mobile-badge-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.mobile-hidden {
+  display: none !important;
+}
+
+/* ===================== ANIMAÇÕES MOBILE ===================== */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===================== MEDIA QUERIES ===================== */
+/* Ajustes para telas muito pequenas */
+@media (max-width: 320px) {
+  html {
     font-size: 14px;
   }
   
-  main {
-    padding: 1rem;
-  }
-  
-  header h1 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-  }
-  
-  .container {
-    padding: 1rem;
-  }
-  
-  /* Melhorar toque em dispositivos móveis */
-  .btn, 
-  .form-control, 
-  select.form-control, 
-  .nav-link {
-    padding: 0.75rem;
-    min-height: 44px; /* Tamanho mínimo para área de toque */
-  }
-  
-  .btn-icon {
-    width: 44px;
-    height: 44px;
-  }
-}
-
-/* Ajustes mobile: Menu e navegação */
-@media (max-width: 768px) {
-  .app-container {
-    flex-direction: column;
-  }
-  
-  aside {
-    width: 100%;
-    height: 100vh;
-    position: fixed;
-    top: 0;
-    left: -100%;
-    z-index: 1000;
-    transition: left 0.3s ease;
-    padding: 1rem;
-  }
-  
-  aside.active {
-    left: 0;
-  }
-  
-  .menu-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 1001;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background-color: var(--primary);
-    color: white;
-    box-shadow: var(--shadow-md);
-    border: none;
-    cursor: pointer;
-  }
-  
-  /* Adicionar botão de fechar no menu lateral */
-  aside::after {
-    content: "×";
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    font-size: 1.5rem;
-    color: var(--text-muted);
-    cursor: pointer;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-  
-  /* Ajustar espaçamento do conteúdo principal para acomodar o botão de menu */
-  main {
-    margin-top: 60px;
-  }
-}
-
-/* Ajustes mobile: Dashboard */
-@media (max-width: 768px) {
-  .dashboard-cards {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .dashboard-card {
-    padding: 1rem;
-  }
-  
-  .dashboard-card-value {
+  .mobile-card-value {
     font-size: 1.5rem;
   }
   
-  .chart-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  #dashboardMonthSelector {
-    width: 100%;
-  }
-  
-  .grafico-painel-container {
-    flex-direction: column;
-  }
-  
-  .chart-panel {
-    min-width: 100%;
+  .mobile-chart {
+    height: 200px;
   }
 }
 
-/* Ajustes mobile: Tabelas */
-@media (max-width: 768px) {
-  .table-container {
-    margin: 0 -1rem;
-    width: calc(100% + 2rem);
-    border-radius: 0;
+/* Ajustes para telas maiores (tablets) */
+@media (min-width: 768px) {
+  .mobile-nav {
+    width: 320px;
   }
   
-  table {
-    font-size: 0.85rem;
+  .mobile-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
   
-  th, td {
-    padding: 0.75rem 0.5rem;
+  .mobile-chart {
+    height: 300px;
   }
   
-  /* Tabelas responsivas com rolagem horizontal */
-  .table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Indicador visual de rolagem */
-  .table-container::after {
-    content: "→";
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-size: 1.5rem;
-    animation: fadeInOut 1.5s infinite;
-    pointer-events: none;
-  }
-  
-  @keyframes fadeInOut {
-    0%, 100% { opacity: 0.2; }
-    50% { opacity: 0.8; }
+  .mobile-modal-content {
+    width: 90%;
+    max-width: 500px;
+    border-radius: var(--border-radius-lg);
+    margin-bottom: 2rem;
   }
 }
 
-/* Ajustes mobile: Formulários */
-@media (max-width: 768px) {
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .form-control {
-    font-size: 16px; /* Evitar zoom automático em iOS */
-  }
-  
-  /* Melhorar layout de grupos de formulários */
-  .d-flex.gap-2 {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  /* Exceção para botões em linha */
-  .d-flex.gap-2.flex-wrap:has(> .btn) {
-    flex-direction: row;
-    flex-wrap: wrap;
+/* ===================== SUPORTE A GESTOS ===================== */
+/* Estas classes serão usadas pelo JavaScript para animações de gestos */
+.mobile-swipe-action {
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  display: flex;
+  transform: translateX(100%);
+  transition: transform var(--transition-speed);
+}
+
+.mobile-swipe-action.open .mobile-swipe-actions {
+  transform: translateX(0);
+}
+
+.mobile-swipe-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 100%;
+  color: white;
+  font-size: 1.25rem;
+  border: none;
+  cursor: pointer;
+}
+
+.mobile-swipe-edit {
+  background: var(--primary);
+}
+
+.mobile-swipe-delete {
+  background: var(--danger);
+}
+
+/* ===================== ACESSIBILIDADE ===================== */
+/* Melhorias de acessibilidade para mobile */
+:focus {
+  outline: 3px solid rgba(67, 97, 238, 0.5);
+  outline-offset: 2px;
+}
+
+/* Remover outline para elementos não-teclado em dispositivos touch */
+@media (hover: none) {
+  :focus:not(:focus-visible) {
+    outline: none;
   }
 }
 
-/* Ajustes mobile: Modais */
-@media (max-width: 768px) {
-  .modal-content {
-    padding: 1rem;
-    width: 95%;
-    max-height: 80vh;
-  }
-  
-  .modal-header {
-    padding-bottom: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  
-  .modal-title {
-    font-size: 1.25rem;
-  }
-  
-  .modal-footer {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .modal-footer .btn {
-    width: 100%;
-  }
+/* Aumentar contraste para texto muted */
+.mobile-text-muted {
+  color: #5a6268 !important;
 }
 
-/* Ajustes mobile: Gráficos */
-@media (max-width: 768px) {
-  .chart-container {
-    padding: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  
-  /* Ajustar altura dos gráficos para melhor visualização */
-  .apexcharts-canvas {
-    max-height: 300px !important;
-  }
+/* Melhorar visibilidade de elementos interativos */
+.mobile-btn,
+.mobile-form-control,
+.mobile-nav-link,
+.mobile-card {
+  transition: transform 0.1s ease;
 }
 
-/* Ajustes mobile: Relatórios e Previsões */
-@media (max-width: 768px) {
-  .relatorio-tabs {
-    gap: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 0 -1rem 1rem -1rem;
-    padding: 0 1rem;
-  }
-  
-  .relatorio-tab-btn {
-    padding: 0.75rem;
-    font-size: 0.85rem;
-    flex: 0 0 auto;
-  }
-  
-  .relatorio-tab-content {
-    border-radius: var(--border-radius-sm);
-  }
-  
-  .relatorio-tab-pane {
-    padding: 1rem;
-  }
-  
-  .relatorio-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  
-  .relatorio-filters {
-    width: 100%;
-  }
-  
-  .relatorio-filters .form-group {
-    width: 100%;
-  }
-}
-
-/* Ajustes mobile: Inteligência Financeira */
-@media (max-width: 768px) {
-  .inteligencia-header {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 1rem;
-  }
-  
-  .inteligencia-icon {
-    margin-bottom: 0.75rem;
-    width: 3rem;
-    height: 3rem;
-    font-size: 1.5rem;
-  }
-  
-  .inteligencia-cards {
-    grid-template-columns: 1fr;
-  }
-  
-  .inteligencia-card {
-    padding: 1rem;
-  }
-  
-  .inteligencia-insights {
-    padding: 1rem;
-  }
-}
-
-/* Ajustes mobile: Metas Financeiras */
-@media (max-width: 768px) {
-  .metas-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .meta-header {
-    padding: 1rem;
-  }
-  
-  .meta-body {
-    padding: 1rem;
-  }
-  
-  .meta-info {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .meta-footer {
-    padding: 0.75rem 1rem;
-  }
-}
-
-/* Ajustes mobile: Configurações */
-@media (max-width: 768px) {
-  .config-tabs {
-    gap: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 0 -1rem 1rem -1rem;
-    padding: 0 1rem;
-  }
-  
-  .config-tab-btn {
-    padding: 0.75rem;
-    font-size: 0.85rem;
-    flex: 0 0 auto;
-  }
-  
-  .config-tab-content {
-    border-radius: var(--border-radius-sm);
-  }
-}
-
-/* Ajustes mobile: Alertas */
-@media (max-width: 768px) {
-  .alerta-item {
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem;
-  }
-  
-  .alerta-icon {
-    align-self: flex-start;
-  }
-  
-  .alerta-details {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-}
-
-/* Ajustes mobile: Calendário */
-@media (max-width: 768px) {
-  .calendar-grid {
-    gap: 0.25rem;
-  }
-  
-  .calendar-day {
-    font-size: 0.85rem;
-  }
-  
-  .calendar-day-header {
-    font-size: 0.75rem;
-  }
-}
-
-/* Ajustes mobile: Utilitários */
-@media (max-width: 768px) {
-  .d-flex.align-center.gap-2.flex-wrap {
-    justify-content: space-between;
-  }
-  
-  .mb-3 {
-    margin-bottom: 0.75rem;
-  }
-}
-
-/* Ajustes mobile: Animações otimizadas */
-@media (max-width: 768px) {
-  * {
-    transition-duration: 0.2s; /* Animações mais rápidas em mobile */
-  }
-  
-  /* Desativar animações de hover em dispositivos touch */
-  .dashboard-card:hover,
-  .card:hover,
-  .meta-card:hover,
-  .inteligencia-card:hover,
-  .summary-card:hover {
-    transform: none;
-    box-shadow: var(--shadow-sm);
-  }
-}
-
-/* Ajustes mobile: Melhorias de acessibilidade */
-@media (max-width: 768px) {
-  /* Aumentar área de toque para todos os elementos interativos */
-  button, 
-  input, 
-  select, 
-  a {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  /* Melhorar contraste */
-  .text-muted {
-    color: #5a6268 !important; /* Mais escuro que o padrão */
-  }
-}
-
-/* Ajustes mobile: Melhorias de desempenho */
-@media (max-width: 768px) {
-  /* Otimizar renderização */
-  .dashboard-card,
-  .chart-container,
-  .container {
-    will-change: transform;
-    backface-visibility: hidden;
-  }
+.mobile-btn:active,
+.mobile-form-control:active,
+.mobile-nav-link:active,
+.mobile-card:active {
+  transform: scale(0.98);
 }
