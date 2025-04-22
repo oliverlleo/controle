@@ -10,7 +10,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   
-  <!-- Script para detecção de dispositivos móveis e redirecionamento -->
+  <!-- Script para detecção de dispositivos móveis e redirecionamento com opção de escolha -->
   <script type="text/javascript">
     // Função para detectar se o dispositivo é mobile
     function isMobileDevice() {
@@ -22,9 +22,13 @@
       );
     }
     
-    // Redireciona para a versão mobile se for um dispositivo móvel
-    // e se não estiver já na página mobile
-    if (isMobileDevice() && !window.location.href.includes('mobile.html')) {
+    // Verificar se há um parâmetro na URL indicando preferência do usuário
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceDesktop = urlParams.get('view') === 'desktop';
+    
+    // Redirecionar apenas se for dispositivo móvel, não houver preferência explícita
+    // e não estiver já na página mobile
+    if (isMobileDevice() && !forceDesktop && !window.location.href.includes('mobile.html')) {
       window.location.href = 'mobile.html';
     }
   </script>
@@ -847,7 +851,17 @@
     });
   </script>
   
+  <!-- Utilitários compartilhados -->
+  <script src="js/utils.js"></script>
+  
   <!-- Script Mobile -->
   <script src="js/mobile.js"></script>
+  
+  <!-- Link para alternar para versão mobile -->
+  <div class="version-switch-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+    <a href="mobile.html?view=mobile" class="version-switch" style="display: inline-block; padding: 10px 15px; background-color: var(--primary); color: white; text-decoration: none; border-radius: var(--border-radius-md); box-shadow: var(--shadow-md);">
+      <i class="fas fa-mobile-alt"></i> Alternar para Versão Mobile
+    </a>
+  </div>
 </body>
 </html>

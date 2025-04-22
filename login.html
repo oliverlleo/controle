@@ -10,6 +10,29 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   
+  <!-- Script para detecção de dispositivos móveis e redirecionamento com opção de escolha -->
+  <script type="text/javascript">
+    // Função para detectar se o dispositivo é mobile
+    function isMobileDevice() {
+      return (
+        // Verifica se é um dispositivo móvel baseado no user agent
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        // Verifica se a largura da tela é menor que 768px (típico para dispositivos móveis)
+        window.innerWidth <= 768
+      );
+    }
+    
+    // Verificar se há um parâmetro na URL indicando preferência do usuário
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceDesktop = urlParams.get('view') === 'desktop';
+    
+    // Redirecionar apenas se for dispositivo móvel, não houver preferência explícita
+    // e não estiver já na página mobile
+    if (isMobileDevice() && !forceDesktop && !window.location.href.includes('mobile-login.html')) {
+      window.location.href = 'mobile-login.html';
+    }
+  </script>
+  
   <!-- Google Fonts: Roboto -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

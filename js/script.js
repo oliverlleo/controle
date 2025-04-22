@@ -74,24 +74,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Exibe uma notificação toast
- * @param {string} mensagem - Mensagem a ser exibida
- * @param {string} tipo - Tipo de notificação (success, danger, warning, primary)
+ * A função exibirToast foi movida para utils.js
+ * Esta referência é mantida para compatibilidade com código existente
  */
 function exibirToast(mensagem, tipo = 'primary') {
-  Toastify({
-    text: mensagem,
-    duration: 3000,
-    close: true,
-    gravity: "bottom",
-    position: "right",
-    backgroundColor: tipo === 'success' ? 'var(--success)' : 
-                     tipo === 'danger' ? 'var(--danger)' : 
-                     tipo === 'warning' ? 'var(--warning)' : 
-                     'var(--primary)',
-    stopOnFocus: true,
-    className: `toast-${tipo}`
-  }).showToast();
+  // Chama a função unificada com o estilo 'desktop'
+  if (typeof window.utilsExibirToast === 'function') {
+    window.utilsExibirToast(mensagem, tipo, 'desktop');
+  } else {
+    // Fallback para caso a função unificada não esteja disponível
+    Toastify({
+      text: mensagem,
+      duration: 3000,
+      close: true,
+      gravity: "bottom",
+      position: "right",
+      backgroundColor: tipo === 'success' ? 'var(--success)' : 
+                      tipo === 'danger' ? 'var(--danger)' : 
+                      tipo === 'warning' ? 'var(--warning)' : 
+                      'var(--primary)',
+      stopOnFocus: true,
+      className: `toast-${tipo}`
+    }).showToast();
+  }
 }
 
 /**

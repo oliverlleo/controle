@@ -405,17 +405,17 @@
       
       <div class="mobile-list-container">
         <h3 class="mobile-list-title">Segurança</h3>
-        <div class="mobile-form-group">
-          <label class="mobile-form-label" for="mobileSenhaAtual">Senha Atual</label>
-          <input type="password" id="mobileSenhaAtual" class="mobile-form-control" placeholder="Sua senha atual">
+        <div class="form-group">
+          <label class="form-label" for="mobileSenhaAtual">Senha Atual</label>
+          <input type="password" id="mobileSenhaAtual" class="form-control" placeholder="Sua senha atual">
         </div>
-        <div class="mobile-form-group">
-          <label class="mobile-form-label" for="mobileNovaSenha">Nova Senha</label>
-          <input type="password" id="mobileNovaSenha" class="mobile-form-control" placeholder="Nova senha">
+        <div class="form-group">
+          <label class="form-label" for="mobileNovaSenha">Nova Senha</label>
+          <input type="password" id="mobileNovaSenha" class="form-control" placeholder="Nova senha">
         </div>
-        <div class="mobile-form-group">
-          <label class="mobile-form-label" for="mobileConfirmarSenha">Confirmar Senha</label>
-          <input type="password" id="mobileConfirmarSenha" class="mobile-form-control" placeholder="Confirme a nova senha">
+        <div class="form-group">
+          <label class="form-label" for="mobileConfirmarSenha">Confirmar Senha</label>
+          <input type="password" id="mobileConfirmarSenha" class="form-control" placeholder="Confirme a nova senha">
         </div>
         <button class="mobile-btn mobile-btn-primary mobile-btn-block" id="mobileAlterarSenha">
           <i class="fas fa-lock"></i>
@@ -425,16 +425,16 @@
       
       <div class="mobile-list-container">
         <h3 class="mobile-list-title">Preferências</h3>
-        <div class="mobile-form-group">
-          <label class="mobile-form-label" for="mobileMoeda">Moeda</label>
+        <div class="form-group">
+          <label class="form-label" for="mobileMoeda">Moeda</label>
           <select id="mobileMoeda" class="mobile-select">
             <option value="BRL">Real (R$)</option>
             <option value="USD">Dólar ($)</option>
             <option value="EUR">Euro (€)</option>
           </select>
         </div>
-        <div class="mobile-form-group">
-          <label class="mobile-form-label" for="mobileNotificacoes">Notificações</label>
+        <div class="form-group">
+          <label class="form-label" for="mobileNotificacoes">Notificações</label>
           <div class="mobile-toggle">
             <input type="checkbox" id="mobileNotificacoes" checked>
             <label for="mobileNotificacoes"></label>
@@ -522,7 +522,133 @@
     window.exibirToast = exibirToast;
   </script>
 
+  <!-- Link para alternar para versão desktop -->
+  <div class="version-switch-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+    <a href="index.html?view=desktop" class="version-switch" style="display: inline-block; padding: 10px 15px; background-color: var(--primary); color: white; text-decoration: none; border-radius: var(--border-radius-md); box-shadow: var(--shadow-md);">
+      <i class="fas fa-desktop"></i> Alternar para Versão Desktop
+    </a>
+  </div>
+
+  <!-- Utilitários compartilhados -->
+  <script src="js/utils.js"></script>
+
   <!-- Script Mobile (nova versão) -->
   <script src="js/mobile.js"></script>
+  
+  <!-- Modais Mobile -->
+  <!-- Modal de Cadastro de Despesa -->
+  <div id="mobileCadastroDespesaModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h3>Nova Despesa</h3>
+        <button class="mobile-modal-close" data-modal="mobileCadastroDespesaModal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-modal-body">
+        <form id="mobileCadastroDespesaForm">
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDescricaoDespesa">Descrição</label>
+            <input type="text" id="mobileDescricaoDespesa" class="mobile-form-control" placeholder="Ex: Aluguel, Supermercado" required>
+          </div>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileValorDespesa">Valor (R$)</label>
+            <input type="number" id="mobileValorDespesa" class="mobile-form-control" step="0.01" min="0.01" placeholder="0.00" required>
+          </div>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDataDespesa">Data</label>
+            <input type="date" id="mobileDataDespesa" class="mobile-form-control" required>
+          </div>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileCategoriaDespesa">Categoria</label>
+            <select id="mobileCategoriaDespesa" class="mobile-form-control mobile-select">
+              <option value="">Selecione uma categoria</option>
+              <!-- Categorias serão carregadas dinamicamente -->
+            </select>
+          </div>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileFormaPagamento">Forma de Pagamento</label>
+            <select id="mobileFormaPagamento" class="mobile-form-control mobile-select" onchange="mobileToggleParcelamento()">
+              <option value="avista">À Vista</option>
+              <option value="cartao">Cartão de Crédito</option>
+            </select>
+          </div>
+          <div id="mobileParcelamentoDiv" class="hidden">
+            <div class="mobile-form-group">
+              <label class="mobile-form-label" for="mobileCartaoDespesa">Cartão</label>
+              <select id="mobileCartaoDespesa" class="mobile-form-control mobile-select">
+                <option value="">Selecione um cartão</option>
+                <!-- Cartões serão carregados dinamicamente -->
+              </select>
+            </div>
+            <div class="mobile-form-group">
+              <label class="mobile-form-label" for="mobileNumeroParcelas">Número de Parcelas</label>
+              <select id="mobileNumeroParcelas" class="mobile-form-control mobile-select">
+                <option value="1">1x</option>
+                <option value="2">2x</option>
+                <option value="3">3x</option>
+                <option value="4">4x</option>
+                <option value="5">5x</option>
+                <option value="6">6x</option>
+                <option value="7">7x</option>
+                <option value="8">8x</option>
+                <option value="9">9x</option>
+                <option value="10">10x</option>
+                <option value="11">11x</option>
+                <option value="12">12x</option>
+              </select>
+            </div>
+          </div>
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileStatusDespesa">Status</label>
+            <select id="mobileStatusDespesa" class="mobile-form-control mobile-select">
+              <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
+            </select>
+          </div>
+          <div class="mobile-modal-footer">
+            <button type="submit" class="mobile-btn mobile-btn-primary mobile-btn-block">
+              <i class="fas fa-save"></i> Salvar Despesa
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Pagar Despesa -->
+  <div id="mobilePagarDespesaModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h3>Pagar Despesa</h3>
+        <button class="mobile-modal-close" data-modal="mobilePagarDespesaModal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-modal-body">
+        <form id="mobilePagarDespesaForm">
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDespesaSelect">Selecione a Despesa</label>
+            <select id="mobileDespesaSelect" class="mobile-form-control mobile-select" onchange="mobileCarregarParcelas()">
+              <option value="">Selecione a Despesa</option>
+              <!-- Despesas serão carregadas dinamicamente -->
+            </select>
+          </div>
+          <div id="mobileParcelasDiv" class="mobile-form-group hidden">
+            <label class="mobile-form-label" for="mobileParcelaSelect">Selecione a Parcela</label>
+            <select id="mobileParcelaSelect" class="mobile-form-control mobile-select">
+              <option value="">Selecione a Parcela</option>
+              <!-- Parcelas serão carregadas dinamicamente -->
+            </select>
+          </div>
+          <div class="mobile-modal-footer">
+            <button type="submit" class="mobile-btn mobile-btn-success mobile-btn-block">
+              <i class="fas fa-check"></i> Confirmar Pagamento
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
