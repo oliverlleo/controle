@@ -3,20 +3,102 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Gerenciamento de Contas Pessoais</title>
-  
-  <!-- Script de detecção de dispositivos -->
-  <script src="js/device_detector.js"></script>
-  
-  <!-- Redirecionamento automático para a interface apropriada -->
+  <title>Redirecionando...</title>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f8f9fa;
+      color: #212529;
+    }
+    
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #4361ee;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    h2 {
+      margin-bottom: 10px;
+      color: #4361ee;
+    }
+    
+    p {
+      text-align: center;
+      max-width: 80%;
+      margin-bottom: 20px;
+    }
+  </style>
   <script>
-    // Este script será executado imediatamente para redirecionar o usuário
-    // para a interface apropriada com base no tipo de dispositivo
-    window.location.href = 'index.html';
+    // Função para detectar dispositivo móvel
+    function isMobileDevice() {
+      return (window.innerWidth <= 768) || 
+             (navigator.userAgent.match(/Android/i) ||
+              navigator.userAgent.match(/webOS/i) ||
+              navigator.userAgent.match(/iPhone/i) ||
+              navigator.userAgent.match(/iPad/i) ||
+              navigator.userAgent.match(/iPod/i) ||
+              navigator.userAgent.match(/BlackBerry/i) ||
+              navigator.userAgent.match(/Windows Phone/i));
+    }
+    
+    // Função para obter parâmetros da URL
+    function getUrlParameter(name) {
+      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+      var results = regex.exec(location.search);
+      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+    
+    // Função para redirecionar com base no dispositivo
+    function redirectBasedOnDevice() {
+      // Verificar se há um destino específico na URL
+      var destination = getUrlParameter('to');
+      
+      // Verificar se o usuário está autenticado
+      var isAuthenticated = localStorage.getItem('userAuthenticated') === 'true';
+      
+      // Se for um dispositivo móvel
+      if (isMobileDevice()) {
+        if (destination === 'login' || !isAuthenticated) {
+          window.location.href = 'mobile-login.html';
+        } else {
+          window.location.href = 'mobile.html';
+        }
+      } else {
+        // Se for desktop
+        if (destination === 'login' || !isAuthenticated) {
+          window.location.href = 'login.html';
+        } else {
+          window.location.href = 'index.html';
+        }
+      }
+    }
+    
+    // Executar o redirecionamento quando a página carregar
+    window.onload = function() {
+      // Pequeno atraso para mostrar a animação de carregamento
+      setTimeout(redirectBasedOnDevice, 1500);
+    };
   </script>
 </head>
 <body>
-  <!-- Esta página serve apenas como redirecionador -->
-  <p>Redirecionando para a interface apropriada...</p>
+  <div class="loader"></div>
+  <h2>Redirecionando...</h2>
+  <p>Estamos detectando seu dispositivo e preparando a melhor experiência para você.</p>
 </body>
 </html>

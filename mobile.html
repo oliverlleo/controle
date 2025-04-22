@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistema de Gerenciamento de Contas Pessoais - Mobile</title>
+  
+  <!-- Meta tags para evitar cache -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
+  <!-- Google Fonts: Roboto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS do Daterangepicker -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css?v=1.0.0" />
+  
+  <!-- ApexCharts para gráficos interativos -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  
+  <!-- Toastify para notificações -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  
+  <!-- Ícones (Font Awesome) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1.0.0">
+  
+  <!-- CSS Mobile (nova versão) -->
+  <link rel="stylesheet" href="css/mobile.css">
+  
+  <style>
+    /* Sobrescrever estilos específicos para garantir que o mobile seja aplicado */
+    body {
+      font-family: 'Roboto', sans-serif !important;
+      background: var(--bg-color) !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow-x: hidden !important;
+    }
+  </style>
+</head>
+<body class="mobile-body">
+  <!-- Cabeçalho Mobile -->
+  <header class="mobile-header">
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+      <i class="fas fa-bars"></i>
+    </button>
+    <h1 class="mobile-title">Sistema de Contas</h1>
+    <button class="mobile-user-btn" id="mobileUserBtn">
+      <i class="fas fa-user"></i>
+    </button>
+  </header>
+
+  <!-- Menu de Navegação Mobile -->
+  <nav class="mobile-nav" id="mobileNav">
+    <div class="mobile-nav-header">
+      <h2><i class="fa-solid fa-wallet"></i> Contas</h2>
+      <button class="mobile-nav-close" id="mobileNavClose">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mobile-user-info" id="mobileUserInfo">
+      <!-- Preenchido dinamicamente -->
+    </div>
+    <div class="mobile-nav-links">
+      <a href="#" class="mobile-nav-link active" data-section="dashboardSection">
+        <i class="fa-solid fa-house"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="despesasSection">
+        <i class="fa-solid fa-money-bill-wave"></i>
+        <span>Despesas</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="relatorioIntegradoSection">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Relatórios & Previsões</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="inteligenciaFinanceiraSection">
+        <i class="fa-solid fa-brain"></i>
+        <span>Inteligência Financeira</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="metasFinanceirasSection">
+        <i class="fa-solid fa-bullseye"></i>
+        <span>Metas</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="configuracoesSection">
+        <i class="fa-solid fa-cog"></i>
+        <span>Configurações</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-action="exportData">
+        <i class="fa-solid fa-file-export"></i>
+        <span>Exportar</span>
+      </a>
+      <a href="#" class="mobile-nav-link" data-section="alertasSection">
+        <i class="fa-solid fa-bell"></i>
+        <span>Alertas</span>
+      </a>
+      <a href="#" class="mobile-nav-link mobile-logout" id="mobileLogout">
+        <i class="fa-solid fa-sign-out-alt"></i>
+        <span>Sair</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Conteúdo Principal Mobile -->
+  <main class="mobile-main">
+    <!-- Dashboard Mobile -->
+    <section id="mobileDashboardSection" class="mobile-section active">
+      <div class="mobile-section-header">
+        <h2>Dashboard</h2>
+        <div class="mobile-date-selector">
+          <select id="mobileDashboardMonth" class="mobile-select">
+            <option value="0">Janeiro</option>
+            <option value="1">Fevereiro</option>
+            <option value="2">Março</option>
+            <option value="3">Abril</option>
+            <option value="4">Maio</option>
+            <option value="5">Junho</option>
+            <option value="6">Julho</option>
+            <option value="7">Agosto</option>
+            <option value="8">Setembro</option>
+            <option value="9">Outubro</option>
+            <option value="10">Novembro</option>
+            <option value="11">Dezembro</option>
+          </select>
+          <select id="mobileDashboardYear" class="mobile-select">
+            <option value="2020">2020</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+            <option value="2029">2029</option>
+            <option value="2030">2030</option>
+          </select>
+          <button class="mobile-btn mobile-btn-primary" id="mobileUpdateDashboard">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="mobile-cards">
+        <div class="mobile-card">
+          <div class="mobile-card-header">
+            <div class="mobile-card-title">Saldo Atual</div>
+            <div class="mobile-card-icon">
+              <i class="fas fa-wallet"></i>
+            </div>
+          </div>
+          <div class="mobile-card-value" id="mobileSaldoAtual">R$ 0,00</div>
+          <div class="mobile-card-label">Disponível para uso</div>
+        </div>
+        
+        <div class="mobile-card">
+          <div class="mobile-card-header">
+            <div class="mobile-card-title">Despesas do Mês</div>
+            <div class="mobile-card-nav">
+              <button class="mobile-btn-icon" id="mobilePrevMonth">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="mobile-btn-icon" id="mobileNextMonth">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+          <div class="mobile-card-value" id="mobileDespesasMes">R$ 0,00</div>
+          <div class="mobile-card-label" id="mobileDespesasMesTitle">Mês de 2025</div>
+        </div>
+        
+        <div class="mobile-card">
+          <div class="mobile-card-header">
+            <div class="mobile-card-title">Próximos Vencimentos</div>
+            <div class="mobile-card-icon">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+          </div>
+          <div class="mobile-card-value" id="mobileProximosVencimentos">0</div>
+          <div class="mobile-card-label">Dias até o próximo vencimento</div>
+        </div>
+      </div>
+      
+      <div class="mobile-chart-container">
+        <h3 class="mobile-chart-title">Análise de Despesas</h3>
+        <div id="mobileGraficoDespesas" class="mobile-chart"></div>
+      </div>
+      
+      <div class="mobile-list-container">
+        <h3 class="mobile-list-title">Despesas do Mês</h3>
+        <div id="mobileListaDespesasMes" class="mobile-despesas-lista"></div>
+      </div>
+      
+      <button class="mobile-btn mobile-btn-primary mobile-btn-float" id="mobileAddDespesa">
+        <i class="fas fa-plus"></i>
+      </button>
+    </section>
+
+    <!-- Despesas Mobile -->
+    <section id="mobileDespesasSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Despesas</h2>
+        <div class="mobile-actions">
+          <button class="mobile-btn mobile-btn-primary" id="mobileAddDespesaBtn">
+            <i class="fas fa-plus"></i>
+            <span>Nova</span>
+          </button>
+          <button class="mobile-btn mobile-btn-success" id="mobilePagarDespesaBtn">
+            <i class="fas fa-check"></i>
+            <span>Pagar</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="mobile-filter-container">
+        <div class="mobile-search-box">
+          <input type="text" id="mobileFiltroDescricao" class="mobile-form-control" placeholder="Filtrar por descrição">
+          <button class="mobile-btn mobile-btn-primary" id="mobileFiltrarBtn">
+            <i class="fas fa-filter"></i>
+          </button>
+        </div>
+        <div class="mobile-filter-options">
+          <select id="mobileFiltroStatus" class="mobile-select">
+            <option value="todos">Todos os status</option>
+            <option value="pendente">Pendentes</option>
+            <option value="pago">Pagas</option>
+          </select>
+          <select id="mobileFiltroMes" class="mobile-select">
+            <option value="todos">Todos os meses</option>
+            <option value="0">Janeiro</option>
+            <option value="1">Fevereiro</option>
+            <option value="2">Março</option>
+            <option value="3">Abril</option>
+            <option value="4">Maio</option>
+            <option value="5">Junho</option>
+            <option value="6">Julho</option>
+            <option value="7">Agosto</option>
+            <option value="8">Setembro</option>
+            <option value="9">Outubro</option>
+            <option value="10">Novembro</option>
+            <option value="11">Dezembro</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="mobile-despesas-container">
+        <div id="mobileDespesasList" class="mobile-despesas-list"></div>
+      </div>
+      
+      <div class="mobile-calendar-btn-container">
+        <button class="mobile-btn mobile-btn-outline" id="mobileCalendarBtn">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Calendário</span>
+        </button>
+      </div>
+    </section>
+    
+    <!-- Relatórios Mobile -->
+    <section id="mobileRelatorioIntegradoSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Relatórios & Previsões</h2>
+      </div>
+      
+      <div class="mobile-tabs">
+        <button class="mobile-tab-btn active" data-tab="mobileRelatorioTab">
+          <i class="fas fa-chart-line"></i>
+          <span>Relatórios</span>
+        </button>
+        <button class="mobile-tab-btn" data-tab="mobilePrevisaoTab">
+          <i class="fas fa-chart-pie"></i>
+          <span>Previsões</span>
+        </button>
+        <button class="mobile-tab-btn" data-tab="mobileCategoriasTab">
+          <i class="fas fa-tags"></i>
+          <span>Categorias</span>
+        </button>
+      </div>
+      
+      <div class="mobile-tab-content">
+        <!-- Aba de Relatórios -->
+        <div id="mobileRelatorioTab" class="mobile-tab-pane active">
+          <div class="mobile-date-range">
+            <input type="text" id="mobileDateRange" class="mobile-form-control" placeholder="Selecione o período">
+          </div>
+          
+          <div class="mobile-chart-container">
+            <h3 class="mobile-chart-title">Resumo Financeiro</h3>
+            <div id="mobileRelatorioMensalChart" class="mobile-chart"></div>
+          </div>
+          
+          <div class="mobile-summary-cards">
+            <div class="mobile-summary-card">
+              <div class="mobile-summary-title">Total de Despesas</div>
+              <div class="mobile-summary-value" id="mobileTotalDespesas">R$ 0,00</div>
+            </div>
+            <div class="mobile-summary-card">
+              <div class="mobile-summary-title">Média Mensal</div>
+              <div class="mobile-summary-value" id="mobileMediaMensal">R$ 0,00</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Aba de Previsões -->
+        <div id="mobilePrevisaoTab" class="mobile-tab-pane">
+          <div class="mobile-chart-container">
+            <h3 class="mobile-chart-title">Tendência de Gastos</h3>
+            <button class="mobile-btn mobile-btn-primary" id="mobileGerarPrevisoes">
+              <i class="fas fa-calculator"></i>
+              <span>Gerar Previsões</span>
+            </button>
+            <div id="mobileGraficoPrevisao" class="mobile-chart"></div>
+          </div>
+          
+          <div class="mobile-list-container">
+            <h3 class="mobile-list-title">Próximos 3 Meses</h3>
+            <div id="mobileTabelaPrevisao" class="mobile-previsao-lista"></div>
+          </div>
+        </div>
+        
+        <!-- Aba de Categorias -->
+        <div id="mobileCategoriasTab" class="mobile-tab-pane">
+          <div class="mobile-chart-container">
+            <h3 class="mobile-chart-title">Despesas por Categoria</h3>
+            <div id="mobileGraficoCategorias" class="mobile-chart"></div>
+          </div>
+          
+          <div class="mobile-list-container">
+            <h3 class="mobile-list-title">Detalhamento por Categoria</h3>
+            <div id="mobileListaCategorias" class="mobile-categorias-lista"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Inteligência Financeira Mobile -->
+    <section id="mobileInteligenciaFinanceiraSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Inteligência Financeira</h2>
+      </div>
+      
+      <div class="mobile-inteligencia-header" id="mobileInteligenciaHeader">
+        <div class="mobile-inteligencia-icon">
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="mobile-inteligencia-title">
+          <h3>Análise Financeira</h3>
+          <p>Sua saúde financeira está <span id="mobileSaudeFinanceira">boa</span></p>
+        </div>
+      </div>
+      
+      <div class="mobile-inteligencia-cards">
+        <div class="mobile-inteligencia-card">
+          <div class="mobile-inteligencia-card-title">Índice de Economia</div>
+          <div class="mobile-inteligencia-card-value" id="mobileIndiceEconomia">0%</div>
+        </div>
+        <div class="mobile-inteligencia-card">
+          <div class="mobile-inteligencia-card-title">Gastos Essenciais</div>
+          <div class="mobile-inteligencia-card-value" id="mobileGastosEssenciais">0%</div>
+        </div>
+        <div class="mobile-inteligencia-card">
+          <div class="mobile-inteligencia-card-title">Gastos Supérfluos</div>
+          <div class="mobile-inteligencia-card-value" id="mobileGastosSuperfluos">0%</div>
+        </div>
+      </div>
+      
+      <div class="mobile-chart-container">
+        <h3 class="mobile-chart-title">Evolução de Gastos</h3>
+        <div id="mobileGraficoEvolucao" class="mobile-chart"></div>
+      </div>
+      
+      <div class="mobile-insights-container">
+        <h3 class="mobile-insights-title">Recomendações</h3>
+        <div id="mobileInsightsList" class="mobile-insights-list"></div>
+      </div>
+    </section>
+    
+    <!-- Metas Financeiras Mobile -->
+    <section id="mobileMetasFinanceirasSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Metas Financeiras</h2>
+        <button class="mobile-btn mobile-btn-primary" id="mobileAddMetaBtn">
+          <i class="fas fa-plus"></i>
+          <span>Nova Meta</span>
+        </button>
+      </div>
+      
+      <div id="mobileMetasList" class="mobile-metas-list"></div>
+      
+      <div id="mobileMetasEmpty" class="mobile-empty-state">
+        <i class="fas fa-bullseye"></i>
+        <h3>Nenhuma meta cadastrada</h3>
+        <p>Adicione metas financeiras para acompanhar seu progresso</p>
+      </div>
+    </section>
+    
+    <!-- Configurações Mobile -->
+    <section id="mobileConfiguracoesSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Configurações</h2>
+      </div>
+      
+      <div class="mobile-tabs">
+        <button class="mobile-tab-btn active" data-tab="mobileRendaTab">
+          <i class="fas fa-user"></i>
+          <span>Rendas</span>
+        </button>
+        <button class="mobile-tab-btn" data-tab="mobileConfigCategoriasTab">
+          <i class="fas fa-tags"></i>
+          <span>Categorias</span>
+        </button>
+        <button class="mobile-tab-btn" data-tab="mobileCartoesTab">
+          <i class="fas fa-credit-card"></i>
+          <span>Cartões</span>
+        </button>
+      </div>
+      
+      <div class="mobile-tab-content">
+        <!-- Aba de Rendas -->
+        <div id="mobileRendaTab" class="mobile-tab-pane active">
+          <div class="mobile-actions">
+            <button class="mobile-btn mobile-btn-primary" id="mobileAddRendaBtn">
+              <i class="fas fa-plus"></i>
+              <span>Nova Renda</span>
+            </button>
+            <button class="mobile-btn mobile-btn-outline" id="mobileAtualizarRendasBtn">
+              <i class="fas fa-sync-alt"></i>
+              <span>Atualizar</span>
+            </button>
+          </div>
+          
+          <div id="mobileRendasList" class="mobile-rendas-list"></div>
+        </div>
+        
+        <!-- Aba de Categorias -->
+        <div id="mobileConfigCategoriasTab" class="mobile-tab-pane">
+          <div class="mobile-actions">
+            <button class="mobile-btn mobile-btn-primary" id="mobileGerenciarCategoriasBtn">
+              <i class="fas fa-tags"></i>
+              <span>Gerenciar Categorias</span>
+            </button>
+            <button class="mobile-btn mobile-btn-primary" id="mobileLimitesBtn">
+              <i class="fas fa-sliders"></i>
+              <span>Configurar Limites</span>
+            </button>
+          </div>
+          
+          <div id="mobileCategoriasList" class="mobile-categorias-list"></div>
+        </div>
+        
+        <!-- Aba de Cartões -->
+        <div id="mobileCartoesTab" class="mobile-tab-pane">
+          <div class="mobile-actions">
+            <button class="mobile-btn mobile-btn-primary" id="mobileAddCartaoBtn">
+              <i class="fas fa-plus"></i>
+              <span>Novo Cartão</span>
+            </button>
+          </div>
+          
+          <div id="mobileCartoesList" class="mobile-cartoes-list"></div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Alertas Mobile -->
+    <section id="mobileAlertasSection" class="mobile-section">
+      <div class="mobile-section-header">
+        <h2>Alertas</h2>
+      </div>
+      
+      <div class="mobile-alertas-container">
+        <div class="mobile-alertas-section">
+          <h3 class="mobile-alertas-title">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Vencimentos Próximos</span>
+          </h3>
+          <div id="mobileVencimentosList" class="mobile-alertas-list"></div>
+        </div>
+        
+        <div class="mobile-alertas-section">
+          <h3 class="mobile-alertas-title">
+            <i class="fas fa-chart-pie"></i>
+            <span>Limites de Categorias</span>
+          </h3>
+          <div id="mobileLimitesList" class="mobile-alertas-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modais Mobile -->
+  <!-- Modal de Cadastro de Despesa -->
+  <div id="mobileCadastroDespesaModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h2 class="mobile-modal-title">Cadastrar Despesa</h2>
+        <button class="mobile-modal-close" data-modal="mobileCadastroDespesaModal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-modal-body">
+        <form id="mobileCadastroDespesaForm">
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDescricaoDespesa">Descrição:</label>
+            <input type="text" id="mobileDescricaoDespesa" class="mobile-form-control" required>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileValorDespesa">Valor (R$):</label>
+            <input type="number" id="mobileValorDespesa" class="mobile-form-control" step="0.01" min="0" required>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDataDespesa">Data:</label>
+            <input type="date" id="mobileDataDespesa" class="mobile-form-control" required>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileCategoriaDespesa">Categoria:</label>
+            <select id="mobileCategoriaDespesa" class="mobile-form-control" required>
+              <!-- Preenchido dinamicamente -->
+            </select>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileStatusDespesa">Status:</label>
+            <select id="mobileStatusDespesa" class="mobile-form-control" required>
+              <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
+            </select>
+          </div>
+          
+          <button type="submit" class="mobile-btn mobile-btn-primary mobile-btn-block">
+            <i class="fas fa-save"></i>
+            <span>Salvar</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Pagamento de Despesa -->
+  <div id="mobilePagarDespesaModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h2 class="mobile-modal-title">Pagar Despesa</h2>
+        <button class="mobile-modal-close" data-modal="mobilePagarDespesaModal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-modal-body">
+        <form id="mobilePagarDespesaForm">
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDespesaSelect">Selecione a Despesa:</label>
+            <select id="mobileDespesaSelect" class="mobile-form-control" required>
+              <!-- Preenchido dinamicamente -->
+            </select>
+          </div>
+          
+          <div id="mobileParcelasDiv" class="mobile-form-group mobile-hidden">
+            <label class="mobile-form-label" for="mobileParcelaSelect">Selecione a Parcela:</label>
+            <select id="mobileParcelaSelect" class="mobile-form-control">
+              <!-- Preenchido dinamicamente -->
+            </select>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDataPagamento">Data de Pagamento:</label>
+            <input type="date" id="mobileDataPagamento" class="mobile-form-control" required>
+          </div>
+          
+          <button type="submit" class="mobile-btn mobile-btn-success mobile-btn-block">
+            <i class="fas fa-check"></i>
+            <span>Confirmar Pagamento</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Calendário -->
+  <div id="mobileCalendarModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h2 class="mobile-modal-title" id="mobileCalendarTitulo">Calendário de Despesas</h2>
+        <button class="mobile-modal-close" data-modal="mobileCalendarModal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-modal-body">
+        <div class="mobile-calendar-header">
+          <div class="mobile-calendar-title" id="mobileCalendarMonthYear">Mês de 2025</div>
+          <div class="mobile-calendar-nav">
+            <button class="mobile-btn-icon" id="mobilePrevCalendarMonth">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="mobile-btn-icon" id="mobileNextCalendarMonth">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="mobile-calendar-grid" id="mobileCalendarGrid">
+          <!-- Preenchido dinamicamente -->
+        </div>
+        
+        <div id="mobileDayDetails" class="mobile-day-details mobile-hidden">
+          <h3 id="mobileDayDetailsTitle">Detalhes do Dia</h3>
+          <div id="mobileDayDetailsList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Nova Meta -->
+  <div id="mobileNovaMetaModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-header">
+        <h2 class="mobile-modal-title">Nova Meta Financeira</h2>
+        <button class="mobile-modal-close" data-modal="mobileNovaMetaModal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-modal-body">
+        <form id="mobileNovaMetaForm">
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDescricaoMeta">Descrição:</label>
+            <input type="text" id="mobileDescricaoMeta" class="mobile-form-control" required>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileValorMeta">Valor (R$):</label>
+            <input type="number" id="mobileValorMeta" class="mobile-form-control" step="0.01" min="0" required>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileDataMeta">Data Limite:</label>
+            <input type="date" id="mobileDataMeta" class="mobile-form-control" required>
+          </div>
+          
+          <div class="mobile-form-group">
+            <label class="mobile-form-label" for="mobileValorAtualMeta">Valor Atual (R$):</label>
+            <input type="number" id="mobileValorAtualMeta" class="mobile-form-control" step="0.01" min="0" value="0">
+          </div>
+          
+          <button type="submit" class="mobile-btn mobile-btn-primary mobile-btn-block">
+            <i class="fas fa-save"></i>
+            <span>Salvar Meta</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts do Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
+  
+  <!-- jQuery e Moment.js para o Daterangepicker -->
+  <script src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  
+  <!-- Script Mobile (nova versão) -->
+  <script src="js/mobile.js"></script>
+</body>
+</html>
