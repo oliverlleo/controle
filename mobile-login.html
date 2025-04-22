@@ -22,7 +22,7 @@
   <!-- Ícones (Font Awesome) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1.0.0">
   
-  <!-- CSS Mobile (nova versão) - Carregado primeiro para maior especificidade -->
+  <!-- CSS Mobile (versão melhorada) -->
   <link rel="stylesheet" href="css/mobile.css">
   
   <style>
@@ -176,9 +176,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
   
-  <!-- Script Mobile (nova versão) -->
-  <script src="js/mobile.js"></script>
-  
+  <!-- Inicialização do Firebase -->
   <script>
     // Configuração do Firebase
     const firebaseConfig = {
@@ -221,6 +219,9 @@
         className: `toast-${tipo}`
       }).showToast();
     }
+    
+    // Expor a função globalmente para uso em outros scripts
+    window.exibirToast = exibirToast;
     
     // Abrir modal
     document.getElementById('mobileRegisterLink').addEventListener('click', function(e) {
