@@ -197,7 +197,8 @@ function filtrarDespesas() {
   despesaSelect.innerHTML = "<option value=''>Selecione a Despesa</option>";
   document.getElementById("parcelasDiv").classList.add("hidden");
   
-  db.ref("despesas").once("value").then(snapshot => {
+  // Buscar apenas despesas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     snapshot.forEach(child => {
       const key = child.key;
       const despesa = child.val();
@@ -240,7 +241,8 @@ window.fecharModal = function(id) {
  * Exporta os dados para um arquivo CSV
  */
 function exportData() {
-  db.ref("despesas").once("value").then(snapshot => {
+  // Exportar apenas despesas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     let csv = "Descrição,Valor,Data,Forma de Pagamento\n";
     snapshot.forEach(child => {
       const despesa = child.val();
@@ -295,7 +297,19 @@ function atualizarDashboard() {
   let saldo = 0;
   let hoje = new Date();
   
-  db.ref("pessoas").once("value").then(snapshot => {
+  // Zerar e mostrar valores iniciais - importante para não mostrar dados de outros usuários
+  document.getElementById("saldoAtual").textContent = "R$ 0.00";
+  document.getElementById("despesasMes").textContent = "R$ 0.00";
+  document.getElementById("proximosVencimentos").textContent = "0";
+  
+  // Verificar se o usuário está autenticado
+  if (!currentUser || !currentUser.uid) {
+    console.log("Usuário não autenticado, mostrando valores zerados");
+    return;
+  }
+  
+  // Buscar apenas as rendas do usuário atual
+  db.ref("pessoas").orderByChild("userId").equalTo(currentUser.uid).once("value").then(snapshot => {
     snapshot.forEach(child => {
       let pessoa = child.val();
       saldo += parseFloat(pessoa.saldoInicial) || 0;
@@ -310,7 +324,8 @@ function atualizarDashboard() {
       }
     });
     
-    db.ref("despesas").once("value").then(snapshot2 => {
+    // Buscar apenas despesas do usuário atual que foram pagas
+    db.ref("despesas").orderByChild("userId").equalTo(currentUser.uid).once("value").then(snapshot2 => {
       snapshot2.forEach(child => {
         let despesa = child.val();
         if (despesa.pago) {
@@ -343,7 +358,8 @@ function updateProximosVencimentos() {
   const hoje = new Date();
   let proximoVencimento = null;
   
-  db.ref("despesas").once("value").then(snapshot => {
+  // Buscar apenas despesas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     snapshot.forEach(child => {
       let despesa = child.val();
       if (despesa.formaPagamento === "avista" && !despesa.pago && despesa.dataCompra) {
@@ -385,7 +401,8 @@ function atualizarDespesasMes() {
   const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
   let despesasMes = 0;
   
-  db.ref("despesas").once("value").then(snapshot => {
+  // Buscar apenas despesas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     snapshot.forEach(child => {
       let despesa = child.val();
       if (despesa.pago) return;
@@ -419,7 +436,8 @@ function carregarPainelDespesasMes() {
   const listaContainer = document.getElementById("listaDespesasMes");
   listaContainer.innerHTML = "";
   
-  db.ref("despesas").once("value").then(snapshot => {
+  // Buscar apenas despesas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     snapshot.forEach(child => {
       let despesa = child.val();
       if (despesa.pago) return;
@@ -470,8 +488,8 @@ function atualizarGrafico() {
   const dashboardMonth = parseInt(document.getElementById("dashboardMonth").value);
   const dashboardYear = parseInt(document.getElementById("dashboardYear").value);
   
-  // Obter despesas por categoria
-  db.ref("despesas").once("value").then(snapshot => {
+  // Obter despesas por categoria - apenas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     let despesasPorCategoria = {};
     let categorias = [];
     
@@ -665,13 +683,20 @@ function cadastrarDespesa() {
     return;
   }
   
+  // Verificar se o usuário está autenticado
+  if (!currentUser || !currentUser.uid) {
+    exibirToast("Usuário não autenticado. Faça login novamente.", "danger");
+    return;
+  }
+  
   const novaDespesa = {
     descricao: descricao,
     valor: valor,
     dataCompra: dataCompra,
     categoria: categoria,
     formaPagamento: formaPagamento,
-    pago: false
+    pago: false,
+    userId: currentUser.uid // Adicionar ID do usuário
   };
   
   if (formaPagamento === "cartao") {
@@ -812,7 +837,8 @@ function filtrarTodasDespesas() {
   const tbody = document.getElementById("todasDespesasBody");
   tbody.innerHTML = "";
   
-  db.ref("despesas").once("value").then(snapshot => {
+  // Buscar apenas despesas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     snapshot.forEach(child => {
       const key = child.key;
       const despesa = child.val();
@@ -927,8 +953,8 @@ function renderCalendar() {
     calendarGrid.appendChild(emptyDay);
   }
   
-  // Buscar despesas do mês
-  db.ref("despesas").once("value").then(snapshot => {
+  // Buscar apenas despesas do usuário atual para o mês
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     let despesasPorDia = {};
     
     snapshot.forEach(child => {
@@ -1253,8 +1279,8 @@ function atualizarRelatorioMensal(inicio, fim) {
   const container = document.getElementById("relatorioMensalContainer");
   container.innerHTML = "";
   
-  // Buscar despesas no período
-  db.ref("despesas").once("value").then(snapshot => {
+  // Buscar apenas despesas do usuário atual no período
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     let despesasPorMes = {};
     
     snapshot.forEach(child => {
@@ -1377,8 +1403,8 @@ function atualizarRelatorioMensal(inicio, fim) {
  * @param {Date} fim - Data de fim
  */
 function atualizarGraficoCategorias(inicio, fim) {
-  // Buscar despesas no período
-  db.ref("despesas").once("value").then(snapshot => {
+  // Buscar apenas despesas do usuário atual no período
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser ? currentUser.uid : "").once("value").then(snapshot => {
     let despesasPorCategoria = {};
     
     snapshot.forEach(child => {
@@ -1774,6 +1800,14 @@ function excluirCartao(cartaoId) {
 }
 
 /**
+ * Salva um novo cartão (função chamada pelo botão Salvar Cartão)
+ */
+function salvarCartao() {
+  // Reutilizando a função adicionarCartao para não duplicar código
+  adicionarCartao();
+}
+
+/**
  * Adiciona um pagamento
  */
 function adicionarPagamento() {
@@ -1808,6 +1842,12 @@ function removerPagamento(button) {
  * Cadastra uma pessoa
  */
 function cadastrarPessoa() {
+  // Verificar se o usuário está autenticado
+  if (!currentUser || !currentUser.uid) {
+    exibirToast("Você precisa estar logado para cadastrar uma renda.", "warning");
+    return;
+  }
+
   // Correção: usando o ID correto "nome" em vez de "nomePessoa"
   const nomeElement = document.getElementById("nome");
   // Validação para evitar erro de elemento null
@@ -1849,10 +1889,12 @@ function cadastrarPessoa() {
     }
   }
   
+  // Adicionar userId para associar a renda ao usuário atual
   db.ref("pessoas").push({
     nome: nome,
     saldoInicial: saldoInicial,
-    pagamentos: pagamentos
+    pagamentos: pagamentos,
+    userId: currentUser.uid // Adicionar ID do usuário
   }).then(() => {
     exibirToast("Renda cadastrada com sucesso!", "success");
     fecharModal("cadastroModal");
@@ -1871,7 +1913,14 @@ function loadRendas() {
   const rendaList = document.getElementById("usuariosListaPrincipal");
   rendaList.innerHTML = "";
   
-  db.ref("pessoas").once("value").then(snapshot => {
+  // Verificar se o usuário está autenticado
+  if (!currentUser || !currentUser.uid) {
+    rendaList.innerHTML = "<p>Você precisa estar logado para ver suas rendas.</p>";
+    return;
+  }
+  
+  // Buscar apenas as rendas do usuário atual
+  db.ref("pessoas").orderByChild("userId").equalTo(currentUser.uid).once("value").then(snapshot => {
     if (!snapshot.exists()) {
       rendaList.innerHTML = "<p>Nenhuma renda cadastrada.</p>";
       return;
@@ -1914,8 +1963,27 @@ function loadRendas() {
  * Exclui uma renda
  */
 function deleteRenda(key) {
+  if (!currentUser || !currentUser.uid) {
+    exibirToast("Você precisa estar logado para excluir uma renda.", "warning");
+    return;
+  }
+  
   if (confirm("Tem certeza que deseja excluir esta renda?")) {
-    db.ref("pessoas").child(key).remove()
+    // Verificar primeiro se a renda pertence ao usuário atual
+    db.ref("pessoas").child(key).once("value")
+      .then(snapshot => {
+        if (!snapshot.exists()) {
+          throw new Error("Renda não encontrada");
+        }
+        
+        const renda = snapshot.val();
+        if (renda.userId !== currentUser.uid) {
+          throw new Error("Você não tem permissão para excluir esta renda");
+        }
+        
+        // Se chegou aqui, pode excluir
+        return db.ref("pessoas").child(key).remove();
+      })
       .then(() => {
         exibirToast("Renda excluída com sucesso!", "success");
         loadRendas();
@@ -2028,13 +2096,7 @@ function handleAuthStateChanged(user) {
   }
 }
 
-/**
- * Alterna o menu mobile
- */
-function toggleMenu() {
-  const sidebar = document.getElementById('sidebar');
-  sidebar.classList.toggle('show');
-}
+
 
 // ===================== MÓDULO DE ALERTAS =====================
 
@@ -2049,6 +2111,12 @@ function novo_verificarAlertas() {
   
   const hoje = new Date();
   
+  // Verificar se usuário está autenticado
+  if (!currentUser || !currentUser.uid) {
+    container.innerHTML = "<p>Você precisa estar logado para ver seus alertas.</p>";
+    return;
+  }
+
   // Verificar despesas vencidas
   novo_verificarDespesasVencidas(hoje, container);
   
@@ -2070,7 +2138,13 @@ function novo_verificarDespesasVencidas(hoje = new Date(), container = null) {
     if (!container) return;
   }
   
-  db.ref("despesas").once("value").then(snapshot => {
+  // Verificar se usuário está autenticado
+  if (!currentUser || !currentUser.uid) {
+    return;
+  }
+  
+  // Buscar apenas despesas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser.uid).once("value").then(snapshot => {
     let alertasVencidos = [];
     
     snapshot.forEach(child => {
@@ -2159,7 +2233,13 @@ function verificarDespesasProximasVencimento(hoje = new Date(), container = null
     if (!container) return;
   }
   
-  db.ref("despesas").once("value").then(snapshot => {
+  // Verificar se usuário está autenticado
+  if (!currentUser || !currentUser.uid) {
+    return;
+  }
+  
+  // Buscar apenas despesas do usuário atual
+  db.ref("despesas").orderByChild("userId").equalTo(currentUser.uid).once("value").then(snapshot => {
     let alertasProximos = [];
     
     snapshot.forEach(child => {
@@ -2251,6 +2331,11 @@ function verificarLimitesCategorias(container = null) {
     if (!container) return;
   }
   
+  // Verificar se usuário está autenticado
+  if (!currentUser || !currentUser.uid) {
+    return;
+  }
+  
   // Obter limites de categorias
   db.ref("limites_categorias").once("value").then(limSnapshot => {
     if (!limSnapshot.exists()) return;
@@ -2265,7 +2350,8 @@ function verificarLimitesCategorias(container = null) {
     const mesAtual = hoje.getMonth();
     const anoAtual = hoje.getFullYear();
     
-    db.ref("despesas").once("value").then(snapshot => {
+    // Buscar apenas despesas do usuário atual
+    db.ref("despesas").orderByChild("userId").equalTo(currentUser.uid).once("value").then(snapshot => {
       const gastosPorCategoria = {};
       
       snapshot.forEach(child => {

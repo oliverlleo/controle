@@ -359,7 +359,14 @@ function analisarGastosPorCategoria() {
  */
 function carregarMetas() {
   return new Promise((resolve, reject) => {
-    db.ref("metas").once("value")
+    // Verificar se o usuário está autenticado
+    if (!currentUser || !currentUser.uid) {
+      reject(new Error("Usuário não autenticado"));
+      return;
+    }
+    
+    // Buscar apenas as metas do usuário atual
+    db.ref("metas").orderByChild("userId").equalTo(currentUser.uid).once("value")
       .then(snapshot => {
         const metas = [];
         
@@ -394,6 +401,12 @@ function salvarMeta(meta) {
       return;
     }
     
+    // Verificar se o usuário está autenticado
+    if (!currentUser || !currentUser.uid) {
+      reject(new Error("Usuário não autenticado"));
+      return;
+    }
+    
     // Preparar dados para salvar
     const metaData = {
       titulo: meta.titulo,
@@ -402,7 +415,8 @@ function salvarMeta(meta) {
       valorAtual: parseFloat(meta.valorAtual || 0),
       dataAlvo: meta.dataAlvo,
       dataCriacao: meta.dataCriacao || new Date().toISOString(),
-      categoria: meta.categoria || "outros"
+      categoria: meta.categoria || "outros",
+      userId: currentUser.uid // Adicionar ID do usuário
     };
     
     // Salvar no Firebase
@@ -437,7 +451,29 @@ function atualizarProgressoMeta(metaId, novoValor) {
       return;
     }
     
-    db.ref(`metas/${metaId}/valorAtual`).set(parseFloat(novoValor))
+    // Verificar se o usuário está autenticado
+    if (!currentUser || !currentUser.uid) {
+      reject(new Error("Usuário não autenticado"));
+      return;
+    }
+    
+    // Primeiro verificar se a meta pertence ao usuário atual
+    db.ref(`metas/${metaId}`).once("value")
+      .then(snapshot => {
+        if (!snapshot.exists()) {
+          reject(new Error("Meta não encontrada"));
+          return;
+        }
+        
+        const meta = snapshot.val();
+        if (meta.userId !== currentUser.uid) {
+          reject(new Error("Acesso negado: meta pertence a outro usuário"));
+          return;
+        }
+        
+        // Se chegou aqui, pode atualizar
+        return db.ref(`metas/${metaId}/valorAtual`).set(parseFloat(novoValor));
+      })
       .then(() => {
         resolve({ success: true });
       })
@@ -460,7 +496,29 @@ function excluirMeta(metaId) {
       return;
     }
     
-    db.ref(`metas/${metaId}`).remove()
+    // Verificar se o usuário está autenticado
+    if (!currentUser || !currentUser.uid) {
+      reject(new Error("Usuário não autenticado"));
+      return;
+    }
+    
+    // Primeiro verificar se a meta pertence ao usuário atual
+    db.ref(`metas/${metaId}`).once("value")
+      .then(snapshot => {
+        if (!snapshot.exists()) {
+          reject(new Error("Meta não encontrada"));
+          return;
+        }
+        
+        const meta = snapshot.val();
+        if (meta.userId !== currentUser.uid) {
+          reject(new Error("Acesso negado: meta pertence a outro usuário"));
+          return;
+        }
+        
+        // Se chegou aqui, pode excluir
+        return db.ref(`metas/${metaId}`).remove();
+      })
       .then(() => {
         resolve({ success: true });
       })
